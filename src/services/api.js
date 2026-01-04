@@ -2,9 +2,9 @@
 // Updated API Service Layer - Connected to Deployed Backend
 
 const getBaseUrl = () => {
-  // Production: Use Railway backend URL
+  // Production: Use Vercel backend URL
   if (import.meta.env.PROD) {
-    return 'https://web-production-f4c8.up.railway.app/api';
+    return 'https://posifine11-backend-xa7t.vercel.app/api';
   }
   // Development: Use local backend
   return 'http://localhost:5002/api';
