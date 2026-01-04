@@ -1,39 +1,56 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
-export default function useInactivity(timeout = 45000) {
+export default function useInactivity(timeout = 60000) { // Default 1 minute
   const [isLocked, setIsLocked] = useState(false);
-  const timerRef = useRef(null);
+  const [lastActivity, setLastActivity] = useState(Date.now());
 
   const resetTimer = useCallback(() => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
+    setLastActivity(Date.now());
+    if (isLocked) {
+      setIsLocked(false);
     }
-    timerRef.current = setTimeout(() => setIsLocked(true), timeout);
-  }, [timeout]);
-
-  useEffect(() => {
-    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
-    
-    events.forEach(event => {
-      document.addEventListener(event, resetTimer, true);
-    });
-
-    resetTimer();
-
-    return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
-      events.forEach(event => {
-        document.removeEventListener(event, resetTimer, true);
-      });
-    };
-  }, [resetTimer]);
+  }, [isLocked]);
 
   const unlock = useCallback(() => {
     setIsLocked(false);
     resetTimer();
   }, [resetTimer]);
 
-  return [isLocked, unlock];
+  useEffect(() => {
+    const events = [
+      'mousedown',
+      'mousemove',
+      'keypress',
+      'scroll',
+      'touchstart',
+      'click'
+    ];
+
+    const handleActivity = () => {
+      resetTimer();
+    };
+
+    // Add event listeners
+    events.forEach(event => {
+      document.addEventListener(event, handleActivity, true);
+    });
+
+    // Set up interval to check for inactivity
+    const interval = setInterval(() => {
+      const now = Date.now();
+      if (now - lastActivity > timeout && !isLocked) {
+        setIsLocked(true);
+      }
+    }, 1000); // Check every second
+
+    // Cleanup
+    return () => {
+      events.forEach(event => {
+        document.removeEventListener(event, handleActivity, true);
+      });
+      clearInterval(interval);
+    };
+  }, [lastActivity, timeout, isLocked, resetTimer]);
+
+  return [isLocked, unlock, resetTimer];
 }

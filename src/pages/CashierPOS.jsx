@@ -1,38 +1,89 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { products, sales, expenses, stats } from '../services/api';
-import { ShoppingCart, Trash2, LogOut, Plus, Minus, DollarSign, TrendingDown, Package, Edit2, Search, BarChart3 } from 'lucide-react';
+import { products, sales, expenses, stats, batches } from '../services/api';
+import { ShoppingCart, Trash2, LogOut, Plus, Minus, DollarSign, TrendingDown, Package, Edit2, Search, BarChart3, Camera, Upload, AlertTriangle } from 'lucide-react';
 
 export default function CashierPOS() {
   const { user, logout } = useAuth();
   const [productList, setProductList] = useState([]);
+  const [batchList, setBatchList] = useState([]);
   const [cart, setCart] = useState([]);
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [activeView, setActiveView] = useState('pos');
   const [data, setData] = useState({ sales: [], expenses: [], stats: {} });
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddProduct, setShowAddProduct] = useState(false);
-  const [newProduct, setNewProduct] = useState({ name: '', price: '', quantity: '' });
+  const [showAddStock, setShowAddStock] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [newProduct, setNewProduct] = useState({ name: '', price: '', cost: '', category: 'finished', image: '' });
+  const [newStock, setNewStock] = useState({ quantity: '', expiryDate: '', batchNumber: '', cost: '' });
   const [showAddExpense, setShowAddExpense] = useState(false);
   const [newExpense, setNewExpense] = useState({ description: '', amount: '', category: '' });
+  const [imagePreview, setImagePreview] = useState('');
 
   useEffect(() => {
     loadData();
   }, []);
 
   const loadData = async () => {
-    const [p, s, e, st] = await Promise.all([
-      products.getAll(),
-      sales.getAll(),
-      expenses.getAll(),
-      stats.get()
-    ]);
-    setProductList(p.filter(prod => prod.visibleToCashier !== false && !prod.expenseOnly));
-    setData({ sales: s, expenses: e, stats: st });
+    try {
+      const [p, s, e, st, b] = await Promise.all([
+        products.getAll(),
+        sales.getAll(),
+        expenses.getAll(),
+        stats.get(),
+        batches.getAll()
+      ]);
+      setProductList(p.filter(prod => prod.visibleToCashier !== false && !prod.expenseOnly));
+      setData({ sales: s, expenses: e, stats: st });
+      setBatchList(b);
+    } catch (error) {
+      console.error('Failed to load data:', error);
+    }
+  };
+
+  const handleImageUpload = (e, isNewProduct = true) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const base64 = e.target.result;
+        setImagePreview(base64);
+        if (isNewProduct) {
+          setNewProduct({ ...newProduct, image: base64 });
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const getProductStock = (productId) => {
+    const productBatches = batchList.filter(b => b.productId === productId && b.quantity > 0);
+    return productBatches.reduce((total, batch) => total + batch.quantity, 0);
+  };
+
+  const getOldestBatch = (productId) => {
+    const productBatches = batchList
+      .filter(b => b.productId === productId && b.quantity > 0)
+      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    return productBatches[0] || null;
   };
 
   const addToCart = (product) => {
+    const availableStock = getProductStock(product.id);
+    if (availableStock <= 0) {
+      alert('Product is out of stock!');
+      return;
+    }
+    
     const existing = cart.find(item => item.id === product.id);
+    const currentCartQty = existing ? existing.quantity : 0;
+    
+    if (currentCartQty >= availableStock) {
+      alert(`Only ${availableStock} units available in stock!`);
+      return;
+    }
+    
     if (existing) {
       setCart(cart.map(item => 
         item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
@@ -43,9 +94,20 @@ export default function CashierPOS() {
   };
 
   const updateQuantity = (id, delta) => {
-    setCart(cart.map(item => 
-      item.id === id ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item
-    ).filter(item => item.quantity > 0));
+    const product = productList.find(p => p.id === id);
+    const availableStock = getProductStock(id);
+    
+    setCart(cart.map(item => {
+      if (item.id === id) {
+        const newQty = item.quantity + delta;
+        if (newQty > availableStock) {
+          alert(`Only ${availableStock} units available!`);
+          return item;
+        }
+        return { ...item, quantity: Math.max(1, newQty) };
+      }
+      return item;
+    }).filter(item => item.quantity > 0));
   };
 
   const removeFromCart = (id) => {
@@ -57,36 +119,105 @@ export default function CashierPOS() {
   const handleCheckout = async () => {
     if (cart.length === 0) return;
     
-    await sales.create({
-      items: cart.map(item => ({ productId: item.id, quantity: item.quantity, price: item.price })),
-      total,
-      paymentMethod
-    });
-    
-    setCart([]);
-    loadData();
-    alert('Sale completed successfully!');
+    try {
+      await sales.create({
+        items: cart.map(item => ({ productId: item.id, quantity: item.quantity, price: item.price })),
+        total,
+        paymentMethod
+      });
+      
+      setCart([]);
+      await loadData(); // Reload all data immediately
+      alert('Sale completed successfully!');
+    } catch (error) {
+      console.error('Checkout failed:', error);
+      alert('Sale failed. Please try again.');
+    }
   };
 
   const handleAddProduct = async (e) => {
     e.preventDefault();
-    await products.create({ ...newProduct, price: parseFloat(newProduct.price), quantity: parseInt(newProduct.quantity) });
-    setNewProduct({ name: '', price: '', quantity: '' });
-    setShowAddProduct(false);
-    loadData();
+    try {
+      await products.create({ 
+        ...newProduct, 
+        price: parseFloat(newProduct.price),
+        cost: parseFloat(newProduct.cost || 0),
+        quantity: 0 // Stock managed through batches
+      });
+      setNewProduct({ name: '', price: '', cost: '', category: 'finished', image: '' });
+      setImagePreview('');
+      setShowAddProduct(false);
+      await loadData(); // Reload all data immediately
+      alert('Product added successfully!');
+    } catch (error) {
+      console.error('Failed to add product:', error);
+      alert('Failed to add product');
+    }
+  };
+
+  const handleAddStock = async (e) => {
+    e.preventDefault();
+    try {
+      await batches.create({
+        productId: selectedProduct.id,
+        quantity: parseInt(newStock.quantity),
+        expiryDate: newStock.expiryDate,
+        batchNumber: newStock.batchNumber || `BATCH-${Date.now()}`,
+        cost: parseFloat(newStock.cost || selectedProduct.cost || 0)
+      });
+      setNewStock({ quantity: '', expiryDate: '', batchNumber: '', cost: '' });
+      setShowAddStock(false);
+      setSelectedProduct(null);
+      await loadData(); // Reload all data immediately
+      alert('Stock added successfully!');
+    } catch (error) {
+      console.error('Failed to add stock:', error);
+      alert('Failed to add stock');
+    }
   };
 
   const handleAddExpense = async (e) => {
     e.preventDefault();
-    await expenses.create({ ...newExpense, amount: parseFloat(newExpense.amount) });
-    setNewExpense({ description: '', amount: '', category: '' });
-    setShowAddExpense(false);
-    loadData();
+    try {
+      await expenses.create({ ...newExpense, amount: parseFloat(newExpense.amount) });
+      setNewExpense({ description: '', amount: '', category: '' });
+      setShowAddExpense(false);
+      await loadData(); // Reload all data immediately
+    } catch (error) {
+      console.error('Failed to add expense:', error);
+      alert('Failed to add expense');
+    }
   };
 
-  const filteredProducts = productList.filter(p => 
-    p.name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleClearData = async () => {
+    if (window.confirm('Are you sure you want to clear all sales and data? This action cannot be undone.')) {
+      try {
+        // Clear backend data by overwriting files
+        const token = localStorage.getItem('token');
+        const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:5002/api' : '/api';
+        
+        // Clear sales and expenses by making requests to clear them
+        await fetch(`${API_URL}/clear-data`, {
+          method: 'POST',
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ type: 'all' })
+        }).catch(() => {});
+        
+        // Clear local state
+        setData({ sales: [], expenses: [], stats: { totalSales: 0, totalExpenses: 0, profit: 0 } });
+        setCart([]);
+        
+        alert('Data cleared successfully!');
+        await loadData();
+      } catch (error) {
+        console.error('Failed to clear data:', error);
+        alert('Failed to clear data');
+      }
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col">
@@ -104,6 +235,10 @@ export default function CashierPOS() {
             <button onClick={logout} className="btn-secondary flex items-center gap-2 hover:bg-red-50 hover:text-red-600 hover:border-red-200">
               <LogOut className="w-4 h-4" />
               Logout
+            </button>
+            <button onClick={handleClearData} className="btn-secondary flex items-center gap-2 hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200">
+              <Trash2 className="w-4 h-4" />
+              Clear Data
             </button>
           </div>
         </div>
@@ -164,17 +299,56 @@ export default function CashierPOS() {
               </div>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {filteredProducts.map(product => (
-                <button
-                  key={product.id}
-                  onClick={() => addToCart(product)}
-                  className="card text-left hover:shadow-xl transition-all transform hover:scale-105 bg-gradient-to-br from-white to-gray-50"
-                >
-                  <h3 className="font-semibold mb-2 text-gray-900">{product.name}</h3>
-                  <p className="text-xl font-bold text-green-600">KSH {product.price?.toLocaleString()}</p>
-                  <p className="text-xs text-gray-500 mt-2">Stock: {product.quantity || 0}</p>
-                </button>
-              ))}
+              {productList.filter(p => p.name?.toLowerCase().includes(searchTerm.toLowerCase())).map(product => {
+                const stock = getProductStock(product.id);
+                const isLowStock = stock < 10;
+                const isOutOfStock = stock <= 0;
+                
+                return (
+                  <button
+                    key={product.id}
+                    onClick={() => addToCart(product)}
+                    disabled={isOutOfStock}
+                    className={`card text-left hover:shadow-xl transition-all transform hover:scale-105 relative ${
+                      isOutOfStock ? 'opacity-50 cursor-not-allowed bg-gray-100' : 'bg-gradient-to-br from-white to-gray-50'
+                    }`}
+                  >
+                    {product.image && (
+                      <div className="w-full h-32 mb-3 rounded-lg overflow-hidden bg-gray-100">
+                        <img 
+                          src={product.image} 
+                          alt={product.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+                    {isLowStock && !isOutOfStock && (
+                      <div className="absolute top-2 right-2 bg-yellow-500 text-white p-1 rounded-full">
+                        <AlertTriangle className="w-4 h-4" />
+                      </div>
+                    )}
+                    {isOutOfStock && (
+                      <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                        OUT
+                      </div>
+                    )}
+                    <h3 className="font-semibold mb-2 text-gray-900">{product.name}</h3>
+                    <p className="text-xl font-bold text-green-600">KSH {product.price?.toLocaleString()}</p>
+                    <div className="flex justify-between items-center mt-2">
+                      <p className={`text-xs font-medium ${
+                        isOutOfStock ? 'text-red-600' : isLowStock ? 'text-yellow-600' : 'text-gray-500'
+                      }`}>
+                        Stock: {stock}
+                      </p>
+                      {isLowStock && !isOutOfStock && (
+                        <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full font-medium">
+                          Low Stock
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -318,7 +492,7 @@ export default function CashierPOS() {
         <div className="p-6 max-w-7xl mx-auto w-full">
           <div className="card shadow-lg">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-semibold">Manage Products</h3>
+              <h3 className="text-lg font-semibold">Manage Products & Stock</h3>
               <button onClick={() => setShowAddProduct(true)} className="btn-primary flex items-center gap-2 bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700">
                 <Plus className="w-4 h-4" />
                 Add Product
@@ -328,34 +502,112 @@ export default function CashierPOS() {
             {showAddProduct && (
               <div className="mb-6 p-6 bg-gradient-to-br from-green-50 to-teal-50 rounded-xl border-2 border-green-200">
                 <h4 className="font-semibold mb-4 text-lg">Add New Product</h4>
-                <form onSubmit={handleAddProduct} className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <input
-                    type="text"
-                    placeholder="Product Name"
-                    className="input"
-                    value={newProduct.name}
-                    onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
-                    required
-                  />
-                  <input
-                    type="number"
-                    placeholder="Price"
-                    className="input"
-                    value={newProduct.price}
-                    onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
-                    required
-                  />
+                <form onSubmit={handleAddProduct} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input
+                      type="text"
+                      placeholder="Product Name"
+                      className="input"
+                      value={newProduct.name}
+                      onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+                      required
+                    />
+                    <select
+                      className="input"
+                      value={newProduct.category}
+                      onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
+                    >
+                      <option value="finished">Finished Product</option>
+                      <option value="raw">Raw Material</option>
+                      <option value="service">Service</option>
+                    </select>
+                    <input
+                      type="number"
+                      placeholder="Selling Price"
+                      className="input"
+                      value={newProduct.price}
+                      onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
+                      required
+                    />
+                    <input
+                      type="number"
+                      placeholder="Cost Price (Optional)"
+                      className="input"
+                      value={newProduct.cost}
+                      onChange={(e) => setNewProduct({ ...newProduct, cost: e.target.value })}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">Product Image</label>
+                    <div className="flex items-center gap-4">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleImageUpload(e, true)}
+                        className="input"
+                      />
+                      <Camera className="w-5 h-5 text-gray-400" />
+                    </div>
+                    {imagePreview && (
+                      <div className="mt-2">
+                        <img src={imagePreview} alt="Preview" className="w-24 h-24 object-cover rounded-lg border" />
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <button type="submit" className="btn-primary flex-1">Add Product</button>
+                    <button type="button" onClick={() => {
+                      setShowAddProduct(false);
+                      setImagePreview('');
+                      setNewProduct({ name: '', price: '', cost: '', category: 'finished', image: '' });
+                    }} className="btn-secondary">Cancel</button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {showAddStock && selectedProduct && (
+              <div className="mb-6 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200">
+                <h4 className="font-semibold mb-4 text-lg">Add Stock for {selectedProduct.name}</h4>
+                <form onSubmit={handleAddStock} className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <input
                     type="number"
                     placeholder="Quantity"
                     className="input"
-                    value={newProduct.quantity}
-                    onChange={(e) => setNewProduct({ ...newProduct, quantity: e.target.value })}
+                    value={newStock.quantity}
+                    onChange={(e) => setNewStock({ ...newStock, quantity: e.target.value })}
                     required
                   />
-                  <div className="flex gap-2">
-                    <button type="submit" className="btn-primary flex-1">Add</button>
-                    <button type="button" onClick={() => setShowAddProduct(false)} className="btn-secondary">Cancel</button>
+                  <input
+                    type="date"
+                    placeholder="Expiry Date (Optional)"
+                    className="input"
+                    value={newStock.expiryDate}
+                    onChange={(e) => setNewStock({ ...newStock, expiryDate: e.target.value })}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Batch Number (Optional)"
+                    className="input"
+                    value={newStock.batchNumber}
+                    onChange={(e) => setNewStock({ ...newStock, batchNumber: e.target.value })}
+                  />
+                  <input
+                    type="number"
+                    placeholder="Cost per Unit"
+                    className="input"
+                    value={newStock.cost}
+                    onChange={(e) => setNewStock({ ...newStock, cost: e.target.value })}
+                  />
+                  <div className="flex gap-2 md:col-span-4">
+                    <button type="submit" className="btn-primary flex-1">Add Stock</button>
+                    <button type="button" onClick={() => {
+                      setShowAddStock(false);
+                      setSelectedProduct(null);
+                      setNewStock({ quantity: '', expiryDate: '', batchNumber: '', cost: '' });
+                    }} className="btn-secondary">Cancel</button>
                   </div>
                 </form>
               </div>
@@ -365,29 +617,73 @@ export default function CashierPOS() {
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Product Name</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Product</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Price</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Stock</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Batches</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {productList.map((product) => (
-                    <tr key={product.id} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3 text-sm font-medium">{product.name}</td>
-                      <td className="px-4 py-3 text-sm font-semibold text-green-600">KSH {product.price?.toLocaleString()}</td>
-                      <td className="px-4 py-3 text-sm">
-                        <span className={`font-medium ${product.quantity < 10 ? 'text-red-600' : 'text-gray-900'}`}>
-                          {product.quantity || 0}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        <button className="p-2 hover:bg-green-50 rounded-lg text-green-600 transition-colors">
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {productList.map((product) => {
+                    const stock = getProductStock(product.id);
+                    const productBatches = batchList.filter(b => b.productId === product.id && b.quantity > 0);
+                    const isLowStock = stock < 10;
+                    
+                    return (
+                      <tr key={product.id} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            {product.image && (
+                              <img src={product.image} alt={product.name} className="w-10 h-10 object-cover rounded-lg" />
+                            )}
+                            <div>
+                              <div className="text-sm font-medium">{product.name}</div>
+                              <div className="text-xs text-gray-500">{product.category}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-sm font-semibold text-green-600">KSH {product.price?.toLocaleString()}</td>
+                        <td className="px-4 py-3 text-sm">
+                          <div className="flex items-center gap-2">
+                            <span className={`font-medium ${
+                              stock === 0 ? 'text-red-600' : isLowStock ? 'text-yellow-600' : 'text-gray-900'
+                            }`}>
+                              {stock}
+                            </span>
+                            {isLowStock && stock > 0 && (
+                              <AlertTriangle className="w-4 h-4 text-yellow-500" />
+                            )}
+                            {stock === 0 && (
+                              <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full font-medium">
+                                Out of Stock
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          <span className="text-gray-600">{productBatches.length} active</span>
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          <div className="flex items-center gap-2">
+                            <button 
+                              onClick={() => {
+                                setSelectedProduct(product);
+                                setShowAddStock(true);
+                              }}
+                              className="p-2 hover:bg-blue-50 rounded-lg text-blue-600 transition-colors"
+                              title="Add Stock"
+                            >
+                              <Plus className="w-4 h-4" />
+                            </button>
+                            <button className="p-2 hover:bg-green-50 rounded-lg text-green-600 transition-colors" title="Edit Product">
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

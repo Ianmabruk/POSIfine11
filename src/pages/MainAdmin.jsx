@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import {
   Users, DollarSign, Mail, Lock, Unlock, CheckCircle, XCircle,
-  AlertTriangle, TrendingUp, Calendar, Search, Filter, Send
+  AlertTriangle, TrendingUp, Calendar, Search, Filter, Send, Eye, LogOut
 } from 'lucide-react';
-import { getLocalUsers } from '../utils/dataSync';
+import { mainAdmin, users, BASE_API_URL } from '../services/api';
+import { useNavigate } from 'react-router-dom';
 
 export default function MainAdmin() {
-  const [users, setUsers] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
   const [payments, setPayments] = useState([]);
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -15,6 +16,9 @@ export default function MainAdmin() {
   const [emailData, setEmailData] = useState({ subject: '', message: '' });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [backendAvailable, setBackendAvailable] = useState(true);
+  const [lockingUser, setLockingUser] = useState(null);
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     totalUsers: 0,
     activeUsers: 0,
@@ -23,82 +27,90 @@ export default function MainAdmin() {
     pendingPayments: 0,
     overduePayments: 0
   });
+  const [recentActivities, setRecentActivities] = useState([]);
 
   useEffect(() => {
+    // Check if user is authenticated as main admin
+    const token = localStorage.getItem('mainAdminToken');
+    const user = localStorage.getItem('mainAdminUser');
+    
+    if (!token || !user) {
+      navigate('/main-admin/login');
+      return;
+    }
+    
     loadData().finally(() => setLoading(false));
-  }, []);
+    
+    // Load recent activities
+    const activities = JSON.parse(localStorage.getItem('authActivities') || '[]');
+    setRecentActivities(activities.slice(0, 10)); // Show last 10 activities
+    
+    // Set up interval to refresh activities every 5 seconds
+    const interval = setInterval(() => {
+      const updatedActivities = JSON.parse(localStorage.getItem('authActivities') || '[]');
+      setRecentActivities(updatedActivities.slice(0, 10));
+    }, 5000);
+    
+    return () => clearInterval(interval);
+  }, [navigate]);
 
   const loadData = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const API_URL = import.meta.env.PROD ? '/api' : 'http://localhost:5001/api';
+      setError(null);
+      let usersData = [];
+      let paymentsData = [];
+      let backendStatus = true;
 
-      // Load users
-      let usersLoaded = false;
+      // Try to load from mainAdmin API first
       try {
-        const usersRes = await fetch(`${API_URL}/main-admin/users`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (usersRes.ok) {
-          const usersData = await usersRes.json();
-          setUsers(usersData);
-          usersLoaded = true;
-        } else {
-          // Fallback: Load from regular users endpoint
-          const fallbackRes = await fetch(`${API_URL}/users`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          if (fallbackRes.ok) {
-            const usersData = await fallbackRes.json();
-            setUsers(usersData);
-            usersLoaded = true;
-          }
+        usersData = await mainAdmin.getUsers();
+        paymentsData = await mainAdmin.getPayments();
+      } catch (mainAdminError) {
+        console.warn('MainAdmin API not available, falling back to regular users API:', mainAdminError.message);
+        
+        // Fallback to regular users API
+        try {
+          usersData = await users.getAll();
+        } catch (usersError) {
+          console.warn('Users API also failed:', usersError.message);
+          backendStatus = false;
         }
-      } catch (err) {
-        console.warn('Backend not available for users:', err);
-      }
-
-      // If no users loaded from backend, use local users
-      if (!usersLoaded) {
-        const localUsers = getLocalUsers();
-        setUsers(localUsers);
-      }
-
-      // Load payments
-      try {
-        const paymentsRes = await fetch(`${API_URL}/main-admin/payments`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (paymentsRes.ok) {
-          const paymentsData = await paymentsRes.json();
-          setPayments(paymentsData);
+        
+        // Try to get payments from localStorage if backend not available
+        if (!backendStatus) {
+          paymentsData = [];
+          setBackendAvailable(false);
         }
-      } catch (err) {
-        console.log('Payments endpoint not available, using empty data');
-        setPayments([]);
       }
 
-      // If no users found and in production, generate demo data
-      if (users.length === 0 && import.meta.env.PROD) {
-        const demoUsers = generateDemoData();
-        setUsers(demoUsers);
-        calculateStats(demoUsers, []);
-      } else {
-        calculateStats(users, payments);
+      // If still no users and backend not available, generate demo data
+      if (usersData.length === 0 && !backendStatus) {
+        usersData = generateDemoData();
+        paymentsData = generateDemoPayments(usersData);
       }
+
+      setAllUsers(usersData);
+      setPayments(paymentsData);
+      setBackendAvailable(backendStatus);
+      calculateStats(usersData, paymentsData);
+
     } catch (error) {
       console.error('Failed to load data:', error);
-      // Don't break the page, generate demo data
-      if (import.meta.env.PROD) {
-        const demoUsers = generateDemoData();
-        setUsers(demoUsers);
-        calculateStats(demoUsers, []);
-      } else {
-        setUsers([]);
-        setPayments([]);
-        calculateStats([], []);
-      }
+      setError('Failed to load dashboard data');
+      
+      // Generate demo data as final fallback
+      const demoUsers = generateDemoData();
+      setAllUsers(demoUsers);
+      setPayments(generateDemoPayments(demoUsers));
+      setBackendAvailable(false);
+      calculateStats(demoUsers, []);
     }
+  };
+
+  const logout = () => {
+    localStorage.removeItem('mainAdminToken');
+    localStorage.removeItem('mainAdminUser');
+    navigate('/main-admin/login');
   };
 
   const generateDemoData = () => {
@@ -108,29 +120,50 @@ export default function MainAdmin() {
     
     if (storedUser) {
       const realUser = JSON.parse(storedUser);
-      demoUsers.push(realUser);
+      demoUsers.push({ ...realUser, id: realUser.id || 'real-user' });
     }
     
     // Add some demo users
     const demoData = [
-      { name: 'John Doe', email: 'john@example.com', plan: 'ultra', price: 1600, active: true, locked: false },
-      { name: 'Jane Smith', email: 'jane@example.com', plan: 'basic', price: 900, active: true, locked: false },
-      { name: 'Bob Wilson', email: 'bob@example.com', plan: 'ultra', price: 1600, active: false, locked: false },
-      { name: 'Alice Brown', email: 'alice@example.com', plan: 'basic', price: 900, active: true, locked: true }
+      { name: 'John Doe', email: 'john@example.com', plan: 'ultra', price: 1600, active: true, locked: false, role: 'admin' },
+      { name: 'Jane Smith', email: 'jane@example.com', plan: 'basic', price: 900, active: true, locked: false, role: 'cashier' },
+      { name: 'Bob Wilson', email: 'bob@example.com', plan: 'ultra', price: 1600, active: false, locked: false, role: 'admin' },
+      { name: 'Alice Brown', email: 'alice@example.com', plan: 'basic', price: 900, active: true, locked: true, role: 'cashier' },
+      { name: 'Mike Johnson', email: 'mike@example.com', plan: 'ultra', price: 1600, active: true, locked: false, role: 'admin' },
+      { name: 'Sarah Davis', email: 'sarah@example.com', plan: 'basic', price: 900, active: false, locked: false, role: 'cashier' }
     ];
     
     demoData.forEach((demo, index) => {
-      if (!demoUsers.find(u => u.email === demo.email)) {
-        demoUsers.push({
-          id: Date.now() + index,
-          ...demo,
-          role: demo.plan === 'ultra' ? 'admin' : 'cashier',
-          createdAt: new Date(Date.now() - (index * 86400000)).toISOString()
-        });
-      }
+      demoUsers.push({
+        id: `demo-${index + 1}`,
+        ...demo,
+        createdAt: new Date(Date.now() - (index * 86400000)).toISOString(),
+        lastLogin: new Date(Date.now() - Math.random() * 86400000).toISOString()
+      });
     });
     
     return demoUsers;
+  };
+
+  const generateDemoPayments = (usersData) => {
+    return usersData.flatMap(user => [
+      {
+        id: `payment-${user.id}-1`,
+        userId: user.id,
+        amount: user.plan === 'ultra' ? 1600 : 900,
+        status: Math.random() > 0.3 ? 'paid' : 'pending',
+        createdAt: new Date(Date.now() - 30 * 86400000).toISOString(),
+        dueDate: new Date(Date.now() + 5 * 86400000).toISOString()
+      },
+      {
+        id: `payment-${user.id}-2`,
+        userId: user.id,
+        amount: user.plan === 'ultra' ? 1600 : 900,
+        status: Math.random() > 0.7 ? 'paid' : (Math.random() > 0.5 ? 'pending' : 'overdue'),
+        createdAt: new Date(Date.now() - 60 * 86400000).toISOString(),
+        dueDate: new Date(Date.now() - 5 * 86400000).toISOString()
+      }
+    ]);
   };
 
   const calculateStats = (usersData, paymentsData) => {
@@ -151,95 +184,82 @@ export default function MainAdmin() {
     });
   };
 
+
   const toggleUserLock = async (userId, currentLockStatus) => {
     try {
-      const token = localStorage.getItem('token');
-      const API_URL = import.meta.env.PROD ? '/api' : 'http://localhost:5001/api';
+      setLockingUser(userId);
+      const newLockStatus = !currentLockStatus;
       
+      // Call the main admin API to lock/unlock user
       try {
-        const response = await fetch(`${API_URL}/main-admin/users/${userId}/lock`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify({ locked: !currentLockStatus })
-        });
+        await mainAdmin.lockUser(userId, newLockStatus);
         
-        if (response.ok) {
-          loadData();
-          return;
-        }
-      } catch (backendError) {
-        console.warn('Backend not available, using client-side update');
-      }
-      
-      // Fallback: Update locally
-      const updatedUsers = users.map(u => 
-        u.id === userId ? { ...u, locked: !currentLockStatus, active: currentLockStatus } : u
-      );
-      setUsers(updatedUsers);
-      calculateStats(updatedUsers, payments);
-      
-      // Also update in localStorage if this is the current user
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        const user = JSON.parse(storedUser);
-        if (user.id === userId) {
-          user.locked = !currentLockStatus;
-          user.active = currentLockStatus;
-          localStorage.setItem('user', JSON.stringify(user));
-        }
+        // Update local state immediately
+        const updatedUsers = allUsers.map(u => 
+          u.id === userId ? { ...u, locked: newLockStatus, active: !newLockStatus } : u
+        );
+        setAllUsers(updatedUsers);
+        calculateStats(updatedUsers, payments);
+        
+        // Show success message
+        const user = allUsers.find(u => u.id === userId);
+        const action = newLockStatus ? 'locked' : 'unlocked';
+        alert(`✅ ${user?.name || `User ${userId}`} has been ${action} successfully!`);
+        
+      } catch (apiError) {
+        console.error('API lock failed:', apiError);
+        
+        // Fallback to local update if backend fails
+        const updatedUsers = allUsers.map(u => 
+          u.id === userId ? { ...u, locked: newLockStatus, active: !newLockStatus } : u
+        );
+        setAllUsers(updatedUsers);
+        calculateStats(updatedUsers, payments);
+        
+        const user = allUsers.find(u => u.id === userId);
+        const action = newLockStatus ? 'locked' : 'unlocked';
+        alert(`⚠️ Backend not available. ${user?.name || `User ${userId}`} ${action} locally. Changes will sync when backend is available.`);
       }
       
     } catch (error) {
       console.error('Failed to toggle lock:', error);
-      alert('Failed to update user lock status.');
+      alert(`❌ Failed to update user status: ${error.message}`);
+    } finally {
+      setLockingUser(null);
     }
   };
 
   const sendEmail = async (userIds, subject, message) => {
     try {
-      const token = localStorage.getItem('token');
-      const API_URL = import.meta.env.PROD ? '/api' : 'http://localhost:5001/api';
+      setLoading(true);
       
+      // Try backend first
       try {
-        const response = await fetch(`${API_URL}/main-admin/send-email`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify({ userIds, subject, message })
-        });
-        
-        if (response.ok) {
-          alert('Emails sent successfully!');
-          setShowEmailModal(false);
-          setSelectedUsers([]);
-          setEmailData({ subject: '', message: '' });
-          return;
-        }
+        await mainAdmin.sendEmail({ userIds, subject, message });
+        alert('Emails sent successfully!');
+        setShowEmailModal(false);
+        setSelectedUsers([]);
+        setEmailData({ subject: '', message: '' });
+        return;
       } catch (backendError) {
-        console.warn('Backend not available, simulating email send');
+        console.warn('Backend email operation failed, simulating email send:', backendError.message);
       }
       
       // Fallback: Simulate email sending
-      const selectedUsersList = users.filter(u => userIds.includes(u.id));
-      const emailLog = {
+      const selectedUsersList = allUsers.filter(u => userIds.includes(u.id));
+      
+      // Store email log locally
+      const emailLogs = JSON.parse(localStorage.getItem('emailLogs') || '[]');
+      emailLogs.push({
         timestamp: new Date().toISOString(),
         recipients: selectedUsersList.map(u => ({ id: u.id, name: u.name, email: u.email })),
         subject,
         message,
         status: 'simulated'
-      };
-      
-      // Store in localStorage for reference
-      const emailLogs = JSON.parse(localStorage.getItem('emailLogs') || '[]');
-      emailLogs.push(emailLog);
+      });
       localStorage.setItem('emailLogs', JSON.stringify(emailLogs));
       
-      alert(`Email simulated successfully!\n\nSent to ${selectedUsersList.length} user(s):\n${selectedUsersList.map(u => u.email).join(', ')}\n\nNote: Deploy backend to send real emails.`);
+      alert(`✅ Email simulation successful!\n\n📧 Sent to ${selectedUsersList.length} user(s):\n${selectedUsersList.map(u => `${u.name} (${u.email})`).join('\n')}\n\n${!backendAvailable ? '📌 Backend not deployed - this was a simulation.\n' : ''}💡 Deploy backend to send real emails.`);
       setShowEmailModal(false);
       setSelectedUsers([]);
       setEmailData({ subject: '', message: '' });
@@ -247,21 +267,23 @@ export default function MainAdmin() {
     } catch (error) {
       console.error('Failed to send email:', error);
       alert('Failed to process email request.');
+    } finally {
+      setLoading(false);
     }
   };
 
   const sendPaymentReminder = async (userId) => {
-    const user = users.find(u => u.id === userId);
+    const user = allUsers.find(u => u.id === userId);
     if (!user) return;
     
     await sendEmail(
       [userId],
-      'Payment Reminder - Subscription Upgrade',
+      'Payment Reminder - Subscription',
       `Dear ${user.name},\n\nThis is a friendly reminder about your pending subscription payment for ${user.plan?.toUpperCase()} plan (KSH ${user.price}).\n\nPlease complete your payment to continue enjoying our services.\n\nThank you!`
     );
   };
 
-  const filteredUsers = users.filter(user => {
+  const filteredUsers = allUsers.filter(user => {
     const matchesSearch = user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email?.toLowerCase().includes(searchTerm.toLowerCase());
 
@@ -289,7 +311,7 @@ export default function MainAdmin() {
     return { pending, overdue, paid, total: userPayments.length };
   };
 
-  if (loading) {
+  if (loading && allUsers.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900 flex items-center justify-center">
         <div className="text-center">
@@ -302,21 +324,37 @@ export default function MainAdmin() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900">
-      {/* Demo Mode Banner */}
-      {import.meta.env.PROD && (
+      {/* Backend Status Banner */}
+      {!backendAvailable && (
         <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-3 text-center">
           <p className="text-sm md:text-base font-semibold">
-            ⚠️ Demo Mode: Backend not deployed. Actions are simulated locally. 
+            ⚠️ Demo Mode: Backend not available. Actions are simulated locally. 
             <a href="/BACKEND_NOT_DEPLOYED.md" className="underline ml-2">Deploy Backend →</a>
           </p>
         </div>
       )}
       
+      {/* Error Banner */}
+      {error && (
+        <div className="bg-red-500 text-white px-6 py-3 text-center">
+          <p className="text-sm font-semibold">⚠️ {error}</p>
+        </div>
+      )}
+      
       {/* Header */}
       <header className="bg-black/30 backdrop-blur-lg border-b border-white/10 px-6 py-4">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-bold text-white mb-2">Main Admin Dashboard</h1>
-          <p className="text-gray-300">Monitor all users, payments, and system activity</p>
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-white mb-2">Main Admin Dashboard</h1>
+            <p className="text-gray-300">Monitor all users, payments, and system activity</p>
+          </div>
+          <button
+            onClick={logout}
+            className="flex items-center gap-2 bg-red-500/20 hover:bg-red-500/30 text-red-300 px-4 py-2 rounded-lg transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+            Logout
+          </button>
         </div>
       </header>
 
@@ -403,7 +441,7 @@ export default function MainAdmin() {
 
             <button
               onClick={() => setShowEmailModal(true)}
-              disabled={selectedUsers.length === 0}
+              disabled={selectedUsers.length === 0 || loading}
               className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-lg font-bold flex items-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Mail className="w-5 h-5" />
@@ -413,149 +451,194 @@ export default function MainAdmin() {
         </div>
 
         {/* Users Table */}
-        <div className="bg-white/10 backdrop-blur-lg rounded-xl border border-white/20 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-black/30">
-                <tr>
-                  <th className="px-4 py-4 text-left">
-                    <input
-                      type="checkbox"
-                      checked={selectedUsers.length === filteredUsers.length && filteredUsers.length > 0}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedUsers(filteredUsers.map(u => u.id));
-                        } else {
-                          setSelectedUsers([]);
-                        }
-                      }}
-                      className="w-5 h-5 rounded"
-                    />
-                  </th>
-                  <th className="px-4 py-4 text-left text-sm font-semibold text-gray-200">User</th>
-                  <th className="px-4 py-4 text-left text-sm font-semibold text-gray-200">Plan</th>
-                  <th className="px-4 py-4 text-left text-sm font-semibold text-gray-200">Status</th>
-                  <th className="px-4 py-4 text-left text-sm font-semibold text-gray-200">Payments</th>
-                  <th className="px-4 py-4 text-left text-sm font-semibold text-gray-200">Joined</th>
-                  <th className="px-4 py-4 text-left text-sm font-semibold text-gray-200">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredUsers.length === 0 && (
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          {/* Main Users Table */}
+          <div className="xl:col-span-2 bg-white/10 backdrop-blur-lg rounded-xl border border-white/20 overflow-hidden">
+            <div className="p-4 border-b border-white/10">
+              <h2 className="text-xl font-bold text-white">All Users</h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-black/30">
                   <tr>
-                    <td colSpan="7" className="px-4 py-12 text-center">
-                      <Users className="w-16 h-16 text-gray-500 mx-auto mb-4" />
-                      <p className="text-gray-400 text-lg">No users found</p>
-                      <p className="text-gray-500 text-sm mt-2">
-                        {searchTerm || filter !== 'all' 
-                          ? 'Try adjusting your filters' 
-                          : 'Users will appear here once they sign up'}
-                      </p>
-                    </td>
+                    <th className="px-4 py-4 text-left">
+                      <input
+                        type="checkbox"
+                        checked={selectedUsers.length === filteredUsers.length && filteredUsers.length > 0}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedUsers(filteredUsers.map(u => u.id));
+                          } else {
+                            setSelectedUsers([]);
+                          }
+                        }}
+                        className="w-5 h-5 rounded"
+                      />
+                    </th>
+                    <th className="px-4 py-4 text-left text-sm font-semibold text-gray-200">User</th>
+                    <th className="px-4 py-4 text-left text-sm font-semibold text-gray-200">Plan</th>
+                    <th className="px-4 py-4 text-left text-sm font-semibold text-gray-200">Status</th>
+                    <th className="px-4 py-4 text-left text-sm font-semibold text-gray-200">Actions</th>
                   </tr>
-                )}
-                {filteredUsers.map(user => {
-                  const paymentStatus = getUserPaymentStatus(user.id);
-                  return (
-                    <tr key={user.id} className="border-t border-white/10 hover:bg-white/5 transition">
-                      <td className="px-4 py-4">
-                        <input
-                          type="checkbox"
-                          checked={selectedUsers.includes(user.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedUsers([...selectedUsers, user.id]);
-                            } else {
-                              setSelectedUsers(selectedUsers.filter(id => id !== user.id));
-                            }
-                          }}
-                          className="w-5 h-5 rounded"
-                        />
-                      </td>
-                      <td className="px-4 py-4">
-                        <div className="flex items-center gap-3">
-                          {user.profilePicture ? (
-                            <img src={user.profilePicture} alt={user.name} className="w-10 h-10 rounded-full" />
-                          ) : (
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white font-bold">
-                              {user.name?.charAt(0).toUpperCase()}
-                            </div>
-                          )}
-                          <div>
-                            <p className="font-semibold text-white">{user.name}</p>
-                            <p className="text-sm text-gray-400">{user.email}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-4">
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                          user.plan === 'ultra' ? 'bg-purple-500/20 text-purple-300' : 'bg-blue-500/20 text-blue-300'
-                        }`}>
-                          {user.plan?.toUpperCase()} - KSH {user.price}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4">
-                        <div className="flex items-center gap-2">
-                          {user.locked ? (
-                            <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-500/20 text-red-300 flex items-center gap-1">
-                              <Lock className="w-3 h-3" />
-                              Locked
-                            </span>
-                          ) : user.active ? (
-                            <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-500/20 text-green-300 flex items-center gap-1">
-                              <CheckCircle className="w-3 h-3" />
-                              Active
-                            </span>
-                          ) : (
-                            <span className="px-3 py-1 rounded-full text-xs font-bold bg-gray-500/20 text-gray-300">
-                              Inactive
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-4">
-                        <div className="space-y-1">
-                          {paymentStatus.paid > 0 && (
-                            <span className="text-xs text-green-400">✓ {paymentStatus.paid} Paid</span>
-                          )}
-                          {paymentStatus.pending > 0 && (
-                            <span className="text-xs text-orange-400 block">⏳ {paymentStatus.pending} Pending</span>
-                          )}
-                          {paymentStatus.overdue > 0 && (
-                            <span className="text-xs text-red-400 block">⚠ {paymentStatus.overdue} Overdue</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-4 text-sm text-gray-400">
-                        {new Date(user.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-4 py-4">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => toggleUserLock(user.id, user.locked)}
-                            className={`p-2 rounded-lg transition ${
-                              user.locked
-                                ? 'bg-green-500/20 hover:bg-green-500/30 text-green-300'
-                                : 'bg-red-500/20 hover:bg-red-500/30 text-red-300'
-                            }`}
-                            title={user.locked ? 'Unlock User' : 'Lock User'}
-                          >
-                            {user.locked ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-                          </button>
-                          <button
-                            onClick={() => sendPaymentReminder(user.id)}
-                            className="p-2 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 transition"
-                            title="Send Payment Reminder"
-                          >
-                            <Send className="w-4 h-4" />
-                          </button>
-                        </div>
+                </thead>
+                <tbody>
+                  {filteredUsers.length === 0 && (
+                    <tr>
+                      <td colSpan="5" className="px-4 py-12 text-center">
+                        <Users className="w-16 h-16 text-gray-500 mx-auto mb-4" />
+                        <p className="text-gray-400 text-lg">No users found</p>
+                        <p className="text-gray-500 text-sm mt-2">
+                          {searchTerm || filter !== 'all' 
+                            ? 'Try adjusting your filters' 
+                            : 'Users will appear here once they sign up'}
+                        </p>
                       </td>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                  )}
+                  {filteredUsers.map(user => {
+                    const paymentStatus = getUserPaymentStatus(user.id);
+                    return (
+                      <tr key={user.id} className="border-t border-white/10 hover:bg-white/5 transition">
+                        <td className="px-4 py-4">
+                          <input
+                            type="checkbox"
+                            checked={selectedUsers.includes(user.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedUsers([...selectedUsers, user.id]);
+                              } else {
+                                setSelectedUsers(selectedUsers.filter(id => id !== user.id));
+                              }
+                            }}
+                            className="w-5 h-5 rounded"
+                          />
+                        </td>
+                        <td className="px-4 py-4">
+                          <div className="flex items-center gap-3">
+                            {user.profilePicture ? (
+                              <img src={user.profilePicture} alt={user.name} className="w-10 h-10 rounded-full" />
+                            ) : (
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white font-bold">
+                                {user.name?.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                            <div>
+                              <p className="font-semibold text-white">{user.name}</p>
+                              <p className="text-sm text-gray-400">{user.email}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-4">
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                            user.plan === 'ultra' ? 'bg-purple-500/20 text-purple-300' : 'bg-blue-500/20 text-blue-300'
+                          }`}>
+                            {user.plan?.toUpperCase()} - KSH {user.price}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4">
+                          <div className="flex items-center gap-2">
+                            {user.locked ? (
+                              <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-500/20 text-red-300 flex items-center gap-1">
+                                <Lock className="w-3 h-3" />
+                                Locked
+                              </span>
+                            ) : user.active ? (
+                              <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-500/20 text-green-300 flex items-center gap-1">
+                                <CheckCircle className="w-3 h-3" />
+                                Active
+                              </span>
+                            ) : (
+                              <span className="px-3 py-1 rounded-full text-xs font-bold bg-gray-500/20 text-gray-300">
+                                Inactive
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-4">
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => toggleUserLock(user.id, user.locked)}
+                              disabled={lockingUser === user.id}
+                              className={`p-2 rounded-lg transition ${
+                                user.locked
+                                  ? 'bg-green-500/20 hover:bg-green-500/30 text-green-300'
+                                  : 'bg-red-500/20 hover:bg-red-500/30 text-red-300'
+                              } ${lockingUser === user.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              title={user.locked ? 'Unlock User' : 'Lock User'}
+                            >
+                              {lockingUser === user.id ? (
+                                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                              ) : user.locked ? (
+                                <Unlock className="w-4 h-4" />
+                              ) : (
+                                <Lock className="w-4 h-4" />
+                              )}
+                            </button>
+                            <button
+                              onClick={() => sendPaymentReminder(user.id)}
+                              disabled={loading}
+                              className="p-2 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 transition"
+                              title="Send Payment Reminder"
+                            >
+                              <Send className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                // View user's dashboard
+                                if (user.role === 'cashier') {
+                                  window.open('/dashboard/cashier', '_blank');
+                                } else {
+                                  window.open('/admin', '_blank');
+                                }
+                              }}
+                              className="p-2 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 transition"
+                              title="View User Dashboard"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          {/* Recent Activity Panel */}
+          <div className="bg-white/10 backdrop-blur-lg rounded-xl border border-white/20">
+            <div className="p-4 border-b border-white/10">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <TrendingUp className="w-5 h-5" />
+                Recent Activity
+              </h2>
+            </div>
+            <div className="p-4 space-y-3 max-h-96 overflow-y-auto">
+              {recentActivities.length === 0 ? (
+                <p className="text-gray-400 text-center py-8">No recent activity</p>
+              ) : (
+                recentActivities.map(activity => (
+                  <div key={activity.id} className="bg-white/5 rounded-lg p-3 border border-white/10">
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className={`w-2 h-2 rounded-full ${
+                        activity.type === 'login' ? 'bg-green-400' : 'bg-blue-400'
+                      }`} />
+                      <span className="text-white font-medium">{activity.user.name}</span>
+                      <span className={`text-xs px-2 py-1 rounded ${
+                        activity.type === 'login' ? 'bg-green-500/20 text-green-300' : 'bg-blue-500/20 text-blue-300'
+                      }`}>
+                        {activity.type}
+                      </span>
+                    </div>
+                    <p className="text-gray-400 text-sm">{activity.user.email}</p>
+                    <p className="text-gray-500 text-xs mt-1">
+                      {new Date(activity.timestamp).toLocaleString()}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -593,9 +676,10 @@ export default function MainAdmin() {
               <div className="flex gap-3">
                 <button
                   onClick={() => sendEmail(selectedUsers, emailData.subject, emailData.message)}
-                  className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-3 rounded-lg font-bold transition"
+                  disabled={loading}
+                  className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-3 rounded-lg font-bold transition disabled:opacity-50"
                 >
-                  Send Email
+                  {loading ? 'Sending...' : 'Send Email'}
                 </button>
                 <button
                   onClick={() => setShowEmailModal(false)}

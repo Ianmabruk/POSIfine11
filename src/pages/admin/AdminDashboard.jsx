@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -22,8 +23,9 @@ import ScreenLock from '../../components/ScreenLock';
 import useInactivity from '../../hooks/useInactivity';
 import { settings as settingsApi } from '../../services/api';
 
+
 export default function AdminDashboard() {
-  const { user, logout } = useAuth();
+  const { user, logout, isCashierUserManagementEnabled } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -91,13 +93,38 @@ export default function AdminDashboard() {
     }
   };
 
+
+  const handleClearData = async () => {
+    if (window.confirm('Are you sure you want to clear all sales and data? This action cannot be undone.')) {
+      try {
+        const token = localStorage.getItem('token');
+        const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:5002/api' : '/api';
+        
+        await fetch(`${API_URL}/clear-data`, {
+          method: 'POST',
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ type: 'all' })
+        });
+        
+        alert('Data cleared successfully!');
+        window.location.reload();
+      } catch (error) {
+        console.error('Failed to clear data:', error);
+        alert('Failed to clear data');
+      }
+    }
+  };
+
   const menuItems = [
     { id: 'overview', label: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
     { id: 'sales', label: 'Sales', icon: ShoppingBag, path: '/admin/sales' },
     { id: 'inventory', label: 'Inventory', icon: Package, path: '/admin/inventory' },
     { id: 'recipes', label: 'Recipes/BOM', icon: Layers, path: '/admin/recipes' },
     { id: 'expenses', label: 'Expenses', icon: TrendingDown, path: '/admin/expenses' },
-    { id: 'users', label: 'Users', icon: Users, path: '/admin/users' },
+    ...(isCashierUserManagementEnabled() ? [{ id: 'users', label: 'Users', icon: Users, path: '/admin/users' }] : []),
     { id: 'time', label: 'Time Tracking', icon: Clock, path: '/admin/time' },
     { id: 'reminders', label: 'Reminders', icon: Bell, path: '/admin/reminders' },
     { id: 'service-fees', label: 'Service Fees', icon: DollarSign, path: '/admin/service-fees' },
@@ -169,6 +196,14 @@ export default function AdminDashboard() {
           >
             <LogOut className="w-5 h-5 flex-shrink-0" />
             {sidebarOpen && <span className="font-medium">Logout</span>}
+          </button>
+          
+          <button
+            onClick={handleClearData}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-orange-600 hover:bg-orange-50 transition-colors"
+          >
+            <X className="w-5 h-5 flex-shrink-0" />
+            {sidebarOpen && <span className="font-medium">Clear Data</span>}
           </button>
         </div>
       </aside>

@@ -1,19 +1,21 @@
 
 
-
-
 import { useState, useEffect } from 'react';
 import { users as usersApi, sales as salesApi } from '../../services/api';
-import { Plus, Edit2, Trash2, Mail, Shield, Eye, Monitor, X, Clock, ShoppingCart } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { Plus, Edit2, Trash2, Mail, Shield, Eye, Monitor, X, Clock, ShoppingCart, UserCheck, UserX, Users, Lock } from 'lucide-react';
+
 
 export default function UserManagement() {
-
+  const { isCashierUserManagementEnabled, isCashier } = useAuth();
   const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [liveViewUser, setLiveViewUser] = useState(null);
   const [liveViewData, setLiveViewData] = useState(null);
   const [liveViewRefresh, setLiveViewRefresh] = useState(0);
+
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
@@ -25,7 +27,10 @@ export default function UserManagement() {
       manageProducts: false
     }
   });
-
+  
+  const [showPINModal, setShowPINModal] = useState(false);
+  const [selectedUserForPIN, setSelectedUserForPIN] = useState(null);
+  const [newPIN, setNewPIN] = useState('');
 
   useEffect(() => {
     loadUsers();
@@ -40,41 +45,68 @@ export default function UserManagement() {
     };
   }, [liveViewData]);
 
-
   const loadUsers = async () => {
     try {
+      setLoading(true);
       const data = await usersApi.getAll();
-      // Ensure we always have an array, even if API returns undefined/null
+      // Ensure we always have an array
       setUsers(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error loading users:', error);
-      setUsers([]); // Fallback to empty array on error
+      // Don't show error to user, just log it
+      setUsers([]);
+    } finally {
+      setLoading(false);
     }
   };
 
 
+  // Generate a random 4-digit PIN
+  const generatePIN = () => {
+    return Math.floor(1000 + Math.random() * 9000).toString();
+  };
+
   const handleAddUser = async (e) => {
     e.preventDefault();
     
-    // Validate password
-    if (!newUser.password || newUser.password.length < 6) {
+    // Validate input
+    if (!newUser.name || !newUser.email || !newUser.password) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    if (newUser.password.length < 6) {
       alert('Password must be at least 6 characters long');
       return;
     }
     
     try {
-
+      setLoading(true);
+      
+      // Generate PIN for cashier login
+      const cashierPIN = generatePIN();
+      
+      // Create the user with proper cashier role and PIN
       const result = await usersApi.create({
         ...newUser,
         role: 'cashier',
+        plan: 'basic',
+        active: true,
         addedByAdmin: true,
-        needsPasswordSetup: true
-
+        needsPasswordSetup: false, // Password is already set
+        cashierPIN: cashierPIN, // Add PIN for cashier login
+        createdAt: new Date().toISOString()
       });
       
-      // Show success message with credentials
-      alert(`Cashier added successfully!\n\nLogin Credentials:\nEmail: ${newUser.email}\nPassword: ${newUser.password}\n\nThe cashier will need to log in and set their password first.\nPlease share these credentials securely.`);
+      // Refresh the users list
+      await loadUsers();
       
+      // Show success message with login credentials including PIN
+      const loginInstructions = `✅ Cashier added successfully!\n\n📧 Email: ${newUser.email}\n🔑 Password: ${newUser.password}\n🔢 PIN: ${cashierPIN}\n\n💡 LOGIN OPTIONS:\n1. Email + Password: Use email and password above\n2. PIN Login: Use email + ${cashierPIN}\n\nPlease share these credentials securely with the new cashier.`;
+      
+      alert(loginInstructions);
+      
+      // Reset form and close modal
       setNewUser({
         name: '',
         email: '',
@@ -82,30 +114,164 @@ export default function UserManagement() {
         permissions: { viewSales: true, viewInventory: true, viewExpenses: false, manageProducts: false }
       });
       setShowAddModal(false);
-      loadUsers();
+      
     } catch (error) {
       console.error('Error creating cashier:', error);
-      alert('Failed to add cashier: ' + (error.message || 'Unknown error'));
+      let errorMessage = 'Failed to add cashier';
+      
+      if (error.message.includes('email')) {
+        errorMessage = 'Email already exists. Please use a different email.';
+      } else if (error.message.includes('network') || error.message.includes('fetch')) {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      } else if (error.message) {
+        errorMessage = `Failed to add cashier: ${error.message}`;
+      }
+      
+      alert(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleUpdatePermissions = async (userId, permissions) => {
-    await usersApi.update(userId, { permissions });
-    loadUsers();
-    setEditingUser(null);
+    try {
+      setLoading(true);
+      await usersApi.update(userId, { permissions });
+      await loadUsers();
+      setEditingUser(null);
+    } catch (error) {
+      console.error('Error updating permissions:', error);
+      alert('Failed to update permissions: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+  const handleToggleUserStatus = async (userId, currentStatus) => {
+    try {
+      setLoading(true);
+      const newStatus = !currentStatus;
+      
+
+
+      // Call the backend API to update user status
+      const getApiUrl = () => {
+        const envUrl = import.meta.env.VITE_API_URL;
+        if (envUrl) {
+          return envUrl.endsWith('/api') ? envUrl : `${envUrl}/api`;
+        }
+        return import.meta.env.PROD ? '/api' : 'http://localhost:5002/api';
+      };
+      const response = await fetch(`${getApiUrl()}/users/${userId}/activate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ active: newStatus })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Network error' }));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      await loadUsers();
+    } catch (error) {
+      console.error('Error updating user status:', error);
+      alert('Failed to update user status: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLockUnlockUser = async (userId, currentLocked) => {
+    try {
+      setLoading(true);
+      const newLocked = !currentLocked;
+      
+
+
+      // Call the backend API to lock/unlock user
+      const getApiUrl = () => {
+        const envUrl = import.meta.env.VITE_API_URL;
+        if (envUrl) {
+          return envUrl.endsWith('/api') ? envUrl : `${envUrl}/api`;
+        }
+        return import.meta.env.PROD ? '/api' : 'http://localhost:5002/api';
+      };
+      const response = await fetch(`${getApiUrl()}/users/${userId}/lock`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ locked: newLocked })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Network error' }));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      await loadUsers();
+    } catch (error) {
+      console.error('Error updating user lock status:', error);
+      alert('Failed to update user lock status: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
 
   const handleDeleteUser = async (userId) => {
-    if (confirm('Are you sure you want to delete this user?')) {
-      await usersApi.delete(userId);
-      loadUsers();
+    if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+      try {
+        setLoading(true);
+        await usersApi.delete(userId);
+        await loadUsers();
+      } catch (error) {
+        console.error('Error deleting user:', error);
+        alert('Failed to delete user: ' + error.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleResetPIN = (user) => {
+    setSelectedUserForPIN(user);
+    setNewPIN(generatePIN());
+    setShowPINModal(true);
+  };
+
+  const handleConfirmPINReset = async () => {
+    try {
+      setLoading(true);
+      await usersApi.update(selectedUserForPIN.id, { cashierPIN: newPIN });
+      await loadUsers();
+      setShowPINModal(false);
+      setSelectedUserForPIN(null);
+      setNewPIN('');
+      alert(`✅ PIN reset successfully!\n\n🔢 New PIN for ${selectedUserForPIN.name}: ${newPIN}\n\nPlease share this PIN securely with the cashier.`);
+    } catch (error) {
+      console.error('Error resetting PIN:', error);
+      alert('Failed to reset PIN: ' + error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   const startLiveView = (user) => {
     setLiveViewUser(user);
-    setLiveViewData({ isActive: false, currentCart: [], totalSalesToday: 0, salesCount: 0, lastActivity: 'Loading...' });
+    setLiveViewData({ 
+      isActive: false, 
+      currentCart: [], 
+      totalSalesToday: 0, 
+      salesCount: 0, 
+      lastActivity: 'Loading...' 
+    });
 
     // Set up auto-refresh every 3 seconds
     const interval = setInterval(() => {
@@ -153,24 +319,55 @@ export default function UserManagement() {
     }
   };
 
-
   const cashiers = (users || []).filter(u => u.role === 'cashier');
+
+  if (loading && users.length === 0) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading users...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
+
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">User Management</h2>
           <p className="text-sm text-gray-600 mt-1">Manage cashiers and their permissions</p>
         </div>
-        <button 
-          onClick={() => setShowAddModal(true)}
-          className="btn-primary flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Add Cashier
-        </button>
+        {isCashierUserManagementEnabled() && (
+          <button 
+            onClick={() => setShowAddModal(true)}
+            className="btn-primary flex items-center gap-2"
+            disabled={loading}
+          >
+            <Plus className="w-4 h-4" />
+            Add Cashier
+          </button>
+        )}
       </div>
+
+      {/* Show informational message for cashiers when user management is disabled */}
+      {isCashier() && !isCashierUserManagementEnabled() && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center">
+              <Lock className="w-4 h-4 text-yellow-600" />
+            </div>
+            <div>
+              <h4 className="font-semibold text-yellow-800">User Management Restricted</h4>
+              <p className="text-sm text-yellow-700 mt-1">
+                The admin has disabled cashier user management. You cannot add, edit, or remove users at this time.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="card bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
@@ -182,9 +379,8 @@ export default function UserManagement() {
           <p className="text-3xl font-bold text-green-900">{cashiers.length}</p>
         </div>
         <div className="card bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
-          <p className="text-sm text-purple-700 mb-1">Admins</p>
-
-          <p className="text-3xl font-bold text-purple-900">{(users || []).filter(u => u.role === 'admin').length}</p>
+          <p className="text-sm text-purple-700 mb-1">Active Users</p>
+          <p className="text-3xl font-bold text-purple-900">{users.filter(u => u.active).length}</p>
         </div>
       </div>
 
@@ -193,18 +389,20 @@ export default function UserManagement() {
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50">
+
               <tr>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Name</th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Email</th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Role</th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Plan</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Permissions</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">PIN</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
               </tr>
             </thead>
-
             <tbody>
               {(users || []).map((user) => (
+
                 <tr key={user.id} className="border-t border-gray-100 hover:bg-gray-50">
                   <td className="px-4 py-3 text-sm font-medium">{user.name}</td>
                   <td className="px-4 py-3 text-sm">{user.email}</td>
@@ -216,53 +414,147 @@ export default function UserManagement() {
                   <td className="px-4 py-3 text-sm">
                     <span className="badge badge-warning">{user.plan || 'N/A'}</span>
                   </td>
+                  
                   <td className="px-4 py-3 text-sm">
                     {user.role === 'cashier' ? (
-                      <button
-                        onClick={() => setEditingUser(user)}
-                        className="text-blue-600 hover:text-blue-700 text-xs font-medium"
-                      >
-                        Edit Permissions
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-lg font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                          {user.cashierPIN || '----'}
+                        </span>
+                        <button
+                          onClick={() => handleResetPIN(user)}
+                          className="p-1 hover:bg-yellow-50 rounded text-yellow-600"
+                          title="Reset PIN"
+                          disabled={loading}
+                        >
+                          <Edit2 className="w-3 h-3" />
+                        </button>
+                      </div>
                     ) : (
-                      <span className="text-gray-400 text-xs">Full Access</span>
+                      <span className="text-gray-400 text-sm">N/A</span>
                     )}
                   </td>
 
                   <td className="px-4 py-3 text-sm">
-                    {user.role === 'cashier' && (
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => {
-                            // Store the selected cashier ID for admin access
-                            localStorage.setItem('adminViewingCashier', user.id);
-                            window.location.href = '/cashier/pos';
-                          }}
-                          className="p-2 hover:bg-blue-50 rounded-lg text-blue-600"
-                          title="Access Cashier POS"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => startLiveView(user)}
-                          className="p-2 hover:bg-green-50 rounded-lg text-green-600"
-                          title="Live View"
-                        >
-                          <Monitor className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteUser(user.id)}
-                          className="p-2 hover:bg-red-50 rounded-lg text-red-600"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    )}
+                    <div className="flex items-center gap-2">
+                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${
+                        user.active 
+                          ? 'bg-green-100 text-green-700' 
+                          : 'bg-gray-100 text-gray-700'
+                      }`}>
+                        {user.active ? (
+                          <>
+                            <UserCheck className="w-3 h-3" />
+                            Active
+                          </>
+                        ) : (
+                          <>
+                            <UserX className="w-3 h-3" />
+                            Inactive
+                          </>
+                        )}
+                      </span>
+                      {user.locked && (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+                          <Shield className="w-3 h-3" />
+                          Locked
+                        </span>
+                      )}
+                    </div>
+                  </td>
+
+
+                  <td className="px-4 py-3 text-sm">
+                    <div className="flex gap-2">
+                      {isCashierUserManagementEnabled() && (
+                        <>
+                          <button
+                            onClick={() => handleToggleUserStatus(user.id, user.active)}
+                            className={`p-2 rounded-lg transition ${
+                              user.active
+                                ? 'hover:bg-red-50 text-red-600'
+                                : 'hover:bg-green-50 text-green-600'
+                            }`}
+                            title={user.active ? 'Deactivate User' : 'Activate User'}
+                            disabled={loading}
+                          >
+                            {user.active ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
+                          </button>
+                          
+                          <button
+                            onClick={() => handleLockUnlockUser(user.id, user.locked || false)}
+                            className={`p-2 rounded-lg transition ${
+                              user.locked
+                                ? 'hover:bg-green-50 text-green-600'
+                                : 'hover:bg-red-50 text-red-600'
+                            }`}
+                            title={user.locked ? 'Unlock User' : 'Lock User'}
+                            disabled={loading}
+                          >
+                            <Shield className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
+                      
+                      {user.role === 'cashier' && (
+                        <>
+                          <button
+                            onClick={() => {
+                              localStorage.setItem('adminViewingCashier', user.id);
+                              window.location.href = '/cashier/pos';
+                            }}
+                            className="p-2 hover:bg-blue-50 rounded-lg text-blue-600"
+                            title="Access Cashier POS"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          
+                          <button
+                            onClick={() => startLiveView(user)}
+                            className="p-2 hover:bg-green-50 rounded-lg text-green-600"
+                            title="Live View"
+                          >
+                            <Monitor className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
+                      
+                      {isCashierUserManagementEnabled() && (
+                        <>
+                          <button
+                            onClick={() => setEditingUser(user)}
+                            className="p-2 hover:bg-purple-50 rounded-lg text-purple-600"
+                            title="Edit Permissions"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          
+                          <button
+                            onClick={() => handleDeleteUser(user.id)}
+                            className="p-2 hover:bg-red-50 rounded-lg text-red-600"
+                            title="Delete User"
+                            disabled={loading}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          
+          {users.length === 0 && (
+            <div className="text-center py-12">
+              <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-400 text-lg">No users found</p>
+              <p className="text-gray-500 text-sm mt-2">
+                Add your first cashier to get started
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -279,6 +571,7 @@ export default function UserManagement() {
                 value={newUser.name}
                 onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
                 required
+                disabled={loading}
               />
               <input
                 type="email"
@@ -287,6 +580,7 @@ export default function UserManagement() {
                 value={newUser.email}
                 onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
                 required
+                disabled={loading}
               />
               <input
                 type="password"
@@ -296,6 +590,7 @@ export default function UserManagement() {
                 onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
                 required
                 minLength={6}
+                disabled={loading}
               />
               <p className="text-xs text-gray-500">
                 💡 The cashier will use this email and password to log in to the system
@@ -313,6 +608,7 @@ export default function UserManagement() {
                           ...newUser,
                           permissions: { ...newUser.permissions, [key]: e.target.checked }
                         })}
+                        disabled={loading}
                       />
                       <span className="text-sm capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
                     </label>
@@ -321,8 +617,21 @@ export default function UserManagement() {
               </div>
 
               <div className="flex gap-2">
-                <button type="submit" className="btn-primary flex-1">Add Cashier</button>
-                <button type="button" onClick={() => setShowAddModal(false)} className="btn-secondary">Cancel</button>
+                <button 
+                  type="submit" 
+                  className="btn-primary flex-1"
+                  disabled={loading}
+                >
+                  {loading ? 'Adding...' : 'Add Cashier'}
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => setShowAddModal(false)} 
+                  className="btn-secondary"
+                  disabled={loading}
+                >
+                  Cancel
+                </button>
               </div>
             </form>
           </div>
@@ -344,6 +653,7 @@ export default function UserManagement() {
                       ...editingUser,
                       permissions: { ...editingUser.permissions, [key]: e.target.checked }
                     })}
+                    disabled={loading}
                   />
                   <span className="text-sm capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
                 </label>
@@ -353,12 +663,18 @@ export default function UserManagement() {
               <button 
                 onClick={() => handleUpdatePermissions(editingUser.id, editingUser.permissions)}
                 className="btn-primary flex-1"
+                disabled={loading}
               >
-                Save Changes
+                {loading ? 'Saving...' : 'Save Changes'}
               </button>
-              <button onClick={() => setEditingUser(null)} className="btn-secondary">Cancel</button>
+              <button 
+                onClick={() => setEditingUser(null)} 
+                className="btn-secondary"
+                disabled={loading}
+              >
+                Cancel
+              </button>
             </div>
-
           </div>
         </div>
       )}
@@ -452,6 +768,58 @@ export default function UserManagement() {
               <p className="text-xs text-gray-500">
                 🔄 Auto-refreshing every 3 seconds • Last updated: {new Date().toLocaleTimeString()}
               </p>
+            </div>
+          </div>
+
+        </div>
+      )}
+
+      {/* PIN Reset Modal */}
+      {showPINModal && selectedUserForPIN && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md">
+            <h3 className="text-xl font-bold mb-4">Reset PIN for {selectedUserForPIN.name}</h3>
+            <div className="mb-6">
+              <p className="text-sm text-gray-600 mb-4">
+                Generate a new 4-digit PIN for this cashier. The old PIN will be invalid.
+              </p>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-800 mb-2">New PIN:</p>
+                <div className="text-center">
+                  <span className="font-mono text-3xl font-bold text-blue-600 bg-white px-4 py-2 rounded border">
+                    {newPIN}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => setNewPIN(generatePIN())}
+                className="btn-secondary flex-1"
+                disabled={loading}
+              >
+                Generate New PIN
+              </button>
+              <button 
+                onClick={handleConfirmPINReset}
+                className="btn-primary flex-1"
+                disabled={loading}
+              >
+                {loading ? 'Updating...' : 'Confirm & Update'}
+              </button>
+            </div>
+            <div className="mt-4">
+              <button 
+                onClick={() => {
+                  setShowPINModal(false);
+                  setSelectedUserForPIN(null);
+                  setNewPIN('');
+                }} 
+                className="btn-secondary w-full"
+                disabled={loading}
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>

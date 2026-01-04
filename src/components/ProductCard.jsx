@@ -1,42 +1,68 @@
-import { ShoppingCart, Package, Tag } from 'lucide-react';
-import DiscountSelector from './DiscountSelector';
+import { ShoppingCart, Package, CreditCard } from 'lucide-react';
 
 export default function ProductCard({ product, onAddToCart, onRequestCredit, showDiscounts = false }) {
   return (
-    <div className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition transform hover:-translate-y-1">
+    <div className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
       {product.image ? (
-        <img src={product.image} alt={product.name} className="w-full h-64 object-contain bg-gray-50" />
+        <img src={product.image} alt={product.name} className="w-full h-48 object-cover" />
       ) : (
-        <div className="w-full h-64 bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
+        <div className="w-full h-48 bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
           <Package size={64} className="text-white" />
         </div>
       )}
       <div className="p-4">
         <div className="flex justify-between items-start mb-2">
-          <h3 className="font-bold text-lg">{product.name}</h3>
-          <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">{product.code || 'N/A'}</span>
+          <h3 className="font-bold text-lg text-gray-800">{product.name}</h3>
+          {product.code && (
+            <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium">
+              {product.code}
+            </span>
+          )}
         </div>
-        <p className="text-gray-600 text-sm mb-2">{product.category}</p>
-        {product.notes && <p className="text-gray-500 text-xs mb-3 italic">{product.notes}</p>}
-
-        <div className="flex justify-between items-center mb-3">
-          <span className="text-2xl font-bold text-green-600">KSH {product.price?.toLocaleString()}</span>
-          <span className="text-sm text-gray-500">{product.quantity} {product.unit}</span>
+        <p className="text-gray-600 text-sm mb-2 capitalize">{product.category}</p>
+        {product.notes && (
+          <p className="text-gray-500 text-xs mb-3 italic bg-gray-50 p-2 rounded">
+            {product.notes}
+          </p>
+        )}
+        <div className="flex justify-between items-center mb-4">
+          <span className="text-2xl font-bold text-green-600">
+            KSH {product.price?.toLocaleString() || 0}
+          </span>
+          <div className="text-right">
+            <span className={`text-sm font-medium ${
+              product.quantity < 10 ? 'text-red-600' : 'text-gray-600'
+            }`}>
+              {product.quantity || 0} {product.unit || 'pcs'}
+            </span>
+            {product.quantity < 10 && (
+              <p className="text-xs text-red-500">Low stock!</p>
+            )}
+          </div>
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => onAddToCart(product)}
-            className="flex-1 bg-blue-600 text-white py-2 rounded-lg font-bold hover:bg-blue-700 transition flex items-center justify-center gap-2"
+            disabled={!product.quantity || product.quantity <= 0}
+            className={`flex-1 py-2 rounded-lg font-bold transition-all flex items-center justify-center gap-2 ${
+              !product.quantity || product.quantity <= 0
+                ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg'
+            }`}
           >
             <ShoppingCart size={18} />
-            Add
+            Add to Cart
           </button>
-          <button
-            onClick={() => onRequestCredit(product)}
-            className="bg-orange-500 text-white px-4 py-2 rounded-lg font-bold hover:bg-orange-600 transition"
-          >
-            Credit
-          </button>
+          {onRequestCredit && (
+            <button
+              onClick={() => onRequestCredit(product)}
+              className="bg-orange-500 text-white px-4 py-2 rounded-lg font-bold hover:bg-orange-600 transition-all hover:shadow-lg flex items-center gap-1"
+              title="Request credit for this product"
+            >
+              <CreditCard size={16} />
+              Credit
+            </button>
+          )}
         </div>
       </div>
     </div>

@@ -1,170 +1,154 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { auth, users } from '../services/api';
 
 const AuthContext = createContext();
 
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
-  // Initialize user from localStorage with proper loading state
-  const [user, setUser] = useState(() => {
-    try {
-      const userData = localStorage.getItem('user');
-      return userData ? JSON.parse(userData) : null;
-    } catch (error) {
-      console.error('Error parsing user data:', error);
-      localStorage.removeItem('user');
-      return null;
-    }
-  });
-  
-  // Track if initial auth check is complete
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
-
+  const [appSettings, setAppSettings] = useState({});
 
   useEffect(() => {
-    // Perform initial auth check
-    const initializeAuth = () => {
-      try {
-        const token = localStorage.getItem('token');
-        const userData = localStorage.getItem('user');
-        
-        if (token && userData) {
-          const parsedUser = JSON.parse(userData);
-          
-
-          // Ensure role is set correctly based on plan and package type
-          if (parsedUser.plan === 'ultra') {
-            // Ultra package always gets admin role
-            if (parsedUser.role !== 'admin') {
-              parsedUser.role = 'admin';
-              parsedUser.active = true;
-              parsedUser.packageType = 'ultra';
-              localStorage.setItem('user', JSON.stringify(parsedUser));
-            }
-          } else if (parsedUser.plan === 'basic') {
-            // Basic package gets cashier role
-            if (parsedUser.role !== 'cashier') {
-              parsedUser.role = 'cashier';
-              parsedUser.active = true;
-              parsedUser.packageType = 'basic';
-              localStorage.setItem('user', JSON.stringify(parsedUser));
-            }
-          }
-          
-          // Ensure active flag is set for all plan users
-          if (parsedUser.plan && !parsedUser.active) {
-            parsedUser.active = true;
-            localStorage.setItem('user', JSON.stringify(parsedUser));
-          }
-          
-          setUser(parsedUser);
-        } else {
-          setUser(null);
-        }
-      } catch (error) {
-        console.error('Error initializing auth:', error);
-        setUser(null);
-        localStorage.removeItem('user');
-        localStorage.removeItem('token');
-      } finally {
-        setLoading(false);
-        setIsInitialized(true);
-      }
-    };
-    
-    // Initial sync
     initializeAuth();
-    
-    // Listen for storage changes (from other tabs or manual updates)
-    const handleStorageChange = (e) => {
-      if (e.key === 'user' || e.key === 'token') {
-        // Add slight delay to ensure localStorage is fully updated
-        setTimeout(() => {
-          initializeAuth();
-        }, 50);
+  }, []);
+
+  useEffect(() => {
+    // Update user state when localStorage changes in other tabs or when we dispatch a custom event
+    const handleStorage = () => {
+      const saved = localStorage.getItem('user');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          setUser(parsed);
+        } catch (e) {
+          console.warn('Failed to parse user from localStorage', e);
+        }
+      } else {
+        setUser(null);
       }
     };
-    
-    // Also listen for custom storage events triggered by subscription updates
-    const handleCustomStorageEvent = () => {
-      setTimeout(() => {
-        initializeAuth();
-      }, 100);
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('localStorageUpdated', handleCustomStorageEvent);
-    
+
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('localStorageUpdated', handleStorage);
+
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('localStorageUpdated', handleCustomStorageEvent);
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('localStorageUpdated', handleStorage);
     };
   }, []);
 
-  const login = (token, userData) => {
+  const initializeAuth = async () => {
     try {
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(userData));
-      setUser(userData);
+      const token = localStorage.getItem('token');
+      const savedUser = localStorage.getItem('user');
+      
+      if (token) {
+        // First verify with backend
+        try {
+          const res = await auth.me();
+          if (res && res.id) {
+             // Backend returned valid user
+             setUser(res);
+             localStorage.setItem('user', JSON.stringify(res));
+          } else {
+             // Token invalid or user not found
+             throw new Error("Invalid token");
+          }
+        } catch (err) {
+           console.warn("Auth check failed:", err);
+           // Fallback to local storage if network fails (offline mode?)
+           // but be careful about stale data. For strict security, logout.
+           // However, if we trust localStorage temporarily:
+           if (savedUser) {
+              try {
+                  const parsed = JSON.parse(savedUser);
+                  setUser(parsed);
+              } catch (e) {
+                  localStorage.removeItem('token');
+                  localStorage.removeItem('user');
+              }
+           } else {
+              localStorage.removeItem('token');
+           }
+        }
+      }
     } catch (error) {
-      console.error('Error during login:', error);
+      console.error('Error initializing auth:', error);
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setUser(null);
+    } finally {
+      setLoading(false);
+      setIsInitialized(true);
+    }
+  };
+
+  const login = async (payload) => {
+    try {
+      // If payload already contains token & user (caller passed the auth response), just set state
+      if (payload && payload.token && payload.user) {
+        localStorage.setItem('token', payload.token);
+        localStorage.setItem('user', JSON.stringify(payload.user));
+        setUser(payload.user);
+        return payload;
+      }
+
+      // Otherwise assume credentials were provided and call API
+      const response = await auth.login(payload);
+      if (response.token && response.user) {
+        localStorage.setItem('token', response.token);
+        localStorage.setItem('user', JSON.stringify(response.user));
+        setUser(response.user);
+        return response;
+      }
+      throw new Error('Invalid response from server');
+    } catch (error) {
+      console.error('Login failed:', error);
       throw error;
     }
   };
 
-  const updateUser = async (userData) => {
+  const signup = async (userData) => {
     try {
-      const token = localStorage.getItem('token');
-      const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:5001/api' : '/api';
-      
-      // Update localStorage FIRST
-      localStorage.setItem('user', JSON.stringify(userData));
-      setUser(userData);
-      
-      try {
-        const response = await fetch(`${API_URL}/users/${userData.id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify(userData)
-        });
-        
-        if (!response.ok) {
-          throw new Error('Backend not available');
-        }
-        
-        const data = await response.json();
-        
-        if (data.token) {
-          localStorage.setItem('token', data.token);
-        }
-        if (data.user) {
-          localStorage.setItem('user', JSON.stringify(data.user));
-          setUser(data.user);
-        }
-        
-        return data;
-      } catch (backendError) {
-        console.warn('Backend not available, using client-side update:', backendError);
-        
-        // Generate a mock token if needed
-        if (!token) {
-          const mockToken = btoa(JSON.stringify({ 
-            id: userData.id, 
-            email: userData.email, 
-            role: userData.role,
-            plan: userData.plan 
-          }));
-          localStorage.setItem('token', mockToken);
-        }
-        
-        return { user: userData, token: token || btoa(JSON.stringify(userData)) };
+      const response = await auth.signup(userData);
+      if (response.token && response.user) {
+        localStorage.setItem('token', response.token);
+        localStorage.setItem('user', JSON.stringify(response.user));
+        setUser(response.user);
+        return response;
       }
+      throw new Error('Invalid response from server');
     } catch (error) {
-      console.error('Failed to update user:', error);
+      console.error('Signup failed:', error);
+      throw error;
+    }
+  };
+
+  // Update the user both locally and on backend (if possible)
+  const updateUser = async (updated) => {
+    try {
+      // Persist locally first for immediate UI update
+      localStorage.setItem('user', JSON.stringify(updated));
+      setUser(updated);
+      // Notify other listeners in same tab
+      window.dispatchEvent(new Event('localStorageUpdated'));
+
+      // Try to persist to backend if we have an id
+      if (updated && updated.id) {
+        try {
+          await users.update(updated.id, updated);
+        } catch (err) {
+          // Non-fatal: backend update failed but local state is consistent
+          console.warn('Failed to persist updated user to backend', err);
+        }
+      }
+
+      return updated;
+    } catch (error) {
+      console.error('updateUser failed:', error);
       throw error;
     }
   };
@@ -173,11 +157,59 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);
+    window.location.href = '/login';
   };
 
+  const isAuthenticated = () => !!user && !!localStorage.getItem('token');
+  
+  const hasRole = (role) => user && (user.role === role);
+  
+  // Helper to check if user is admin
+  const isAdmin = () => user && (user.role === 'admin' || user.role === 'main-admin');
+  
+  // Helper to check if user is cashier
+  const isCashier = () => user && (user.role === 'cashier');
+
+  // Package-related helper functions
+  const isUltraPackage = () => user && (user.plan === 'ultra');
+  const isBasicPackage = () => user && (user.plan === 'basic');
+  const canEditStock = () => user && (user.role === 'admin' || user.role === 'cashier');
+  const canManageUsers = () => user && (user.role === 'admin' && user.plan === 'ultra');
+  const canViewAnalytics = () => user && (user.role === 'admin');
+  const isRealTimeProductSyncEnabled = () => true;
+  const isCashierUserManagementEnabled = () => true;
+
+  // Show locked account screen if user is locked
+  if (user?.locked) {
+    return <LockedAccount />;
+  }
+
   return (
-    <AuthContext.Provider value={{ user, login, updateUser, logout, loading, isInitialized }}>
+    <AuthContext.Provider 
+      value={{ 
+        user, 
+        loading, 
+        isInitialized,
+        appSettings,
+        login, 
+        signup,
+        updateUser,
+        logout,
+        isAuthenticated,
+        hasRole,
+        isAdmin,
+        isCashier,
+        isUltraPackage,
+        isBasicPackage,
+        canEditStock,
+        canManageUsers,
+        canViewAnalytics,
+        isRealTimeProductSyncEnabled,
+        isCashierUserManagementEnabled
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
 };
+

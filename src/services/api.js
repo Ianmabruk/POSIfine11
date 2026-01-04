@@ -1,387 +1,394 @@
 
-import { saveData, loadData, getDataWithSync, refreshData, initializeStorage } from '../utils/localStorage.js';
+// Updated API Service Layer - Connected to Deployed Backend
 
+const getBaseUrl = () => {
+  // Use environment variable for backend URL
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (envUrl) {
+    // Remove trailing slash if present
+    const cleanUrl = envUrl.replace(/\/$/, '');
+    // If envUrl already contains /api, DO NOT add it again
+    if (cleanUrl.endsWith('/api')) {
+        return cleanUrl;
+    }
+    // Otherwise add /api
+    return `${cleanUrl}/api`;
+  }
+  // Fallback to Flask backend development URL (port 5002)
+  return 'http://localhost:5002/api';
+};
 
-const API_URL = import.meta.env.PROD ? '/api' : 'http://localhost:5002/api';
-
-// Force production URL for deployment fix
-const BASE_API_URL = window.location.hostname === 'localhost' ? 'http://localhost:5002/api' : '/api';
+const BASE_API_URL = getBaseUrl();
 
 const getToken = () => localStorage.getItem('token');
 
-
-
-
 const request = async (endpoint, options = {}) => {
   const token = getToken();
+  
+  // Ensure endpoint starts with / to avoid double slash or missing slash issues when combining
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  
   const config = {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      ...(token && { Authorization: `Bearer ${token}` }),
+      // Avoid attaching Authorization header to auth endpoints like /auth/login and /auth/signup
+      // This prevents stale/invalid tokens from causing 401s on public auth routes.
+      // Also skip for main-admin auth endpoint
+      ...(token && !(cleanEndpoint.startsWith('/auth') && cleanEndpoint !== '/auth/me') && !cleanEndpoint.includes('/main-admin/auth/login') && { Authorization: `Bearer ${token}` }),
       ...options.headers
     }
   };
 
-  // Extract data key from endpoint for localStorage
-  const getDataKey = (endpoint) => {
-    if (endpoint.includes('/products')) return 'products';
-    if (endpoint.includes('/sales')) return 'sales';
-    if (endpoint.includes('/expenses')) return 'expenses';
-    if (endpoint.includes('/users')) return 'users';
-    if (endpoint.includes('/reminders')) return 'reminders';
-    if (endpoint.includes('/stats')) return 'stats';
-    if (endpoint.includes('/settings')) return 'settings';
-    if (endpoint.includes('/service-fees')) return 'serviceFees';
-    if (endpoint.includes('/discounts')) return 'discounts';
-    if (endpoint.includes('/credit-requests')) return 'creditRequests';
-    if (endpoint.includes('/time-entries')) return 'timeEntries';
-    if (endpoint.includes('/categories')) return 'categories';
-    if (endpoint.includes('/batches')) return 'batches';
-    if (endpoint.includes('/production')) return 'production';
-    if (endpoint.includes('/price-history')) return 'priceHistory';
-    return null;
-  };
-
-  const dataKey = getDataKey(endpoint);
-
   try {
-    const response = await fetch(`${BASE_API_URL}${endpoint}`, config);
+    const response = await fetch(`${BASE_API_URL}${cleanEndpoint}`, config);
 
+    // Handle authentication errors
+    if (response.status === 401) {
+      // Clear stale token and local user information
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
 
-    // For auth endpoints, throw errors so they can be caught and handled with fallback
-    if (endpoint.includes('/auth/')) {
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Authentication failed' }));
-        throw new Error(errorData.error || 'Authentication failed');
+      // Avoid redirect loops: allow auth routes (/login, /signup, /auth) to handle UI
+      const path = window.location.pathname || '';
+      if (!path.includes('/login') && !path.includes('/signup') && !path.includes('/auth') && !path.includes('/main.admin')) {
+        try {
+          window.location.href = '/login';
+        } catch (e) {
+          // ignore navigation errors in non-browser contexts
+        }
+      }
+
+      // Throw a clear, specific Unauthorized error for callers to handle
+      const err = new Error('Unauthorized');
+      err.status = 401;
+      throw err;
+    }
+
+    // Handle successful responses
+    if (response.ok) {
+      // Handle empty responses (like DELETE operations)
+      if (response.status === 204) {
+        return { success: true };
       }
       return await response.json();
     }
 
+    // Handle HTTP errors
+    const errorData = await response.json().catch(() => ({ error: 'Network error' }));
+    throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
 
-    // Handle 401 Unauthorized for non-auth endpoints (Invalid Token)
-    if (response.status === 401) {
-      console.warn('Session expired or token invalid. Backend returned 401.');
-      // Only redirect if we are sure it's not a temporary glitch
-      // localStorage.removeItem('token');
-      // localStorage.removeItem('user');
-      // window.location.href = '/'; // Redirect to login
-      throw new Error('Session expired. Please login again.');
-    }
-
-
-    // Handle 204 No Content responses (typically DELETE operations)
-    if (response.status === 204) {
-      return { success: true, message: 'Operation completed successfully' };
-    }
-
-    // For CRUD operations (POST, PUT, DELETE), throw errors to ensure proper feedback
-    if (!response.ok && (options.method === 'POST' || options.method === 'PUT' || options.method === 'DELETE')) {
-      const errorData = await response.json().catch(() => ({ error: 'Operation failed' }));
-      throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    // For GET operations, return localStorage data on failure
-    if (!response.ok) {
-      console.warn(`API request failed: ${endpoint} - ${response.status}`);
-      if (dataKey) {
-        return loadData(dataKey);
-      }
-      return getFallbackData(endpoint);
-    }
-
-    const data = await response.json();
-
-    // Save successful GET responses to localStorage
-    if (!options.method || options.method === 'GET') {
-      if (dataKey && Array.isArray(data)) {
-        saveData(dataKey, data);
-      }
-    }
-
-
-    // After successful backend operation, try to sync any pending local data
-    if (options.method === 'POST' || options.method === 'PUT' || options.method === 'DELETE') {
-      // Run sync in background to avoid blocking the response
-      setTimeout(async () => {
-        try {
-          const backendAvailable = await isBackendAvailable();
-
-          if (backendAvailable) {
-            // Sync pending local data for this data type
-            const localData = getDataWithSync(dataKey);
-            if (localData && Array.isArray(localData)) {
-              for (const item of localData) {
-                if (item.pendingSync) {
-                  try {
-                    await syncDataToBackend(dataKey, item);
-                    // Remove pendingSync flag
-                    item.pendingSync = false;
-                  } catch (syncError) {
-                    console.warn(`Failed to sync ${dataKey} item:`, syncError);
-                  }
-                }
-              }
-              // Save updated data back to localStorage
-              saveData(dataKey, localData);
-            }
-          }
-        } catch (error) {
-          console.warn('Data sync failed:', error);
-        }
-      }, 100);
-      
-      // Broadcast data update to other components
-      broadcastDataUpdate(dataKey);
-    }
-
-    return data;
   } catch (error) {
-    // For auth endpoints, re-throw the error
-    if (endpoint.includes('/auth/')) {
-      throw error;
+    // Handle network errors
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      console.error("API Fetch Error:", error);
+      console.error("Attempted URL:", `${BASE_API_URL}${cleanEndpoint}`);
+      throw new Error('Cannot connect to server. Please ensure the backend is running on port 5002.');
     }
-
-    // For CRUD operations, re-throw the error
-    if (options.method === 'POST' || options.method === 'PUT' || options.method === 'DELETE') {
-      throw error;
-    }
-
-    console.warn(`API request error: ${endpoint}`, error);
-
-
-    // Return localStorage data for GET operations on network failure
-    if (dataKey) {
-      return getDataWithSync(dataKey);
-    }
-
-    // Return appropriate empty data based on endpoint for GET operations
-    return getFallbackData(endpoint);
+    throw error;
   }
 };
 
-// Helper function to return appropriate fallback data
-const getFallbackData = (endpoint) => {
-  if (endpoint.includes('/products')) return [];
-  if (endpoint.includes('/sales')) return [];
-  if (endpoint.includes('/expenses')) return [];
-  if (endpoint.includes('/users')) return [];
-  if (endpoint.includes('/reminders')) return [];
-  if (endpoint.includes('/stats')) return { 
-    totalSales: 0, 
-    totalExpenses: 0, 
-    profit: 0, 
-    grossProfit: 0,
-    netProfit: 0,
-    totalCOGS: 0,
-    dailySales: 0,
-    weeklySales: 0,
-    productCount: 0
-  };
-  if (endpoint.includes('/settings')) return { 
-    lockTimeout: 300000, 
-    currency: 'KSH',
-    logo: '',
-    companyName: '',
-    address: ''
-  };
-  if (endpoint.includes('/service-fees')) return [];
-  if (endpoint.includes('/discounts')) return [];
-  if (endpoint.includes('/credit-requests')) return [];
-  if (endpoint.includes('/time-entries')) return [];
-  if (endpoint.includes('/categories')) return [];
-  if (endpoint.includes('/batches')) return [];
-  if (endpoint.includes('/production')) return [];
-  if (endpoint.includes('/price-history')) return [];
-  
-  return {};
-};
 
+// Authentication API
 export const auth = {
-  login: (credentials) => request('/auth/login', { method: 'POST', body: JSON.stringify(credentials) }),
-  signup: (data) => request('/auth/signup', { method: 'POST', body: JSON.stringify(data) })
+  login: (credentials) => request('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify(credentials)
+  }),
+  
+  pinLogin: (credentials) => request('/auth/pin-login', {
+    method: 'POST',
+    body: JSON.stringify(credentials)
+  }),
+  
+  signup: (data) => request('/auth/signup', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  }),
+  
+  signupWithPayment: (data) => request('/signup-with-payment', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  }),
+  
+  me: () => request('/auth/me')
 };
 
+
+// Users API
+export const users = {
+  getAll: () => request('/users'),
+  
+  create: (userData) => request('/users', {
+    method: 'POST',
+    body: JSON.stringify(userData)
+  }),
+  
+  update: (id, userData) => request(`/users/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(userData)
+  }),
+  
+  delete: (id) => request(`/users/${id}`, {
+    method: 'DELETE'
+  }),
+  
+  setPin: (id, pin) => request(`/users/${id}/set-pin`, {
+    method: 'POST',
+    body: JSON.stringify({ pin })
+  }),
+  
+  lock: (id, locked) => request(`/users/${id}/lock`, {
+    method: 'POST',
+    body: JSON.stringify({ locked })
+  })
+};
+
+// Products API
 export const products = {
   getAll: () => request('/products'),
-  create: async (data) => {
-    try {
-      const result = await request('/products', { method: 'POST', body: JSON.stringify(data) });
-      // Update localStorage after successful creation
-      const currentProducts = loadData('products');
-      currentProducts.push(result);
-      saveData('products', currentProducts);
-      return result;
-    } catch (error) {
-      // If backend fails, save locally with pendingSync flag
-      console.warn('Backend not available, saving product locally:', error);
-      const currentProducts = loadData('products');
-      const localProduct = {
-        ...data,
-        id: Date.now(), // Generate temporary ID
-        pendingSync: true,
-        createdAt: new Date().toISOString()
-      };
-      currentProducts.push(localProduct);
-      saveData('products', currentProducts);
-      return localProduct;
-    }
-  },
-  update: async (id, data) => {
-    try {
-      const result = await request(`/products/${id}`, { method: 'PUT', body: JSON.stringify(data) });
-      // Update localStorage after successful update
-      const currentProducts = loadData('products');
-      const index = currentProducts.findIndex(p => p.id === id);
-      if (index !== -1) {
-        currentProducts[index] = result;
-        saveData('products', currentProducts);
-      }
-      return result;
-    } catch (error) {
-      // If backend fails, update locally with pendingSync flag
-      console.warn('Backend not available, updating product locally:', error);
-      const currentProducts = loadData('products');
-      const index = currentProducts.findIndex(p => p.id === id);
-      if (index !== -1) {
-        currentProducts[index] = { ...currentProducts[index], ...data, pendingSync: true };
-        saveData('products', currentProducts);
-        return currentProducts[index];
-      }
-      throw error;
-    }
-  },
-
-  delete: async (id) => {
-    try {
-      const result = await request(`/products/${id}`, { method: 'DELETE' });
-      // Update localStorage after successful deletion
-      const currentProducts = loadData('products');
-      const filteredProducts = currentProducts.filter(p => p.id !== id);
-      saveData('products', filteredProducts);
-      return result;
-    } catch (error) {
-      // If backend fails, mark locally as deleted with pendingSync flag
-      console.warn('Backend not available, marking product for deletion locally:', error);
-      const currentProducts = loadData('products');
-      const index = currentProducts.findIndex(p => p.id === id);
-      if (index !== -1) {
-        currentProducts[index] = { ...currentProducts[index], pendingDelete: true, pendingSync: true };
-        saveData('products', currentProducts);
-        return { success: true, message: 'Product marked for deletion' };
-      }
-      throw error;
-    }
-  }
+  
+  create: (productData) => request('/products', {
+    method: 'POST',
+    body: JSON.stringify(productData)
+  }),
+  
+  update: (id, productData) => request(`/products/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(productData)
+  }),
+  
+  delete: (id) => request(`/products/${id}`, {
+    method: 'DELETE'
+  }),
+  
+  getMaxProducible: (id) => request(`/products/${id}/max-producible`)
 };
 
+// Sales API
 export const sales = {
   getAll: () => request('/sales'),
-  create: (data) => request('/sales', { method: 'POST', body: JSON.stringify(data) })
+  
+  create: (saleData) => request('/sales', {
+    method: 'POST',
+    body: JSON.stringify(saleData)
+  })
 };
 
+// Expenses API
 export const expenses = {
   getAll: () => request('/expenses'),
-  create: (data) => request('/expenses', { method: 'POST', body: JSON.stringify(data) })
+  
+  create: (expenseData) => request('/expenses', {
+    method: 'POST',
+    body: JSON.stringify(expenseData)
+  })
 };
 
+// Statistics API
 export const stats = {
   get: () => request('/stats')
 };
 
-export const users = {
-  getAll: () => request('/users'),
-  create: (data) => request('/users', { method: 'POST', body: JSON.stringify(data) }),
-  update: (id, data) => request(`/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  delete: (id) => request(`/users/${id}`, { method: 'DELETE' })
-};
-
+// Reminders API
 export const reminders = {
   getAll: () => request('/reminders'),
   getToday: () => request('/reminders/today'),
-  create: (data) => request('/reminders', { method: 'POST', body: JSON.stringify(data) }),
-  update: (id, data) => request(`/reminders/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  delete: (id) => request(`/reminders/${id}`, { method: 'DELETE' })
+  create: (reminderData) => request('/reminders', {
+    method: 'POST',
+    body: JSON.stringify(reminderData)
+  }),
+  update: (id, reminderData) => request(`/reminders/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(reminderData)
+  }),
+  delete: (id) => request(`/reminders/${id}`, {
+    method: 'DELETE'
+  })
 };
 
+// Price History API
 export const priceHistory = {
   getAll: () => request('/price-history'),
-  create: (data) => request('/price-history', { method: 'POST', body: JSON.stringify(data) })
+  create: (priceData) => request('/price-history', {
+    method: 'POST',
+    body: JSON.stringify(priceData)
+  })
 };
 
+// Service Fees API
 export const serviceFees = {
   getAll: () => request('/service-fees'),
-  create: (data) => request('/service-fees', { method: 'POST', body: JSON.stringify(data) }),
-  update: (id, data) => request(`/service-fees/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  delete: (id) => request(`/service-fees/${id}`, { method: 'DELETE' })
+  create: (feeData) => request('/service-fees', {
+    method: 'POST',
+    body: JSON.stringify(feeData)
+  }),
+  update: (id, feeData) => request(`/service-fees/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(feeData)
+  }),
+  delete: (id) => request(`/service-fees/${id}`, {
+    method: 'DELETE'
+  })
 };
 
+// Discounts API
 export const discounts = {
   getAll: () => request('/discounts'),
-  create: (data) => request('/discounts', { method: 'POST', body: JSON.stringify(data) }),
-  update: (id, data) => request(`/discounts/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  delete: (id) => request(`/discounts/${id}`, { method: 'DELETE' })
+  create: (discountData) => request('/discounts', {
+    method: 'POST',
+    body: JSON.stringify(discountData)
+  }),
+  update: (id, discountData) => request(`/discounts/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(discountData)
+  }),
+  delete: (id) => request(`/discounts/${id}`, {
+    method: 'DELETE'
+  })
 };
 
+// Credit Requests API
 export const creditRequests = {
   getAll: () => request('/credit-requests'),
-  create: (data) => request('/credit-requests', { method: 'POST', body: JSON.stringify(data) }),
-  approve: (id) => request(`/credit-requests/${id}/approve`, { method: 'POST' }),
-  reject: (id) => request(`/credit-requests/${id}/reject`, { method: 'POST' })
+  create: (requestData) => request('/credit-requests', {
+    method: 'POST',
+    body: JSON.stringify(requestData)
+  }),
+  approve: (id) => request(`/credit-requests/${id}/approve`, {
+    method: 'POST'
+  }),
+  reject: (id) => request(`/credit-requests/${id}/reject`, {
+    method: 'POST'
+  })
 };
 
+// Settings API
 export const settings = {
   get: () => request('/settings'),
-  update: (data) => request('/settings', { method: 'POST', body: JSON.stringify(data) })
+  update: (settingsData) => request('/settings', {
+    method: 'POST',
+    body: JSON.stringify(settingsData)
+  })
 };
 
+// Batches API
 export const batches = {
-  getAll: (productId) => request(`/batches${productId ? `?productId=${productId}` : ''}`),
-  create: (data) => request('/batches', { method: 'POST', body: JSON.stringify(data) })
+  getAll: (productId) => {
+    const url = productId ? `/batches?productId=${productId}` : '/batches';
+    return request(url);
+  },
+  create: (batchData) => request('/batches', {
+    method: 'POST',
+    body: JSON.stringify(batchData)
+  })
 };
 
+// Production API
 export const production = {
   getAll: () => request('/production'),
-  create: (data) => request('/production', { method: 'POST', body: JSON.stringify(data) })
+  create: (productionData) => request('/production', {
+    method: 'POST',
+    body: JSON.stringify(productionData)
+  })
 };
 
-
+// Categories API
 export const categories = {
-  generateCode: (data) => request('/categories/generate-code', { method: 'POST', body: JSON.stringify(data) })
+  generateCode: (data) => request('/categories/generate-code', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  })
 };
 
-// Data synchronization helper functions
-const broadcastDataUpdate = (dataType) => {
-  // Store update timestamp in localStorage for other components to check
-  const updateKey = `dataUpdate_${dataType}`;
-  localStorage.setItem(updateKey, Date.now().toString());
-  
-  // Broadcast to other tabs/windows if available
-  if (typeof window !== 'undefined' && window.localStorage) {
-    window.dispatchEvent(new CustomEvent('dataUpdate', {
-      detail: { dataType, timestamp: Date.now() }
-    }));
+// Image Upload API
+export const uploadImage = (imageData) => request('/upload-image', {
+  method: 'POST',
+  body: JSON.stringify(imageData)
+});
+
+// Main Admin API (for owner dashboard)
+export const mainAdmin = {
+  login: (credentials) => {
+    // Use owner token for main admin requests
+    return request('/main-admin/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(credentials)
+    });
+  },
+  getUsers: () => {
+    const token = localStorage.getItem('ownerToken');
+    return request('/main-admin/users', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  },
+  getStats: () => {
+    const token = localStorage.getItem('ownerToken');
+    return request('/main-admin/stats', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  },
+  getActivities: () => {
+    const token = localStorage.getItem('ownerToken');
+    return request('/main-admin/activities', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  },
+  lockUser: (userId, locked) => {
+    const token = localStorage.getItem('ownerToken');
+    return request(`/main-admin/users/${userId}/lock`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ locked })
+    });
+  },
+  changePlan: (userId, plan) => {
+    const token = localStorage.getItem('ownerToken');
+    return request(`/main-admin/users/${userId}/plan`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ plan })
+    });
+  },
+  clearData: (type) => {
+    const token = localStorage.getItem('ownerToken');
+    return request('/main-admin/system/clear-data', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ type })
+    });
   }
 };
 
-export const getLastUpdate = (dataType) => {
-  const updateKey = `dataUpdate_${dataType}`;
-  const timestamp = localStorage.getItem(updateKey);
-  return timestamp ? parseInt(timestamp) : null;
+// Utility function to check if backend is available
+export const checkBackendHealth = async () => {
+  try {
+    const response = await fetch(`${BASE_API_URL}/auth/me`, {
+      headers: {
+        'Authorization': `Bearer ${getToken() || 'invalid'}`
+      }
+    });
+    // If we get 200 or 401, the backend is alive. 
+    // If we get connection refused, it throws.
+    return response.status < 500;
+  } catch (error) {
+    return false;
+  }
 };
 
-export const isDataStale = (dataType, maxAge = 30000) => { // 30 seconds default
-  const lastUpdate = getLastUpdate(dataType);
-  if (!lastUpdate) return true;
-  
-  return (Date.now() - lastUpdate) > maxAge;
-};
+// Export base URL for other components to use
+export { BASE_API_URL };
 
-export const forceDataRefresh = async (dataType) => {
-  // Clear cached data to force fresh load
-  localStorage.removeItem(`data_${dataType}`);
-  localStorage.removeItem(`dataUpdate_${dataType}`);
-  
-  // Trigger broadcast for other components
-  broadcastDataUpdate(dataType);
-};

@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { products, sales, expenses, stats } from '../services/api';
-import { Package, DollarSign, TrendingUp, TrendingDown, Plus, Edit2, Trash2, LogOut, Search, Filter, BarChart3, ShoppingBag, Layers } from 'lucide-react';
+import { users, products, sales, expenses, stats } from '../services/api';
+import { Package, DollarSign, TrendingUp, TrendingDown, Plus, Edit2, Trash2, LogOut, Search, Filter, BarChart3, ShoppingBag, Layers, Users } from 'lucide-react';
 
 export default function AdminDashboard() {
   const { user, logout } = useAuth();
-  const [data, setData] = useState({ products: [], sales: [], expenses: [], stats: {} });
+  const [data, setData] = useState({ products: [], sales: [], expenses: [], stats: {}, users: [] });
   const [activeTab, setActiveTab] = useState('overview');
   const [showAddProduct, setShowAddProduct] = useState(false);
+  const [showAddUser, setShowAddUser] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [newProduct, setNewProduct] = useState({ name: '', price: '', quantity: '', category: 'raw' });
+  const [newUser, setNewUser] = useState({ name: '', email: '', password: 'changeme123', role: 'cashier' });
 
   useEffect(() => {
     loadData();
@@ -17,24 +19,24 @@ export default function AdminDashboard() {
 
   const loadData = async () => {
     try {
-      const [p, s, e, st] = await Promise.all([
+      const [p, s, e, st, u] = await Promise.all([
         products.getAll(),
         sales.getAll(),
         expenses.getAll(),
-        stats.get()
+        stats.get(),
+        users.getAll()
       ]);
       
-      // Ensure we have valid data structures
       setData({ 
         products: Array.isArray(p) ? p : [], 
         sales: Array.isArray(s) ? s : [], 
         expenses: Array.isArray(e) ? e : [], 
-        stats: st || {} 
+        stats: st || {},
+        users: Array.isArray(u) ? u : []
       });
     } catch (error) {
       console.error('Failed to load data:', error);
-      // Set empty data on error
-      setData({ products: [], sales: [], expenses: [], stats: {} });
+      setData({ products: [], sales: [], expenses: [], stats: {}, users: [] });
     }
   };
 
@@ -46,6 +48,19 @@ export default function AdminDashboard() {
     loadData();
   };
 
+  const handleAddUser = async (e) => {
+    e.preventDefault();
+    try {
+      await users.create(newUser);
+      setNewUser({ name: '', email: '', password: 'changeme123', role: 'cashier' });
+      setShowAddUser(false);
+      loadData();
+      alert(`User created successfully! Login: ${newUser.email} / ${newUser.password}`);
+    } catch (error) {
+      alert('Failed to create user: ' + error.message);
+    }
+  };
+
   const filteredProducts = data.products.filter(p => 
     p.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -53,6 +68,7 @@ export default function AdminDashboard() {
   const tabs = [
     { id: 'overview', label: 'Overview', icon: BarChart3 },
     { id: 'inventory', label: 'Inventory', icon: Layers },
+    { id: 'users', label: 'Users', icon: Users },
     { id: 'sales', label: 'Sales', icon: ShoppingBag },
     { id: 'expenses', label: 'Expenses', icon: TrendingDown }
   ];
@@ -283,6 +299,90 @@ export default function AdminDashboard() {
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'users' && (
+            <div>
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-semibold">User Management</h3>
+                <button onClick={() => setShowAddUser(true)} className="btn-primary flex items-center gap-2">
+                  <Plus className="w-4 h-4" />
+                  Add User
+                </button>
+              </div>
+
+              {showAddUser && (
+                <div className="mb-6 p-6 bg-gradient-to-br from-green-50 to-blue-50 rounded-xl border-2 border-green-200">
+                  <h4 className="font-semibold mb-4 text-lg">Add New User</h4>
+                  <form onSubmit={handleAddUser} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <input
+                      type="text"
+                      placeholder="Full Name"
+                      className="input"
+                      value={newUser.name}
+                      onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                      required
+                    />
+                    <input
+                      type="email"
+                      placeholder="Email"
+                      className="input"
+                      value={newUser.email}
+                      onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                      required
+                    />
+                    <select
+                      className="input"
+                      value={newUser.role}
+                      onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                    >
+                      <option value="cashier">Cashier</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                    <div className="flex gap-2">
+                      <button type="submit" className="btn-primary flex-1">Add User</button>
+                      <button type="button" onClick={() => setShowAddUser(false)} className="btn-secondary">Cancel</button>
+                    </div>
+                  </form>
+                  <p className="text-xs text-gray-600 mt-2">Default password: changeme123</p>
+                </div>
+              )}
+
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Name</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Email</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Role</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Created</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.users.map((user) => (
+                      <tr key={user.id} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-3 text-sm font-medium">{user.name}</td>
+                        <td className="px-4 py-3 text-sm text-gray-600">{user.email}</td>
+                        <td className="px-4 py-3 text-sm">
+                          <span className={`badge ${user.role === 'admin' ? 'badge-success' : 'badge-warning'}`}>
+                            {user.role}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          <span className={`badge ${user.active ? 'badge-success' : 'badge-danger'}`}>
+                            {user.active ? 'Active' : 'Inactive'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600">
+                          {new Date(user.createdAt).toLocaleDateString()}
                         </td>
                       </tr>
                     ))}

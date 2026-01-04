@@ -2,7 +2,9 @@
  * Data synchronization utility for syncing localStorage data to backend
  */
 
-const API_URL = import.meta.env.PROD ? '/api' : 'http://localhost:5001/api';
+import { BASE_API_URL } from '../services/api';
+
+const API_URL = BASE_API_URL;
 
 export const syncUserToBackend = async (userData) => {
   try {

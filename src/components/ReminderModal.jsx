@@ -10,11 +10,19 @@ export default function ReminderModal({ onClose }) {
   }, []);
 
 
+
+
   const fetchReminders = async () => {
     try {
       const token = localStorage.getItem('token');
-      const API_URL = import.meta.env.PROD ? '/api' : 'http://localhost:5001/api';
-      const res = await fetch(`${API_URL}/reminders/today`, {
+      const getApiUrl = () => {
+        const envUrl = import.meta.env.VITE_API_URL;
+        if (envUrl) {
+          return envUrl.endsWith('/api') ? envUrl : `${envUrl}/api`;
+        }
+        return import.meta.env.PROD ? '/api' : 'http://localhost:5002/api';
+      };
+      const res = await fetch(`${getApiUrl()}/reminders/today`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -42,11 +50,19 @@ export default function ReminderModal({ onClose }) {
     }
   };
 
+
+
   const markFulfilled = async (id) => {
     try {
       const token = localStorage.getItem('token');
-      const API_URL = import.meta.env.PROD ? '/api' : 'http://localhost:5001/api';
-      await fetch(`${API_URL}/reminders/${id}`, {
+      const getApiUrl = () => {
+        const envUrl = import.meta.env.VITE_API_URL;
+        if (envUrl) {
+          return envUrl.endsWith('/api') ? envUrl : `${envUrl}/api`;
+        }
+        return import.meta.env.PROD ? '/api' : 'http://localhost:5002/api';
+      };
+      await fetch(`${getApiUrl()}/reminders/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ status: 'fulfilled' })

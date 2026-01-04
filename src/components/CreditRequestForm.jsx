@@ -12,7 +12,8 @@ export default function CreditRequestForm({ product, onClose, onSubmit }) {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      const API_URL = import.meta.env.PROD ? '/api' : 'http://localhost:5001/api';
+
+      const API_URL = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : (import.meta.env.PROD ? '/api' : 'http://localhost:5002/api');
       const res = await fetch(`${API_URL}/credit-requests`, {
         method: 'POST',
         headers: {

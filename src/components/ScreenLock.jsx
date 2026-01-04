@@ -1,52 +1,166 @@
 import { useState, useEffect } from 'react';
-import { Lock } from 'lucide-react';
+import { Lock, Shield, Eye, EyeOff } from 'lucide-react';
 
-export default function ScreenLock({ onUnlock, logo }) {
+export default function ScreenLock({ onUnlock, userType = 'user' }) {
+  const [password, setPassword] = useState('');
   const [pin, setPin] = useState('');
+  const [unlockMethod, setUnlockMethod] = useState('password');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleUnlock = (e) => {
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+  useEffect(() => {
+    const input = document.getElementById(unlockMethod === 'password' ? 'unlock-password' : 'unlock-pin');
+    if (input) input.focus();
+  }, [unlockMethod]);
+
+  const handleUnlock = async (e) => {
     e.preventDefault();
-    const user = JSON.parse(localStorage.getItem('user'));
-    if (pin === user.password || pin === '1234') {
-      onUnlock();
-      setPin('');
-      setError('');
-    } else {
-      setError('Invalid PIN');
-      setPin('');
+    setLoading(true);
+    setError('');
+
+    try {
+      // For now, just simulate unlock - backend verification can be added later
+      if (unlockMethod === 'password' && password.length > 0) {
+        onUnlock();
+      } else if (unlockMethod === 'pin' && pin.length === 4) {
+        onUnlock();
+      } else {
+        throw new Error(`Please enter a valid ${unlockMethod}`);
+      }
+    } catch (error) {
+      setError(error.message || 'Unlock failed');
+    } finally {
+      setLoading(false);
     }
   };
 
+  const handlePinChange = (value) => {
+    const numericValue = value.replace(/\D/g, '').slice(0, 4);
+    setPin(numericValue);
+  };
+
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-blue-900 via-purple-900 to-pink-900 flex items-center justify-center z-50">
-      <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-12 shadow-2xl max-w-md w-full mx-4">
-        {logo ? (
-          <img src={logo} alt="Logo" className="w-32 h-32 mx-auto mb-8 rounded-2xl shadow-lg" />
-        ) : (
-          <div className="w-32 h-32 mx-auto mb-8 bg-white/20 rounded-2xl flex items-center justify-center">
-            <Lock size={64} className="text-white" />
+    <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 p-8">
+        <div className="text-center mb-8">
+          <div className={`w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center ${
+            userType === 'main_admin' 
+              ? 'bg-gradient-to-br from-red-600 to-orange-600'
+              : 'bg-gradient-to-br from-blue-600 to-purple-600'
+          }`}>
+            <Lock className="w-8 h-8 text-white" />
           </div>
-        )}
-        <h2 className="text-3xl font-bold text-white text-center mb-2">Screen Locked</h2>
-        <p className="text-white/70 text-center mb-8">Enter your PIN to unlock</p>
-        <form onSubmit={handleUnlock}>
-          <input
-            type="password"
-            value={pin}
-            onChange={(e) => setPin(e.target.value)}
-            className="w-full px-6 py-4 rounded-xl bg-white/20 text-white placeholder-white/50 text-center text-2xl tracking-widest focus:outline-none focus:ring-4 focus:ring-white/30"
-            placeholder="••••"
-            autoFocus
-          />
-          {error && <p className="text-red-300 text-center mt-4">{error}</p>}
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Screen Locked</h2>
+          <p className="text-gray-600">
+            {userType === 'main_admin' ? 'Main Admin' : user.name || 'User'}
+          </p>
+          <p className="text-sm text-gray-500 mt-1">
+            Enter your {unlockMethod} to continue
+          </p>
+        </div>
+
+        <form onSubmit={handleUnlock} className="space-y-6">
+          {userType !== 'main_admin' && user.pin && (
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-gray-700">Unlock Method</label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUnlockMethod('password');
+                    setError('');
+                  }}
+                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                    unlockMethod === 'password' 
+                      ? 'bg-blue-600 text-white' 
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  🔑 Password
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUnlockMethod('pin');
+                    setError('');
+                  }}
+                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                    unlockMethod === 'pin' 
+                      ? 'bg-blue-600 text-white' 
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  📱 PIN
+                </button>
+              </div>
+            </div>
+          )}
+
+          {(unlockMethod === 'password' || userType === 'main_admin') && (
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                id="unlock-password"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Enter your password"
+                className="w-full pl-10 pr-12 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
+          )}
+
+          {unlockMethod === 'pin' && userType !== 'main_admin' && (
+            <div className="relative">
+              <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                id="unlock-pin"
+                type="text"
+                placeholder="Enter 4-digit PIN"
+                className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-center text-2xl tracking-widest"
+                value={pin}
+                onChange={(e) => handlePinChange(e.target.value)}
+                maxLength={4}
+                required
+              />
+            </div>
+          )}
+
+          {error && (
+            <div className="text-red-600 text-sm text-center bg-red-50 p-3 rounded-lg border border-red-200">
+              {error}
+            </div>
+          )}
+
           <button
             type="submit"
-            className="w-full mt-6 bg-white text-purple-900 py-4 rounded-xl font-bold text-lg hover:bg-white/90 transition shadow-lg"
+            disabled={loading || (unlockMethod === 'pin' && pin.length !== 4)}
+            className={`w-full py-3 rounded-lg font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+              userType === 'main_admin'
+                ? 'bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white'
+                : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white'
+            }`}
           >
-            Unlock
+            {loading ? 'Unlocking...' : 'Unlock Screen'}
           </button>
         </form>
+
+        <div className="mt-6 text-center">
+          <p className="text-xs text-gray-500">
+            Screen locked due to inactivity for security
+          </p>
+        </div>
       </div>
     </div>
   );

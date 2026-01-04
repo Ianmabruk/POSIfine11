@@ -1,26 +1,44 @@
+
+
 import { useState, useEffect } from 'react';
-import { products as productsApi } from '../../services/api';
-import { Plus, Search, Edit2, Trash2, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { useProducts } from '../../context/ProductsContext';
+import { products, batches } from '../../services/api';
+import { Plus, Search, Edit2, Trash2, ChevronDown, ChevronUp, AlertTriangle, Camera, Package } from 'lucide-react';
+
+
 
 export default function Inventory() {
-  const [products, setProducts] = useState([]);
+  const { user, isUltraPackage, isRealTimeProductSyncEnabled } = useAuth();
+  const { products: globalProducts, refreshProducts } = useProducts();
+  const [productList, setProductList] = useState([]);
+  const [batchList, setBatchList] = useState([]);
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-
+  const [showAddStock, setShowAddStock] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const [expandedRow, setExpandedRow] = useState(null);
   const [notification, setNotification] = useState(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSync, setLastSync] = useState(null);
+  const [imagePreview, setImagePreview] = useState('');
   const [newProduct, setNewProduct] = useState({
     name: '',
     price: '',
     cost: '',
-    quantity: '',
+    category: 'finished',
     unit: 'pcs',
-    category: 'raw',
     expenseOnly: false,
     image: '',
     visibleToCashier: true
+  });
+  const [newStock, setNewStock] = useState({
+    quantity: '',
+    expiryDate: '',
+    batchNumber: '',
+    cost: ''
   });
   const [editProduct, setEditProduct] = useState({
     name: '',
@@ -36,8 +54,51 @@ export default function Inventory() {
 
 
   useEffect(() => {
-    loadProducts();
+    loadData();
   }, []);
+
+  const loadData = async () => {
+    try {
+      await refreshProducts();
+      const batchData = await batches.getAll();
+      setBatchList(batchData);
+    } catch (error) {
+      console.error('Failed to load data:', error);
+    }
+  };
+
+  // Sync with global context
+  useEffect(() => {
+    if (globalProducts) {
+      setProductList(globalProducts);
+    }
+  }, [globalProducts]);
+
+  const handleImageUpload = (e, isNewProduct = true) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const base64 = e.target.result;
+        setImagePreview(base64);
+        if (isNewProduct) {
+          setNewProduct({ ...newProduct, image: base64 });
+        } else {
+          setEditProduct({ ...editProduct, image: base64 });
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const getProductStock = (productId) => {
+    const productBatches = batchList.filter(b => b.productId === productId && b.quantity > 0);
+    return productBatches.reduce((total, batch) => total + batch.quantity, 0);
+  };
+
+  const getProductBatches = (productId) => {
+    return batchList.filter(b => b.productId === productId && b.quantity > 0);
+  };
 
   const showNotification = (message, type = 'success') => {
     setNotification({ message, type });
@@ -47,50 +108,36 @@ export default function Inventory() {
 
 
 
+
+
   const loadProducts = async () => {
-    try {
-      const data = await productsApi.getAll();
-      
-      // Ensure we always have an array and filter out deleted products
-      if (Array.isArray(data)) {
-        const activeProducts = data.filter(p => !p.pendingDelete);
-        setProducts(activeProducts);
-      } else {
-        console.error('Expected array but got:', typeof data, data);
-        setProducts([]);
-      }
-    } catch (error) {
-      console.error('Failed to load products:', error);
-      setProducts([]);
-    }
+    // Deprecated: Using global context instead
+    refreshProducts();
   };
+
 
 
   const handleAddProduct = async (e) => {
     e.preventDefault();
     try {
-
       const productData = {
         ...newProduct,
         price: parseFloat(newProduct.price),
-        cost: parseFloat(newProduct.cost),
-        quantity: parseFloat(newProduct.quantity),
-        // Ensure products are visible to cashiers unless explicitly marked as expenseOnly
+        cost: parseFloat(newProduct.cost || 0),
+        quantity: 0, // Stock managed through batches
         visibleToCashier: !newProduct.expenseOnly && newProduct.visibleToCashier !== false
       };
       
-
-      const result = await productsApi.create(productData);
+      const result = await products.create(productData);
       
       // Reset form and close modal
-      setNewProduct({ name: '', price: '', cost: '', quantity: '', unit: 'pcs', category: 'raw', expenseOnly: false, image: '', visibleToCashier: true });
+      setNewProduct({ name: '', price: '', cost: '', category: 'finished', unit: 'pcs', expenseOnly: false, image: '', visibleToCashier: true });
+      setImagePreview('');
       setShowAddModal(false);
       
-      // Refresh the products list
-      await loadProducts();
+      // Refresh data
+      await loadData();
       
-
-      // Show success notification
       showNotification(`✅ Product "${result.name}" added successfully! ${result.visibleToCashier ? 'Cashiers can now see this product.' : 'This product is hidden from cashiers.'}`, 'success');
       
     } catch (error) {
@@ -99,11 +146,35 @@ export default function Inventory() {
     }
   };
 
+  const handleAddStock = async (e) => {
+    e.preventDefault();
+    try {
+      await batches.create({
+        productId: selectedProduct.id,
+        quantity: parseInt(newStock.quantity),
+        expiryDate: newStock.expiryDate,
+        batchNumber: newStock.batchNumber || `BATCH-${Date.now()}`,
+        cost: parseFloat(newStock.cost || selectedProduct.cost || 0)
+      });
+      
+      setNewStock({ quantity: '', expiryDate: '', batchNumber: '', cost: '' });
+      setShowAddStock(false);
+      setSelectedProduct(null);
+      await loadData();
+      
+      showNotification(`✅ Stock added successfully for ${selectedProduct.name}!`, 'success');
+    } catch (error) {
+      console.error('Failed to add stock:', error);
+      alert('Failed to add stock');
+    }
+  };
+
+
 
   const handleEditProduct = async (e) => {
     e.preventDefault();
     try {
-      const originalProduct = products.find(p => p.id === editProduct.id);
+      const originalProduct = productList.find(p => p.id === editProduct.id);
       if (parseFloat(editProduct.price) < originalProduct.price) {
         alert('You cannot lower prices, only increase.');
         return;
@@ -115,14 +186,36 @@ export default function Inventory() {
         cost: parseFloat(editProduct.cost),
         quantity: parseFloat(editProduct.quantity)
       };
-      
 
-      const result = await productsApi.update(editProduct.id, updateData);
+
+      const result = await products.update(editProduct.id, updateData);
       
       setShowEditModal(false);
-      await loadProducts();
+      await refreshProducts();
       
-      alert('Product updated successfully!');
+      // Trigger real-time sync notification if enabled
+      if (isRealTimeProductSyncEnabled()) {
+        setIsSyncing(true);
+        window.dispatchEvent(new CustomEvent('productUpdated', { 
+          detail: { 
+            product: result,
+            originalProduct,
+            timestamp: new Date().toISOString(),
+            type: 'update'
+          }
+        }));
+        
+        // Show sync notification
+        showNotification(`📡 Product updated and synced to all dashboards!`, 'success');
+        setLastSync(new Date());
+        
+        // Clear sync status after 3 seconds
+        setTimeout(() => {
+          setIsSyncing(false);
+        }, 3000);
+      } else {
+        alert('Product updated successfully!');
+      }
       
     } catch (error) {
       console.error('Failed to update product:', error);
@@ -131,23 +224,47 @@ export default function Inventory() {
   };
 
 
+
   const handleDelete = async (id) => {
     try {
       if (!confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
         return;
       }
 
-      const result = await productsApi.delete(id);
+      const productToDelete = productList.find(p => p.id === id);
+      const result = await products.delete(id);
       
+
       // Update local state immediately for better UX
-      setProducts(prevProducts => prevProducts.filter(p => p.id !== id));
+      setProductList(prevProducts => prevProducts.filter(p => p.id !== id));
       
-      // Show success message
-      const successMessage = result?.message || 'Product deleted successfully!';
-      alert(successMessage);
+      // Trigger real-time sync notification if enabled
+      if (isRealTimeProductSyncEnabled() && productToDelete) {
+        setIsSyncing(true);
+        window.dispatchEvent(new CustomEvent('productDeleted', { 
+          detail: { 
+            product: productToDelete,
+            timestamp: new Date().toISOString(),
+            type: 'delete'
+          }
+        }));
+        
+        // Show sync notification
+        showNotification(`📡 Product "${productToDelete.name}" deleted and synced to all dashboards!`, 'success');
+        setLastSync(new Date());
+        
+        // Clear sync status after 3 seconds
+        setTimeout(() => {
+          setIsSyncing(false);
+        }, 3000);
+      } else {
+        // Show success message
+        const successMessage = result?.message || 'Product deleted successfully!';
+        alert(successMessage);
+      }
       
       // Refresh products to ensure sync with backend
-      await loadProducts();
+      await refreshProducts();
       
     } catch (error) {
       console.error('Failed to delete product:', error);
@@ -170,7 +287,8 @@ export default function Inventory() {
   };
 
 
-  const filteredProducts = (products || []).filter(p => {
+
+  const filteredProducts = (productList || []).filter(p => {
     if (!p) return false;
     const matchesSearch = p.name?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filter === 'all' || 
@@ -181,9 +299,10 @@ export default function Inventory() {
     return matchesSearch && matchesFilter;
   });
 
-  const rawProducts = (products || []).filter(p => p && !p.recipe && !p.expenseOnly);
-  const compositeProducts = (products || []).filter(p => p && p.recipe);
-  const expenseProducts = (products || []).filter(p => p && p.expenseOnly);
+
+  const rawProducts = (productList || []).filter(p => p && !p.recipe && !p.expenseOnly);
+  const compositeProducts = (productList || []).filter(p => p && p.recipe);
+  const expenseProducts = (productList || []).filter(p => p && p.expenseOnly);
 
 
   const calculateMaxProducible = (product) => {
@@ -191,7 +310,8 @@ export default function Inventory() {
     let max = Infinity;
     (product.recipe || []).forEach(ingredient => {
       if (!ingredient) return;
-      const raw = (products || []).find(p => p && p.id === ingredient.productId);
+
+      const raw = (productList || []).find(p => p && p.id === ingredient.productId);
       if (raw && raw.quantity > 0 && ingredient.quantity > 0) {
         const possible = Math.floor(raw.quantity / ingredient.quantity);
         max = Math.min(max, possible);
@@ -206,7 +326,8 @@ export default function Inventory() {
     let totalCost = 0;
     (product.recipe || []).forEach(ingredient => {
       if (!ingredient) return;
-      const raw = (products || []).find(p => p && p.id === ingredient.productId);
+
+      const raw = (productList || []).find(p => p && p.id === ingredient.productId);
       if (raw && raw.quantity > 0) {
         const unitCost = (raw.cost || 0) / raw.quantity;
         totalCost += unitCost * (ingredient.quantity || 0);
@@ -302,6 +423,7 @@ export default function Inventory() {
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Price</th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Cost/COGS</th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Stock</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Batches</th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Max Units</th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Margin</th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
@@ -369,9 +491,37 @@ export default function Inventory() {
                         KSH {cogs.toLocaleString()}
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`font-medium ${product.quantity < 10 && !product.recipe ? 'text-red-600' : 'text-gray-900'}`}>
-                          {product.quantity} {product.unit}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className={`font-medium ${
+                            getProductStock(product.id) === 0 ? 'text-red-600' : 
+                            getProductStock(product.id) < 10 ? 'text-yellow-600' : 'text-gray-900'
+                          }`}>
+                            {getProductStock(product.id)} {product.unit}
+                          </span>
+                          {getProductStock(product.id) < 10 && getProductStock(product.id) > 0 && (
+                            <AlertTriangle className="w-4 h-4 text-yellow-500" />
+                          )}
+                          {getProductStock(product.id) === 0 && (
+                            <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full font-medium">
+                              Out of Stock
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-600">{getProductBatches(product.id).length} active</span>
+                          <button 
+                            onClick={() => {
+                              setSelectedProduct(product);
+                              setShowAddStock(true);
+                            }}
+                            className="p-1 hover:bg-blue-50 rounded text-blue-600 transition-colors"
+                            title="Add Stock"
+                          >
+                            <Plus className="w-3 h-3" />
+                          </button>
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         {product.recipe ? (
@@ -427,7 +577,8 @@ export default function Inventory() {
                               <tbody>
                                 {(product.recipe || []).map((ingredient, idx) => {
                                   if (!ingredient) return null;
-                                  const raw = (products || []).find(p => p && p.id === ingredient.productId);
+
+                                  const raw = (productList || []).find(p => p && p.id === ingredient.productId);
                                   if (!raw) return null;
                                   const unitCost = (raw.cost || 0) / (raw.quantity || 1);
                                   const totalCost = unitCost * (ingredient.quantity || 0);
@@ -462,6 +613,55 @@ export default function Inventory() {
       </div>
 
 
+      {/* Add Stock Modal */}
+      {showAddStock && selectedProduct && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md">
+            <h3 className="text-xl font-bold mb-4">Add Stock for {selectedProduct.name}</h3>
+            <form onSubmit={handleAddStock} className="space-y-4">
+              <input
+                type="number"
+                placeholder="Quantity"
+                className="input"
+                value={newStock.quantity}
+                onChange={(e) => setNewStock({ ...newStock, quantity: e.target.value })}
+                required
+              />
+              <input
+                type="date"
+                placeholder="Expiry Date (Optional)"
+                className="input"
+                value={newStock.expiryDate}
+                onChange={(e) => setNewStock({ ...newStock, expiryDate: e.target.value })}
+              />
+              <input
+                type="text"
+                placeholder="Batch Number (Optional)"
+                className="input"
+                value={newStock.batchNumber}
+                onChange={(e) => setNewStock({ ...newStock, batchNumber: e.target.value })}
+              />
+              <input
+                type="number"
+                step="0.01"
+                placeholder="Cost per Unit"
+                className="input"
+                value={newStock.cost}
+                onChange={(e) => setNewStock({ ...newStock, cost: e.target.value })}
+              />
+              <div className="flex gap-2">
+                <button type="submit" className="btn-primary flex-1">Add Stock</button>
+                <button type="button" onClick={() => {
+                  setShowAddStock(false);
+                  setSelectedProduct(null);
+                  setNewStock({ quantity: '', expiryDate: '', batchNumber: '', cost: '' });
+                }} className="btn-secondary">Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Add Product Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -478,33 +678,19 @@ export default function Inventory() {
               />
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">Product Image</label>
-                <div className="flex gap-2">
-                  <input
-                    type="url"
-                    placeholder="Image URL"
-                    className="input flex-1"
-                    value={newProduct.image}
-                    onChange={(e) => setNewProduct({ ...newProduct, image: e.target.value })}
-                  />
-                  <span className="text-sm text-gray-500 self-center">or</span>
+                <div className="flex items-center gap-4">
                   <input
                     type="file"
                     accept="image/*"
-                    className="input flex-1"
-                    onChange={(e) => {
-                      const file = e.target.files[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onloadend = () => {
-                          setNewProduct({ ...newProduct, image: reader.result });
-                        };
-                        reader.readAsDataURL(file);
-                      }
-                    }}
+                    onChange={(e) => handleImageUpload(e, true)}
+                    className="input"
                   />
+                  <Camera className="w-5 h-5 text-gray-400" />
                 </div>
-                {newProduct.image && (
-                  <img src={newProduct.image} alt="Preview" className="w-20 h-20 object-cover rounded" />
+                {(imagePreview || newProduct.image) && (
+                  <div className="mt-2">
+                    <img src={imagePreview || newProduct.image} alt="Preview" className="w-24 h-24 object-cover rounded-lg border" />
+                  </div>
                 )}
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -524,19 +710,18 @@ export default function Inventory() {
                   className="input"
                   value={newProduct.cost}
                   onChange={(e) => setNewProduct({ ...newProduct, cost: e.target.value })}
-                  required
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <input
-                  type="number"
-                  step="0.01"
-                  placeholder="Quantity"
+                <select
                   className="input"
-                  value={newProduct.quantity}
-                  onChange={(e) => setNewProduct({ ...newProduct, quantity: e.target.value })}
-                  required
-                />
+                  value={newProduct.category}
+                  onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
+                >
+                  <option value="finished">Finished Product</option>
+                  <option value="raw">Raw Material</option>
+                  <option value="service">Service</option>
+                </select>
                 <select
                   className="input"
                   value={newProduct.unit}
@@ -549,14 +734,6 @@ export default function Inventory() {
                   <option value="ml">Milliliters</option>
                 </select>
               </div>
-              <select
-                className="input"
-                value={newProduct.category}
-                onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
-              >
-                <option value="raw">Raw Material</option>
-                <option value="finished">Finished Product</option>
-              </select>
               <div className="space-y-2">
                 <label className="flex items-center gap-2">
                   <input
@@ -579,7 +756,11 @@ export default function Inventory() {
               </div>
               <div className="flex gap-2">
                 <button type="submit" className="btn-primary flex-1">Add Product</button>
-                <button type="button" onClick={() => setShowAddModal(false)} className="btn-secondary">Cancel</button>
+                <button type="button" onClick={() => {
+                  setShowAddModal(false);
+                  setImagePreview('');
+                  setNewProduct({ name: '', price: '', cost: '', category: 'finished', unit: 'pcs', expenseOnly: false, image: '', visibleToCashier: true });
+                }} className="btn-secondary">Cancel</button>
               </div>
             </form>
           </div>

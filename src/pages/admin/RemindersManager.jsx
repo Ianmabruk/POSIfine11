@@ -19,10 +19,11 @@ export default function RemindersManager() {
   }, []);
 
 
+
   const fetchReminders = async () => {
     try {
       const token = localStorage.getItem('token');
-      const API_URL = import.meta.env.PROD ? '/api' : 'http://localhost:5001/api';
+      const API_URL = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : (import.meta.env.PROD ? '/api' : 'http://localhost:5002/api');
       const res = await fetch(`${API_URL}/reminders`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -50,10 +51,11 @@ export default function RemindersManager() {
   };
 
 
+
   const fetchProducts = async () => {
     try {
       const token = localStorage.getItem('token');
-      const API_URL = import.meta.env.PROD ? '/api' : 'http://localhost:5001/api';
+      const API_URL = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : (import.meta.env.PROD ? '/api' : 'http://localhost:5002/api');
       const res = await fetch(`${API_URL}/products`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -83,9 +85,10 @@ export default function RemindersManager() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     try {
       const token = localStorage.getItem('token');
-      const API_URL = import.meta.env.PROD ? '/api' : 'http://localhost:5001/api';
+      const API_URL = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : (import.meta.env.PROD ? '/api' : 'http://localhost:5002/api');
       
       const response = await fetch(`${API_URL}/reminders`, {
         method: 'POST',
@@ -133,8 +136,9 @@ export default function RemindersManager() {
         return;
       }
       
+
       const token = localStorage.getItem('token');
-      const API_URL = import.meta.env.PROD ? '/api' : 'http://localhost:5001/api';
+      const API_URL = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : (import.meta.env.PROD ? '/api' : 'http://localhost:5002/api');
       
       const response = await fetch(`${API_URL}/reminders/${id}`, {
         method: 'DELETE',

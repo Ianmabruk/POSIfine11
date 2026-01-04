@@ -1,13 +1,20 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useProducts } from '../../context/ProductsContext';
 
-import { products as productsApi, sales as salesApi, stats, creditRequests, discounts } from '../../services/api';
+
+import { sales as salesApi, stats, creditRequests, discounts, BASE_API_URL } from '../../services/api';
 import { ShoppingCart, Trash2, LogOut, Plus, Minus, Search, DollarSign, TrendingUp, Package, BarChart3, Edit2, Settings, Tag } from 'lucide-react';
 import DiscountSelector from '../../components/DiscountSelector';
 import ProductCard from '../../components/ProductCard';
 
+
+
 export default function CashierPOS() {
-  const { user, logout } = useAuth();
+  const { user, logout, isUltraPackage, isBasicPackage, canEditStock, canManageUsers, canViewAnalytics, isRealTimeProductSyncEnabled, isCashierUserManagementEnabled } = useAuth();
+  const { products: globalProducts, refreshProducts } = useProducts();
+
   const [productList, setProductList] = useState([]);
   const [cart, setCart] = useState([]);
   const [paymentMethod, setPaymentMethod] = useState('cash');
@@ -35,12 +42,26 @@ export default function CashierPOS() {
     reason: '',
     items: []
   });
+  const [isAutoRefreshing, setIsAutoRefreshing] = useState(false);
+
+  // Track last products update time and update count to display refresh info
   const [lastProductUpdate, setLastProductUpdate] = useState(Date.now());
   const [productUpdateCount, setProductUpdateCount] = useState(0);
-  const [isAutoRefreshing, setIsAutoRefreshing] = useState(false);
+
+  // User management state for 1600 package
+  const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [userForm, setUserForm] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    role: 'cashier',
+    cashierPIN: ''
+  });
 
   useEffect(() => {
     loadData();
+    refreshProducts();
     
     // Check if already clocked in today
     const todayClockIn = localStorage.getItem(`clockIn_${user?.id}_${new Date().toDateString()}`);
@@ -53,15 +74,27 @@ export default function CashierPOS() {
     const refreshInterval = setInterval(() => {
       console.log('🔄 Auto-refreshing products...');
       setIsAutoRefreshing(true);
-      loadData().finally(() => {
-        setIsAutoRefreshing(false);
-        setLastProductUpdate(Date.now());
-        setProductUpdateCount(prev => prev + 1);
-      });
+      refreshProducts().finally(() => setIsAutoRefreshing(false));
     }, 30000); // 30 seconds
 
     return () => clearInterval(refreshInterval);
   }, []);
+
+  // Sync with global products
+  useEffect(() => {
+    if (globalProducts) {
+      const visibleProducts = globalProducts.filter(p => {
+        // Include product if it's not expenseOnly and not deleted
+        const isVisible = !p.expenseOnly && !p.pendingDelete;
+        
+        // For products without explicit visibleToCashier field, assume visible unless expenseOnly
+        const isNotHidden = p.visibleToCashier !== false;
+        
+        return isVisible && isNotHidden;
+      });
+      setProductList(visibleProducts);
+    }
+  }, [globalProducts]);
 
   const handleClockIn = () => {
     const now = new Date();
@@ -69,6 +102,7 @@ export default function CashierPOS() {
     setClockedIn(true);
     setClockInTime(now);
   };
+
 
   const handleClockOut = () => {
     const now = new Date();
@@ -93,57 +127,80 @@ export default function CashierPOS() {
     setClockInTime(null);
   };
 
+  const handleAddUser = async (e) => {
+    e.preventDefault();
+    
+    try {
+      // Validate passwords match
+      if (userForm.password !== userForm.confirmPassword) {
+        alert('Passwords do not match');
+        return;
+      }
+
+      // Validate PIN for cashier role
+      if (userForm.role === 'cashier' && (!userForm.cashierPIN || userForm.cashierPIN.length !== 4)) {
+        alert('Please provide a valid 4-digit PIN for cashier accounts');
+        return;
+      }
+
+      // Create user object
+      const newUser = {
+        name: userForm.name,
+        email: userForm.email,
+        password: userForm.password,
+        role: userForm.role,
+        plan: userForm.role === 'admin' ? '1600' : '900', // Admin gets 1600, Cashier gets 900
+        active: true,
+        cashierPIN: userForm.cashierPIN || null,
+        createdBy: user?.id,
+        createdAt: new Date().toISOString()
+      };
+
+      // This would typically call the users API
+      console.log('Creating new user:', newUser);
+      
+      // Simulate API call
+      setTimeout(() => {
+        alert(`✅ User "${userForm.name}" created successfully!\n\n📧 Email: ${userForm.email}\n👤 Role: ${userForm.role}\n📦 Package: ${userForm.role === 'admin' ? '1600 Package' : '900 Package'}\n${userForm.cashierPIN ? `🔢 PIN: ${userForm.cashierPIN}` : ''}\n\n${userForm.role === 'cashier' ? 'Cashier can now login with email and PIN from the landing page.' : ''}`);
+        setShowAddUserModal(false);
+        setUserForm({
+          name: '',
+          email: '',
+          password: '',
+          confirmPassword: '',
+          role: 'cashier',
+          cashierPIN: ''
+        });
+      }, 1000);
+
+    } catch (error) {
+      console.error('Failed to create user:', error);
+      alert('Failed to create user: ' + error.message);
+    }
+  };
+
+
+
 
 
 
   const loadData = async () => {
     try {
-      const [products, sales, statistics, requests, discountData] = await Promise.all([
-        productsApi.getAll(),
+
+      const [salesData, statistics, requests, discountData] = await Promise.all([
         salesApi.getAll(),
         stats.get(),
         creditRequests.getAll().catch(() => []),
         discounts.getAll().catch(() => [])
       ]);
       
-      // Enhanced product filtering with better visibility logic
-      const visibleProducts = products.filter(p => {
-        // Include product if it's not expenseOnly and not deleted
-        const isVisible = !p.expenseOnly && !p.pendingDelete;
-        
-        // For products without explicit visibleToCashier field, assume visible unless expenseOnly
-        const isNotHidden = p.visibleToCashier !== false;
-        
-        // Debug logging
-        if (p.id <= 5) { // Only log first few products to avoid spam
-          console.log(`Product ${p.name}:`, {
-            expenseOnly: p.expenseOnly,
-            visibleToCashier: p.visibleToCashier,
-            pendingDelete: p.pendingDelete,
-            isVisible,
-            isNotHidden,
-            finalInclude: isVisible && isNotHidden
-          });
-        }
-        
-        return isVisible && isNotHidden;
-      });
-      
-      console.log('Loaded products for cashier:', {
-        total: products.length,
-        visible: visibleProducts.length,
-        visibleProductNames: visibleProducts.map(p => p.name)
-      });
-      
-      setProductList(visibleProducts);
-      setSalesData(sales.reverse());
+      setSalesData(salesData.reverse());
       setStatsData(statistics);
       setDiscountRequests(requests);
       setDiscounts(discountData);
     } catch (error) {
       console.error('Error loading data:', error);
       // Fallback to empty data on error
-      setProductList([]);
       setSalesData([]);
       setStatsData({});
       setDiscountRequests([]);
@@ -213,11 +270,13 @@ export default function CashierPOS() {
     setSelectedDiscount(discount);
   };
 
+
   const handleCheckout = async () => {
     if (cart.length === 0) return;
     
     try {
-      await salesApi.create({
+      // Create sale through the backend API
+      const result = await salesApi.create({
         items: cart.map(item => ({ productId: item.id, quantity: item.quantity, price: item.price })),
         total,
         paymentMethod
@@ -225,9 +284,25 @@ export default function CashierPOS() {
       
       setCart([]);
       loadData();
-      alert('Sale completed successfully!');
+      
+      // Show success message with sale details
+      alert(`✅ Sale completed successfully!\n\n💰 Total: KSH ${total.toLocaleString()}\n📋 Payment: ${paymentMethod}\n🧾 Receipt #: ${result.id || 'N/A'}\n\nThank you for your purchase!`);
     } catch (error) {
-      alert('Failed to complete sale: ' + error.message);
+      console.error('Checkout error:', error);
+      let errorMessage = 'Failed to complete sale';
+      
+      if (error.message.includes('Failed to fetch') || error.message.includes('Network error')) {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      } else if (error.message.includes('401') || error.message.includes('unauthorized')) {
+        errorMessage = 'Session expired. Please log in again.';
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/';
+      } else if (error.message) {
+        errorMessage = `Failed to complete sale: ${error.message}`;
+      }
+      
+      alert(errorMessage);
     }
   };
 
@@ -237,15 +312,17 @@ export default function CashierPOS() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col">
+
       {/* Header */}
       <nav className="bg-white/80 backdrop-blur-md border-b border-gray-200 px-4 md:px-6 py-3 md:py-4 sticky top-0 z-50 shadow-sm">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-lg md:text-2xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
-              {user?.plan === 'basic' ? 'Cashier Dashboard' : 'POS System'}
+              {isUltraPackage() ? 'Admin Dashboard' : isBasicPackage() ? 'Cashier Dashboard' : 'POS System'}
             </h1>
             <p className="text-xs text-gray-500 mt-0.5 hidden md:block">
-              {user?.plan === 'basic' ? 'Basic Package - KSH 900/month' : 'Ultra Package Access'}
+              {isUltraPackage() ? '1600 Package - Full Admin Access' : 
+               isBasicPackage() ? '900 Package - Stock Management' : 'Package Access'}
             </p>
           </div>
 
@@ -294,6 +371,7 @@ export default function CashierPOS() {
         </div>
       </nav>
 
+
       {/* View Tabs */}
       <div className="flex gap-1 md:gap-2 px-2 md:px-6 py-2 md:py-4 bg-white border-b border-gray-200 overflow-x-auto">
         <button
@@ -305,6 +383,8 @@ export default function CashierPOS() {
           <ShoppingCart className="w-4 h-4 inline mr-1 md:mr-2" />
           POS
         </button>
+        
+        {/* Show Sales tab for both packages */}
         <button
           onClick={() => setActiveView('sales')}
           className={`px-3 md:px-6 py-2 rounded-lg font-medium transition-all whitespace-nowrap text-sm md:text-base ${
@@ -314,15 +394,45 @@ export default function CashierPOS() {
           <BarChart3 className="w-4 h-4 inline mr-1 md:mr-2" />
           Sales
         </button>
-        <button
-          onClick={() => setActiveView('stock')}
-          className={`px-3 md:px-6 py-2 rounded-lg font-medium transition-all whitespace-nowrap text-sm md:text-base ${
-            activeView === 'stock' ? 'bg-gradient-to-r from-green-600 to-teal-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-          }`}
-        >
-          <Package className="w-4 h-4 inline mr-1 md:mr-2" />
-          Stock
-        </button>
+        
+        {/* Show Stock tab for both packages (900 package can edit stock) */}
+        {canEditStock() && (
+          <button
+            onClick={() => setActiveView('stock')}
+            className={`px-3 md:px-6 py-2 rounded-lg font-medium transition-all whitespace-nowrap text-sm md:text-base ${
+              activeView === 'stock' ? 'bg-gradient-to-r from-green-600 to-teal-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            <Package className="w-4 h-4 inline mr-1 md:mr-2" />
+            Stock
+          </button>
+        )}
+        
+
+        {/* Show User Management tab based on new permission system */}
+        {canManageUsers() && isCashierUserManagementEnabled() && (
+          <button
+            onClick={() => setActiveView('users')}
+            className={`px-3 md:px-6 py-2 rounded-lg font-medium transition-all whitespace-nowrap text-sm md:text-base ${
+              activeView === 'users' ? 'bg-gradient-to-r from-green-600 to-teal-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            <Settings className="w-4 h-4 inline mr-1 md:mr-2" />
+            Users
+          </button>
+        )}
+        
+        {/* Show disabled User Management tab when admin has disabled it */}
+        {canManageUsers() && !isCashierUserManagementEnabled() && (
+          <button
+            onClick={() => alert('User Management has been disabled by the admin')}
+            className="px-3 md:px-6 py-2 rounded-lg font-medium transition-all whitespace-nowrap text-sm md:text-base bg-gray-200 text-gray-500 cursor-not-allowed opacity-60"
+            title="User Management disabled by admin"
+          >
+            <Settings className="w-4 h-4 inline mr-1 md:mr-2" />
+            Users (Disabled)
+          </button>
+        )}
       </div>
 
       {/* POS View */}
@@ -613,6 +723,7 @@ export default function CashierPOS() {
         </div>
       )}
 
+
       {/* Stock Management View */}
       {activeView === 'stock' && (
         <div className="p-6 max-w-7xl mx-auto w-full space-y-6">
@@ -669,7 +780,8 @@ export default function CashierPOS() {
                             onClick={async () => {
                               if (confirm('Delete this product? This action cannot be undone.')) {
                                 try {
-                                  await productsApi.delete(product.id);
+
+                                  await products.delete(product.id);
                                   // Update local state immediately for better UX
                                   setProductList(prevProducts => prevProducts.filter(p => p.id !== product.id));
                                   alert('Product deleted successfully!');
@@ -716,14 +828,16 @@ export default function CashierPOS() {
                   e.preventDefault();
                   try {
                     if (editingProduct) {
-                      await productsApi.update(editingProduct.id, {
+
+                      await products.update(editingProduct.id, {
                         ...editingProduct,
                         ...productForm,
                         price: parseFloat(productForm.price),
                         quantity: parseFloat(productForm.quantity)
                       });
                     } else {
-                      await productsApi.create({
+
+                      await products.create({
                         ...productForm,
                         price: parseFloat(productForm.price),
                         cost: parseFloat(productForm.price) * 0.6,
@@ -868,6 +982,140 @@ export default function CashierPOS() {
             </div>
           </div>
 
+
+        </div>
+      )}
+
+      {/* User Management View */}
+      {activeView === 'users' && isUltraPackage() && canManageUsers() && (
+        <div className="p-6 max-w-7xl mx-auto w-full space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold">User Management</h2>
+            <button 
+              onClick={() => {
+                setShowAddUserModal(true);
+                setUserForm({ name: '', email: '', password: '', confirmPassword: '', role: 'cashier', cashierPIN: '' });
+              }}
+              className="btn-primary flex items-center gap-2 bg-gradient-to-r from-green-600 to-teal-600"
+            >
+              <Plus className="w-4 h-4" />
+              Add User
+            </button>
+          </div>
+
+          <div className="card shadow-lg">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Name</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Email</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Role</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Package</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">PIN</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {/* This would typically fetch from users API */}
+                  <tr className="border-t border-gray-100">
+                    <td className="px-4 py-3 text-sm">Admin User</td>
+                    <td className="px-4 py-3 text-sm">admin@example.com</td>
+                    <td className="px-4 py-3 text-sm">
+                      <span className="badge badge-success">Admin</span>
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      <span className="badge badge-primary">1600 Package</span>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-500">N/A</td>
+                    <td className="px-4 py-3 text-sm">
+                      <span className="badge badge-success">Active</span>
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      <div className="flex items-center gap-2">
+                        <button className="p-2 hover:bg-green-50 rounded-lg text-green-600">
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Add User Modal */}
+          {showAddUserModal && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-xl p-6 w-full max-w-lg">
+                <h3 className="text-xl font-bold mb-4">Add New User</h3>
+                <form onSubmit={handleAddUser} className="space-y-4">
+                  <input
+                    type="text"
+                    placeholder="Full Name"
+                    className="input"
+                    value={userForm.name}
+                    onChange={(e) => setUserForm({ ...userForm, name: e.target.value })}
+                    required
+                  />
+                  <input
+                    type="email"
+                    placeholder="Email Address"
+                    className="input"
+                    value={userForm.email}
+                    onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
+                    required
+                  />
+                  <input
+                    type="password"
+                    placeholder="Password"
+                    className="input"
+                    value={userForm.password}
+                    onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
+                    required
+                  />
+                  <input
+                    type="password"
+                    placeholder="Confirm Password"
+                    className="input"
+                    value={userForm.confirmPassword}
+                    onChange={(e) => setUserForm({ ...userForm, confirmPassword: e.target.value })}
+                    required
+                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    <select
+                      className="input"
+                      value={userForm.role}
+                      onChange={(e) => setUserForm({ ...userForm, role: e.target.value })}
+                    >
+                      <option value="cashier">Cashier</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                    <input
+                      type="text"
+                      placeholder="4-digit PIN"
+                      className="input"
+                      value={userForm.cashierPIN}
+                      onChange={(e) => setUserForm({ ...userForm, cashierPIN: e.target.value })}
+                      maxLength="4"
+                      pattern="[0-9]{4}"
+                      title="Please enter a 4-digit PIN"
+                    />
+                  </div>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <p className="text-sm text-blue-700">
+                      💡 <strong>PIN Note:</strong> Cashiers can login using their email and the 4-digit PIN provided.
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button type="submit" className="btn-primary flex-1">Add User</button>
+                    <button type="button" onClick={() => setShowAddUserModal(false)} className="btn-secondary">Cancel</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

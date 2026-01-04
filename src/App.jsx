@@ -1,160 +1,137 @@
-
-
-import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { initializeStorage, setupCrossTabSync, refreshData } from './utils/localStorage';
+import { ProductsProvider } from './context/ProductsContext';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import PaymentInput from './pages/PaymentInput';
+import BasicDashboard from './pages/BasicDashboard';
 import Landing from './pages/Landing';
 import Auth from './pages/Auth';
 import Subscription from './pages/Subscription';
-import AdminDashboard from './pages/admin/AdminDashboard';
-import CashierPOS from './pages/cashier/CashierPOS';
-import CashierSettings from './pages/cashier/CashierSettings';
-import MainAdmin from './pages/MainAdmin';
-import ErrorBoundary from './components/ErrorBoundary';
+import CashierPOS from './pages/CashierPOS';
+import MainAdminLogin from './pages/MainAdminLogin';
+import MainAdminDashboard from './pages/MainAdminDashboard';
+import ReminderModal from './components/ReminderModal';
+import ScreenLock from './components/ScreenLock';
+import useInactivity from './hooks/useInactivity';
+import { useState, useEffect } from 'react';
 
-// Loading component
-function LoadingScreen() {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-center justify-center">
-      <div className="text-center">
-        <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg animate-pulse">
-          <span className="text-2xl font-bold text-white">POS</span>
-        </div>
-        <p className="text-gray-600">Loading...</p>
+function ProtectedRoute({ children, adminOnly = false, ultraOnly = false, ownerOnly = false }) {
+  const { user, loading } = useAuth();
+  const [showReminders, setShowReminders] = useState(false);
+  const inactivityResult = useInactivity(60000); // 1 minute for all dashboards
+  const isLocked = inactivityResult?.[0] || false;
+  const unlock = inactivityResult?.[1] || (() => {});
+  const [settings, setSettings] = useState({});
+  
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:5002/api' : '/api';
+        const res = await fetch(`${API_URL}/settings`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setSettings(data);
+        }
+      } catch (error) {
+        console.error('Failed to load settings:', error);
+      }
+    };
+    
+    if (user && !ownerOnly) {
+      loadSettings();
+      setShowReminders(true);
+    }
+  }, [user, ownerOnly]);
+  
+  if (loading && !ownerOnly) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
-    </div>
+    );
+  }
+  
+  // Owner route protection (main.admin)
+  if (ownerOnly) {
+    const ownerToken = localStorage.getItem('ownerToken');
+    const ownerUser = localStorage.getItem('ownerUser');
+    if (!ownerToken || !ownerUser) {
+      return <Navigate to="/main.admin" />;
+    }
+    try {
+      const userData = JSON.parse(ownerUser);
+      if (userData.type !== 'main_admin') {
+        return <Navigate to="/main.admin" />;
+      }
+    } catch (e) {
+      return <Navigate to="/main.admin" />;
+    }
+  } else {
+    // Regular route protection
+    if (!user) return <Navigate to="/auth/login" />;
+    if (!user.active) return <Navigate to="/plans" />;
+    if (adminOnly && user.role !== 'admin') return <Navigate to="/dashboard" />;
+    if (ultraOnly && (user.role !== 'admin' || user.plan !== 'ultra')) return <Navigate to="/dashboard" />;
+  }
+  
+  const userType = ownerOnly ? 'owner' : 'user';
+  
+  return (
+    <>
+      {isLocked && <ScreenLock onUnlock={unlock} userType={userType} />}
+      {showReminders && <ReminderModal onClose={() => setShowReminders(false)} />}
+      {children}
+    </>
   );
 }
 
-
-function ProtectedRoute({ children, adminOnly = false }) {
-  const { user, loading, isInitialized } = useAuth();
-  
-  // Wait for auth to initialize before making routing decisions
-  if (!isInitialized || loading) {
-    return <LoadingScreen />;
-  }
-  
-  // Check if user is authenticated
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-  
-  // For admin-only routes, check if user has admin access
-  if (adminOnly) {
-    // First check localStorage for the most up-to-date user data
-    const storedUser = localStorage.getItem('user');
-    let currentUser = user;
-    
-    if (storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        currentUser = { ...user, ...parsedUser };
-      } catch (error) {
-        console.warn('Error parsing stored user data:', error);
-      }
-    }
-    
-    const isAdmin = currentUser.plan === 'ultra' || currentUser.role === 'admin';
-    const hasValidSubscription = currentUser.active && currentUser.plan;
-    
-    if (!isAdmin || !hasValidSubscription) {
-      console.log('Access denied - User does not have admin privileges:', currentUser);
-      
-      // If user has ultra plan but wrong role, try to fix it
-      if (currentUser.plan === 'ultra' && currentUser.role !== 'admin') {
-        currentUser.role = 'admin';
-        currentUser.active = true;
-        localStorage.setItem('user', JSON.stringify(currentUser));
-        window.dispatchEvent(new Event('storage'));
-        
-        // Return children if we just fixed the role
-        return children;
-      }
-      
-      return <Navigate to="/cashier" replace />;
-    }
-  }
-  
-  return children;
-}
-
 function DashboardRouter() {
-  const { user, loading, isInitialized } = useAuth();
+  const { user } = useAuth();
   
-  // Wait for auth to initialize
-  if (!isInitialized || loading) {
-    return <LoadingScreen />;
+  if (!user || !user.active) return <Navigate to="/plans" />;
+  
+  // Ultra plan users go to admin dashboard
+  if (user.plan === 'ultra' && user.role === 'admin') {
+    return <Navigate to="/admin" />;
   }
   
-  // If no user, redirect to login
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-  
-  // If user doesn't have an active subscription, redirect to subscription page
-  if (!user.active || !user.plan) {
-    return <Navigate to="/subscription" replace />;
-  }
-  
-  // Route based on user's plan and role
-  const isAdmin = user.plan === 'ultra' || user.role === 'admin';
-  
-  if (isAdmin) {
-    return <Navigate to="/admin" replace />;
-  }
-  
-  return <Navigate to="/cashier" replace />;
+  // All others go to cashier dashboard
+  return <Navigate to="/dashboard/cashier" />;
 }
-
-
-
 
 function App() {
-  // Initialize localStorage and set up cross-tab synchronization
-  useEffect(() => {
-    // Initialize localStorage with default data if not exists
-    initializeStorage();
-    
-    // Set up cross-tab synchronization
-    const cleanup = setupCrossTabSync();
-    
-    // Set up data refresh on localStorage changes
-    const handleDataChange = (event) => {
-      if (event.detail?.key) {
-        console.log(`Data changed, refreshing: ${event.detail.key}`);
-        refreshData(event.detail.key);
-      }
-    };
-    
-    window.addEventListener('localStorageDataChanged', handleDataChange);
-    
-    // Clean up event listeners on unmount
-    return () => {
-      cleanup();
-      window.removeEventListener('localStorageDataChanged', handleDataChange);
-    };
-  }, []);
-
   return (
-    <ErrorBoundary>
-      <AuthProvider>
-        <BrowserRouter>
+    <AuthProvider>
+      <ProductsProvider>
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <Routes>
             <Route path="/" element={<Landing />} />
-            <Route path="/login" element={<Auth />} />
-            <Route path="/signup" element={<Auth />} />
-            <Route path="/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} />
+            <Route path="/auth/login" element={<Auth />} />
+            <Route path="/auth/signup" element={<Auth />} />
+            <Route path="/plans" element={<Subscription />} />
+            
+            {/* Owner Main Admin Routes - Hidden from normal users */}
+            <Route path="/main.admin" element={<MainAdminLogin />} />
+            <Route path="/main.admin/dashboard" element={<ProtectedRoute ownerOnly><MainAdminDashboard /></ProtectedRoute>} />
+            
+            {/* Regular User Routes */}
             <Route path="/dashboard" element={<ProtectedRoute><DashboardRouter /></ProtectedRoute>} />
+            <Route path="/dashboard/cashier" element={<ProtectedRoute><CashierPOS /></ProtectedRoute>} />
             <Route path="/admin/*" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
-            <Route path="/cashier" element={<ProtectedRoute><CashierPOS /></ProtectedRoute>} />
-            <Route path="/cashier/settings" element={<ProtectedRoute><CashierSettings /></ProtectedRoute>} />
-            <Route path="/main.admin" element={<MainAdmin />} />
+            
+            {/* Legacy redirects */}
+            <Route path="/login" element={<Navigate to="/auth/login" />} />
+            <Route path="/signup" element={<Navigate to="/auth/signup" />} />
+            <Route path="/subscription" element={<Navigate to="/plans" />} />
+            <Route path="/payment" element={<Navigate to="/plans" />} />
+            <Route path="/cashier" element={<Navigate to="/dashboard/cashier" />} />
           </Routes>
         </BrowserRouter>
-      </AuthProvider>
-    </ErrorBoundary>
+      </ProductsProvider>
+    </AuthProvider>
   );
 }
 

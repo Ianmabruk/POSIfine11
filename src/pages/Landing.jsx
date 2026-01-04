@@ -118,10 +118,10 @@ export default function Landing() {
               <span className="text-2xl font-bold text-white">POSify</span>
             </div>
             <div className="flex items-center gap-4">
-              <button onClick={() => navigate('/login')} className="text-white hover:text-blue-100 font-medium">
+              <button onClick={() => navigate('/auth/login')} className="text-white hover:text-blue-100 font-medium">
                 Login
               </button>
-              <button onClick={() => navigate('/signup')} className="bg-white text-blue-600 px-6 py-2 rounded-lg font-semibold hover:shadow-lg transition-all">
+              <button onClick={() => navigate('/plans')} className="bg-white text-blue-600 px-6 py-2 rounded-lg font-semibold hover:shadow-lg transition-all">
                 Get Started
               </button>
             </div>
@@ -146,7 +146,7 @@ export default function Landing() {
           
           <div className="flex items-center justify-center gap-4">
             <button 
-              onClick={() => navigate('/signup')}
+              onClick={() => navigate('/plans')}
               className="bg-white text-blue-600 px-8 py-4 rounded-xl font-bold text-lg hover:shadow-2xl transform hover:scale-105 transition-all flex items-center gap-2"
             >
               Start Free Trial
@@ -257,7 +257,7 @@ export default function Landing() {
                   </ul>
 
                   <button 
-                    onClick={() => navigate('/signup')}
+                    onClick={() => navigate('/plans')}
                     className={`w-full py-4 rounded-xl font-bold text-lg transition-all ${
                       plan.popular 
                         ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:shadow-xl transform hover:scale-105' 
@@ -307,7 +307,7 @@ export default function Landing() {
             Join hundreds of businesses already using POSify to streamline their operations
           </p>
           <button 
-            onClick={() => navigate('/signup')}
+            onClick={() => navigate('/plans')}
             className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-12 py-4 rounded-xl font-bold text-lg hover:shadow-2xl transform hover:scale-105 transition-all inline-flex items-center gap-2"
           >
             Start Your Free Trial
@@ -387,7 +387,7 @@ export default function Landing() {
                   </button>
                 ) : (
                   <button
-                    onClick={() => { setShowDemo(false); setDemoStep(0); navigate('/signup'); }}
+                    onClick={() => { setShowDemo(false); setDemoStep(0); navigate('/plans'); }}
                     className="btn-primary bg-gradient-to-r from-blue-600 to-purple-600 flex items-center gap-2"
                   >
                     Get Started Now

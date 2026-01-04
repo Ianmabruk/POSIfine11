@@ -12,7 +12,7 @@ export default function ServiceFeeSelector({ onApply }) {
   const fetchFees = async () => {
     try {
       const token = localStorage.getItem('token');
-      const API_URL = import.meta.env.PROD ? '/api' : 'http://localhost:5001/api';
+      const API_URL = import.meta.env.PROD ? '/api' : 'http://localhost:5002/api';
       const res = await fetch(`${API_URL}/service-fees`, {
         headers: { Authorization: `Bearer ${token}` }
       });

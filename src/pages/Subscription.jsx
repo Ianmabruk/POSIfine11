@@ -1,18 +1,18 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { Check, Crown, Zap } from 'lucide-react';
+import { Check, Crown, Zap, ArrowLeft } from 'lucide-react';
 
 export default function Subscription() {
   const [selected, setSelected] = useState('ultra');
+  const [showDemoForm, setShowDemoForm] = useState(false);
+  const [demoData, setDemoData] = useState({ name: '', email: '', company: '' });
   const navigate = useNavigate();
-  const { user, updateUser } = useAuth();
 
   const plans = [
     {
       id: 'basic',
       name: 'Basic Package',
-      price: 900,
+      price: 1000,
       icon: Zap,
       color: 'from-green-500 to-teal-600',
       features: [
@@ -29,7 +29,7 @@ export default function Subscription() {
     {
       id: 'ultra',
       name: 'Ultra Package',
-      price: 1600,
+      price: 2400,
       icon: Crown,
       color: 'from-blue-600 to-purple-600',
       popular: true,
@@ -52,60 +52,48 @@ export default function Subscription() {
 
 
   const handleSubscribe = async () => {
+    console.log('handleSubscribe called with selected:', selected);
+    const plan = plans.find(p => p.id === selected);
+    console.log('Found plan:', plan);
     try {
-      const plan = plans.find(p => p.id === selected);
-      
-      // Step 1: Create updated user object
-      const updatedUser = { 
-        ...user, 
-        role: selected === 'ultra' ? 'admin' : 'cashier', 
-        plan: selected, 
-        price: plan.price, 
-        active: true,
-        packageType: selected // Store package type for reference
-      };
-
-      // Step 2: Update localStorage synchronously FIRST
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-
-      // Step 3: Force trigger storage event to update all contexts
-      window.dispatchEvent(new Event('storage'));
-      window.dispatchEvent(new Event('localStorageUpdated'));
-      
-      // Step 4: Update auth context
-      await updateUser(updatedUser).catch(err => {
-        console.warn('Auth context update failed, but localStorage updated:', err);
-      });
-      
-      // Step 5: Add delay for state sync
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Step 6: Navigate to appropriate dashboard based on package
-      let targetPath;
-      if (selected === 'ultra') {
-        // Ultra package: Admin dashboard first
-        targetPath = '/admin';
-      } else {
-        // Basic package: Direct to cashier dashboard
-        targetPath = '/cashier';
-      }
-      
-      // Use window.location.href for more reliable redirect in production
-      if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-        window.location.href = targetPath;
-      } else {
-        navigate(targetPath, { replace: true });
-      }
-      
+      localStorage.setItem('selectedPlan', JSON.stringify(plan));
+      navigate('/auth/login', { state: { plan } });
+      console.log('Navigation attempted to /auth/login');
     } catch (error) {
-      console.error('Subscription error:', error);
-      alert('Failed to update subscription. Please try again.');
+      console.error('Navigation error:', error);
+    }
+  };
+
+  const handleDemoRequest = async (e) => {
+    e.preventDefault();
+    try {
+      const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:5002/api' : '/api';
+      await fetch(`${API_URL}/demo-requests`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(demoData)
+      });
+      alert('Demo request submitted! Admin will review and contact you.');
+      setShowDemoForm(false);
+      setDemoData({ name: '', email: '', company: '' });
+    } catch (error) {
+      console.error('Demo request failed:', error);
+      alert('Failed to submit demo request. Please try again.');
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 py-6 md:py-12 px-4 md:px-6">
       <div className="max-w-6xl mx-auto">
+        <div className="flex items-center gap-4 mb-8">
+          <button 
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition"
+          >
+            <ArrowLeft size={20} />
+            Back to Home
+          </button>
+        </div>
         <div className="text-center mb-8 md:mb-12 animate-fade-in">
           <h1 className="text-3xl md:text-5xl font-bold mb-3 md:mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
             Choose Your Plan
@@ -159,15 +147,86 @@ export default function Subscription() {
           })}
         </div>
 
-        <div className="text-center animate-fade-in">
+        <div className="flex flex-col md:flex-row gap-4 items-center justify-center animate-fade-in">
           <button 
-            onClick={handleSubscribe} 
-            className="btn-primary w-full md:w-auto px-8 md:px-12 py-3 md:py-4 text-base md:text-lg bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
+            onClick={() => {
+              console.log('Get Started clicked with plan:', selected);
+              const plan = plans.find(p => p.id === selected);
+              console.log('Selected plan:', plan);
+              localStorage.setItem('selectedPlan', JSON.stringify(plan));
+              navigate('/auth/signup');
+            }}
+            className="btn-primary px-8 md:px-12 py-3 md:py-4 text-base md:text-lg bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
           >
-            Continue to Dashboard
+            Get Started
           </button>
-          <p className="text-xs md:text-sm text-gray-500 mt-3 md:mt-4">Start your journey today • Cancel anytime</p>
+          <button 
+            onClick={() => setShowDemoForm(true)}
+            className="btn-secondary px-8 md:px-12 py-3 md:py-4 text-base md:text-lg border-2 border-gray-300 hover:border-gray-400 transition-all"
+          >
+            Request Free Demo
+          </button>
         </div>
+        <p className="text-xs md:text-sm text-gray-500 mt-3 md:mt-4 text-center">Secure payment • Cancel anytime</p>
+
+        {/* Demo Request Modal */}
+        {showDemoForm && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+              <div className="bg-gradient-to-r from-green-600 to-teal-600 p-6 text-white rounded-t-2xl">
+                <h2 className="text-2xl font-bold">Request Free Demo</h2>
+                <p className="text-green-100 text-sm mt-1">We'll contact you to schedule a demo</p>
+              </div>
+              <form onSubmit={handleDemoRequest} className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Full Name</label>
+                  <input
+                    type="text"
+                    value={demoData.name}
+                    onChange={(e) => setDemoData({ ...demoData, name: e.target.value })}
+                    className="w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-green-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Email Address</label>
+                  <input
+                    type="email"
+                    value={demoData.email}
+                    onChange={(e) => setDemoData({ ...demoData, email: e.target.value })}
+                    className="w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-green-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Company Name</label>
+                  <input
+                    type="text"
+                    value={demoData.company}
+                    onChange={(e) => setDemoData({ ...demoData, company: e.target.value })}
+                    className="w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-green-500"
+                    placeholder="Optional"
+                  />
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    type="submit"
+                    className="flex-1 bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 transition"
+                  >
+                    Submit Request
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowDemoForm(false)}
+                    className="px-6 bg-gray-200 text-gray-700 py-3 rounded-lg font-bold hover:bg-gray-300 transition"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-const jwt = require('jsonwebtoken');
+import jwt from 'jsonwebtoken';
 
 const SECRET_KEY = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
@@ -40,7 +40,7 @@ const tokenRequired = (handler) => async (req, res) => {
   }
 };
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -50,7 +50,7 @@ module.exports = async (req, res) => {
     return res.status(200).end();
   }
 
-  const path = req.query.path ? `/${req.query.path.join('/')}` : '/';
+  const path = req.query.path ? `/${Array.isArray(req.query.path) ? req.query.path.join('/') : req.query.path}` : '/';
   const method = req.method;
   const body = req.body || {};
 
@@ -421,3 +421,4 @@ module.exports = async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 };
+
