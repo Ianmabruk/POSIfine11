@@ -2,13 +2,11 @@
 // Updated API Service Layer - Connected to Deployed Backend
 
 const getBaseUrl = () => {
-  // Use environment variable for backend URL
-  const envUrl = import.meta.env.VITE_API_URL;
-  if (envUrl) {
-    return envUrl;
+  // Production: Use Railway backend URL
+  if (import.meta.env.PROD) {
+    return 'https://web-production-f4c8.up.railway.app/api';
   }
-  
-  // Fallback to Flask backend development URL (port 5002)
+  // Development: Use local backend
   return 'http://localhost:5002/api';
 };
 
