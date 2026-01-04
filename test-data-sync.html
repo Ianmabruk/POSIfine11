@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Synchronization Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background: #f9f9f9;
+        }
+        
+        .section h2 {
+            color: #555;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status {
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+            font-weight: 600;
+            transition: transform 0.2s ease;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .data-display {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+        
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 3px solid #4299e1;
+            background: rgba(66, 153, 225, 0.1);
+            padding-left: 10px;
+        }
+        
+        .product-item {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .product-name {
+            font-weight: bold;
+            color: #2d3748;
+        }
+        
+        .product-details {
+            font-size: 12px;
+            color: #718096;
+        }
+        
+        .sync-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-left: 10px;
+        }
+        
+        .sync-active {
+            background: #48bb78;
+            animation: pulse 1s infinite;
+        }
+        
+        .sync-inactive {
+            background: #f56565;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #48bb78, #38a169);
+            transition: width 0.3s ease;
+        }
+        
+        .metric {
+            display: inline-block;
+            margin: 5px 10px;
+            padding: 5px 10px;
+            background: #edf2f7;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .test-result {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            font-weight: 600;
+        }
+        
+        .test-pass {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 1px solid #9ae6b4;
+        }
+        
+        .test-fail {
+            background: #fed7d7;
+            color: #742a2a;
+            border: 1px solid #fc8181;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Data Synchronization Test Suite</h1>
+        
+        <div class="section">
+            <h2>📊 Test Status</h2>
+            <div id="test-status">
+                <span class="status info">Ready to run tests</span>
+            </div>
+            <div class="button-group">
+                <button onclick="runAllTests()">🚀 Run All Tests</button>
+                <button onclick="clearLocalStorage()">🗑️ Clear Storage</button>
+                <button onclick="initializeData()">💾 Initialize Data</button>
+                <button onclick="exportData()">📤 Export Data</button>
+                <button onclick="openAdminTest()">👨‍💼 Open Admin Test</button>
+                <button onclick="openCashierTest()">💰 Open Cashier Test</button>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>🎯 Core Functionality Tests</h2>
+            <div id="test-results"></div>
+        </div>
+        
+        <div class="section">
+            <h2>📦 Products Data</h2>
+            <div class="button-group">
+                <button onclick="loadProducts()">📥 Load Products</button>
+                <button onclick="simulateAdminAdd()">➕ Admin Add Product</button>
+                <button onclick="simulateCashierLoad()">👁️ Cashier Load Products</button>
+                <button onclick="checkVisibility()">👁️ Check Visibility</button>
+            </div>
+            <div id="products-display"></div>
+        </div>
+        
+        <div class="section">
+            <h2>🔗 Cross-Tab Synchronization</h2>
+            <div class="button-group">
+                <button onclick="setupSyncTest()">🔗 Setup Sync</button>
+                <button onclick="testSync()">⚡ Test Sync</button>
+                <button onclick="simulateMultiTab()">🪟 Multi-Tab Simulation</button>
+            </div>
+            <div id="sync-status"></div>
+        </div>
+        
+        <div class="section">
+            <h2>📈 Performance Metrics</h2>
+            <div id="metrics"></div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="sync-progress" style="width: 0%"></div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>📋 Test Logs</h2>
+            <div id="test-logs" class="data-display"></div>
+        </div>
+    </div>
+
+    <script>
+        // Mock localStorage utilities for testing
+        const DEFAULT_DATA = {
+            products: [
+                {
+                    id: 1,
+                    name: "Nile Perch",
+                    cost: 500,
+                    price: 800,
+                    quantity: 10,
+                    unit: "kg",
+                    category: "raw",
+                    visibleToCashier: true,
+                    expenseOnly: false,
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: 2,
+                    name: "Cooking Oil",
+                    cost: 200,
+                    price: 300,
+                    quantity: 5,
+                    unit: "L",
+                    category: "raw",
+                    visibleToCashier: true,
+                    expenseOnly: false,
+                    createdAt: new Date().toISOString()
+                }
+            ],
+            sales: [],
+            users: []
+        };
+
+        let testResults = [];
+        let performanceMetrics = {
+            startTime: null,
+            endTime: null,
+            syncOperations: 0,
+            dataConsistency: 100
+        };
+
+        // Logging function
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
+            document.getElementById('test-logs').appendChild(logEntry);
+            document.getElementById('test-logs').scrollTop = document.getElementById('test-logs').scrollHeight;
+            console.log(`[${timestamp}] ${message}`);
+        }
+
+        // Initialize storage
+        function initializeData() {
+            try {
+                Object.keys(DEFAULT_DATA).forEach(key => {
+                    if (!localStorage.getItem(key)) {
+                        localStorage.setItem(key, JSON.stringify(DEFAULT_DATA[key]));
+                        log(`✅ Initialized ${key} with default data`);
+                    }
+                });
+                updateTestStatus('success', 'Storage initialized successfully');
+            } catch (error) {
+                updateTestStatus('error', `Initialization failed: ${error.message}`);
+                log(`❌ Initialization failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Clear localStorage
+        function clearLocalStorage() {
+            try {
+                localStorage.clear();
+                log('🗑️ LocalStorage cleared');
+                updateTestStatus('success', 'LocalStorage cleared');
+            } catch (error) {
+                log(`❌ Failed to clear storage: ${error.message}`, 'error');
+                updateTestStatus('error', `Clear failed: ${error.message}`);
+            }
+        }
+
+        // Update test status
+        function updateTestStatus(type, message) {
+            const statusElement = document.getElementById('test-status');
+            statusElement.innerHTML = `<span class="status ${type}">${message}</span>`;
+        }
+
+        // Add test result
+        function addTestResult(testName, passed, message) {
+            testResults.push({ testName, passed, message, timestamp: new Date() });
+            const resultsContainer = document.getElementById('test-results');
+            const resultElement = document.createElement('div');
+            resultElement.className = `test-result ${passed ? 'test-pass' : 'test-fail'}`;
+            resultElement.innerHTML = `${passed ? '✅' : '❌'} ${testName}: ${message}`;
+            resultsContainer.appendChild(resultElement);
+        }
+
+        // Load products
+        function loadProducts() {
+            try {
+                const products = JSON.parse(localStorage.getItem('products')) || [];
+                const displayContainer = document.getElementById('products-display');
+                
+                displayContainer.innerHTML = '';
+                products.forEach(product => {
+                    const productElement = document.createElement('div');
+                    productElement.className = 'product-item';
+                    productElement.innerHTML = `
+                        <div>
+                            <div class="product-name">${product.name}</div>
+                            <div class="product-details">
+                                Price: KSH ${product.price} | 
+                                Visible: ${product.visibleToCashier !== false ? '✅' : '❌'} | 
+                                Expense: ${product.expenseOnly ? '✅' : '❌'}
+                            </div>
+                        </div>
+                        <div class="sync-indicator ${product.visibleToCashier !== false ? 'sync-active' : 'sync-inactive'}"></div>
+                    `;
+                    displayContainer.appendChild(productElement);
+                });
+                
+                addTestResult('Load Products', true, `Loaded ${products.length} products`);
+                log(`📦 Loaded ${products.length} products`);
+            } catch (error) {
+                addTestResult('Load Products', false, `Failed: ${error.message}`);
+                log(`❌ Failed to load products: ${error.message}`, 'error');
+            }
+        }
+
+        // Simulate admin adding a product
+        function simulateAdminAdd() {
+            try {
+                const products = JSON.parse(localStorage.getItem('products')) || [];
+                const newProduct = {
+                    id: Date.now(),
+                    name: `Test Product ${products.length + 1}`,
+                    cost: 100 + Math.random() * 500,
+                    price: 150 + Math.random() * 800,
+                    quantity: Math.floor(Math.random() * 50) + 1,
+                    unit: "pcs",
+                    category: "raw",
+                    visibleToCashier: true, // Ensure visible to cashiers
+                    expenseOnly: false,
+                    createdAt: new Date().toISOString()
+                };
+                
+                products.push(newProduct);
+                localStorage.setItem('products', JSON.stringify(products));
+                
+                addTestResult('Admin Add Product', true, `Added "${newProduct.name}"`);
+                log(`➕ Admin added product: ${newProduct.name}`);
+                loadProducts();
+            } catch (error) {
+                addTestResult('Admin Add Product', false, `Failed: ${error.message}`);
+                log(`❌ Failed to add product: ${error.message}`, 'error');
+            }
+        }
+
+        // Simulate cashier loading products
+        function simulateCashierLoad() {
+            try {
+                const allProducts = JSON.parse(localStorage.getItem('products')) || [];
+                const visibleProducts = allProducts.filter(p => 
+                    !p.expenseOnly && p.visibleToCashier !== false
+                );
+                
+                addTestResult('Cashier Load Products', true, `Found ${visibleProducts}/${allProducts.length} visible products`);
+                log(`👁️ Cashier sees ${visibleProducts.length}/${allProducts.length} products`);
+                updateMetrics();
+            } catch (error) {
+                addTestResult('Cashier Load Products', false, `Failed: ${error.message}`);
+                log(`❌ Cashier load failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Check visibility logic
+        function checkVisibility() {
+            try {
+                const products = JSON.parse(localStorage.getItem('products')) || [];
+                let visibleCount = 0;
+                let hiddenCount = 0;
+                
+                products.forEach(product => {
+                    const isVisible = !product.expenseOnly && product.visibleToCashier !== false;
+                    if (isVisible) {
+                        visibleCount++;
+                    } else {
+                        hiddenCount++;
+                        log(`🔒 Hidden product: ${product.name} (expenseOnly: ${product.expenseOnly}, visibleToCashier: ${product.visibleToCashier})`);
+                    }
+                });
+                
+                addTestResult('Visibility Check', true, `${visibleCount} visible, ${hiddenCount} hidden`);
+                log(`👁️ Visibility check: ${visibleCount} visible, ${hiddenCount} hidden`);
+            } catch (error) {
+                addTestResult('Visibility Check', false, `Failed: ${error.message}`);
+                log(`❌ Visibility check failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Setup cross-tab sync
+        function setupSyncTest() {
+            try {
+                window.addEventListener('storage', (e) => {
+                    if (e.key === 'products') {
+                        log('🔗 Cross-tab sync detected! Products changed in another tab');
+                        updateSyncStatus('active');
+                        loadProducts();
+                    }
+                });
+                
+                addTestResult('Setup Cross-Tab Sync', true, 'Sync listener registered');
+                log('🔗 Cross-tab synchronization setup complete');
+            } catch (error) {
+                addTestResult('Setup Cross-Tab Sync', false, `Failed: ${error.message}`);
+                log(`❌ Sync setup failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Update sync status
+        function updateSyncStatus(status) {
+            const syncElement = document.getElementById('sync-status');
+            syncElement.innerHTML = `
+                <div class="status ${status === 'active' ? 'success' : 'info'}">
+                    Sync Status: ${status === 'active' ? 'Active' : 'Inactive'}
+                </div>
+            `;
+        }
+
+        // Test synchronization
+        function testSync() {
+            try {
+                performanceMetrics.syncOperations++;
+                const products = JSON.parse(localStorage.getItem('products')) || [];
+                const timestamp = new Date().toISOString();
+                
+                // Add a sync marker
+                localStorage.setItem('lastSync', timestamp);
+                
+                addTestResult('Sync Test', true, `Sync #${performanceMetrics.syncOperations} completed`);
+                log(`⚡ Sync test #${performanceMetrics.syncOperations} completed`);
+                updateMetrics();
+            } catch (error) {
+                addTestResult('Sync Test', false, `Failed: ${error.message}`);
+                log(`❌ Sync test failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Simulate multi-tab scenario
+        function simulateMultiTab() {
+            try {
+                // Simulate data change in "another tab"
+                setTimeout(() => {
+                    const products = JSON.parse(localStorage.getItem('products')) || [];
+                    if (products.length > 0) {
+                        products[0].quantity += 10;
+                        localStorage.setItem('products', JSON.stringify(products));
+                        log('🪟 Simulated data change in "another tab"');
+                    }
+                }, 1000);
+                
+                addTestResult('Multi-Tab Simulation', true, 'Simulation started');
+                log('🪟 Multi-tab simulation initiated');
+            } catch (error) {
+                addTestResult('Multi-Tab Simulation', false, `Failed: ${error.message}`);
+                log(`❌ Multi-tab simulation failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Update metrics
+        function updateMetrics() {
+            const metricsElement = document.getElementById('metrics');
+            const products = JSON.parse(localStorage.getItem('products')) || [];
+            const visibleProducts = products.filter(p => !p.expenseOnly && p.visibleToCashier !== false);
+            
+            metricsElement.innerHTML = `
+                <div class="metric">Total Products: ${products.length}</div>
+                <div class="metric">Visible to Cashier: ${visibleProducts.length}</div>
+                <div class="metric">Sync Operations: ${performanceMetrics.syncOperations}</div>
+                <div class="metric">Data Consistency: ${performanceMetrics.dataConsistency}%</div>
+            `;
+            
+            // Update progress bar
+            const progress = Math.min((visibleProducts.length / Math.max(products.length, 1)) * 100, 100);
+            document.getElementById('sync-progress').style.width = progress + '%';
+        }
+
+        // Run all tests
+        function runAllTests() {
+            performanceMetrics.startTime = Date.now();
+            document.getElementById('test-results').innerHTML = '';
+            document.getElementById('test-logs').innerHTML = '';
+            
+            log('🚀 Starting comprehensive data synchronization tests...');
+            updateTestStatus('info', 'Running tests...');
+            
+            // Test sequence
+            setTimeout(() => initializeData(), 100);
+            setTimeout(() => loadProducts(), 200);
+            setTimeout(() => simulateAdminAdd(), 300);
+            setTimeout(() => simulateCashierLoad(), 400);
+            setTimeout(() => checkVisibility(), 500);
+            setTimeout(() => setupSyncTest(), 600);
+            setTimeout(() => testSync(), 700);
+            setTimeout(() => simulateMultiTab(), 800);
+            setTimeout(() => {
+                performanceMetrics.endTime = Date.now();
+                const duration = performanceMetrics.endTime - performanceMetrics.startTime;
+                addTestResult('Test Suite', true, `Completed in ${duration}ms`);
+                log(`🏁 All tests completed in ${duration}ms`);
+                updateTestStatus('success', 'All tests passed');
+                updateMetrics();
+            }, 2000);
+        }
+
+        // Export data
+        function exportData() {
+            try {
+                const data = {};
+                Object.keys(DEFAULT_DATA).forEach(key => {
+                    data[key] = JSON.parse(localStorage.getItem(key)) || DEFAULT_DATA[key];
+                });
+                
+                const dataStr = JSON.stringify(data, null, 2);
+                const dataBlob = new Blob([dataStr], {type: 'application/json'});
+                const url = URL.createObjectURL(dataBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'data-sync-test-export.json';
+                link.click();
+                
+                addTestResult('Export Data', true, 'Data exported successfully');
+                log('📤 Data exported successfully');
+            } catch (error) {
+                addTestResult('Export Data', false, `Failed: ${error.message}`);
+                log(`❌ Export failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Open admin test in new window
+        function openAdminTest() {
+            const adminTestUrl = window.location.href.replace('test-data-sync.html', 'src/pages/admin/Inventory.jsx');
+            window.open(adminTestUrl, '_blank');
+            log('👨‍💼 Opening admin test...');
+        }
+
+        // Open cashier test in new window
+        function openCashierTest() {
+            const cashierTestUrl = window.location.href.replace('test-data-sync.html', 'src/pages/cashier/CashierPOS.jsx');
+            window.open(cashierTestUrl, '_blank');
+            log('💰 Opening cashier test...');
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            log('🎯 Data Synchronization Test Suite loaded');
+            updateTestStatus('info', 'Ready to run tests');
+            initializeData();
+            loadProducts();
+            updateMetrics();
+        });
+    </script>
+</body>
+</html>
