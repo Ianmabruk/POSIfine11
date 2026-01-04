@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Lock, Shield, Eye, EyeOff } from 'lucide-react';
+import { settings } from '../services/api';
 
 export default function ScreenLock({ onUnlock, userType = 'user' }) {
   const [password, setPassword] = useState('');
@@ -8,8 +9,24 @@ export default function ScreenLock({ onUnlock, userType = 'user' }) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [screenLockPassword, setScreenLockPassword] = useState('admin123');
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+  useEffect(() => {
+    // Load screen lock password from settings
+    const loadSettings = async () => {
+      try {
+        const settingsData = await settings.get();
+        if (settingsData.screenLockPassword) {
+          setScreenLockPassword(settingsData.screenLockPassword);
+        }
+      } catch (error) {
+        console.warn('Failed to load settings:', error);
+      }
+    };
+    loadSettings();
+  }, []);
 
   useEffect(() => {
     const input = document.getElementById(unlockMethod === 'password' ? 'unlock-password' : 'unlock-pin');
@@ -22,11 +39,18 @@ export default function ScreenLock({ onUnlock, userType = 'user' }) {
     setError('');
 
     try {
-      // For now, just simulate unlock - backend verification can be added later
-      if (unlockMethod === 'password' && password.length > 0) {
-        onUnlock();
-      } else if (unlockMethod === 'pin' && pin.length === 4) {
-        onUnlock();
+      if (unlockMethod === 'password') {
+        if (password === screenLockPassword) {
+          onUnlock();
+        } else {
+          throw new Error('Incorrect password');
+        }
+      } else if (unlockMethod === 'pin' && user.pin) {
+        if (pin === user.pin) {
+          onUnlock();
+        } else {
+          throw new Error('Incorrect PIN');
+        }
       } else {
         throw new Error(`Please enter a valid ${unlockMethod}`);
       }
