@@ -4,7 +4,7 @@
 const getBaseUrl = () => {
   // Production: Use Vercel backend URL
   if (import.meta.env.PROD) {
-    return 'https://posifine11-backend-xa7t.vercel.app/api';
+    return 'https://posifine11-backend-spu4.vercel.app/api';
   }
   // Development: Use local backend
   return 'http://localhost:5002/api';
