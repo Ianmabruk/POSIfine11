@@ -161,7 +161,7 @@ export default function Landing() {
             </button>
           </div>
 
-          <p className="text-blue-200 text-sm mt-4">No credit card required • 14-day free trial</p>
+          <p className="text-blue-200 text-sm mt-4">No credit card required • 30-day free trial</p>
         </div>
 
         {/* Hero Image/Dashboard Preview */}

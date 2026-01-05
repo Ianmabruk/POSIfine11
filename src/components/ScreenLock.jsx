@@ -9,7 +9,7 @@ export default function ScreenLock({ onUnlock, userType = 'user' }) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [screenLockPassword, setScreenLockPassword] = useState('admin123');
+  const [screenLockPassword, setScreenLockPassword] = useState('2005');
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
@@ -18,11 +18,12 @@ export default function ScreenLock({ onUnlock, userType = 'user' }) {
     const loadSettings = async () => {
       try {
         const settingsData = await settings.get();
-        if (settingsData.screenLockPassword) {
+        if (settingsData?.screenLockPassword) {
           setScreenLockPassword(settingsData.screenLockPassword);
         }
       } catch (error) {
-        console.warn('Failed to load settings:', error);
+        console.warn('Failed to load settings, using default password:', error);
+        // Keep default password if settings fail to load
       }
     };
     loadSettings();
@@ -35,6 +36,7 @@ export default function ScreenLock({ onUnlock, userType = 'user' }) {
 
   const handleUnlock = async (e) => {
     e.preventDefault();
+    e.stopPropagation();
     setLoading(true);
     setError('');
 
@@ -67,8 +69,14 @@ export default function ScreenLock({ onUnlock, userType = 'user' }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 p-8">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div 
+        className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 p-8"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="text-center mb-8">
           <div className={`w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center ${
             userType === 'main_admin' 

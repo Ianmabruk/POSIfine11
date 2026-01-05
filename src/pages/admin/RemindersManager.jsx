@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { BASE_API_URL } from '../../services/api';
 import { Bell, Plus, Trash2, Calendar } from 'lucide-react';
 
 export default function RemindersManager() {
@@ -23,8 +24,7 @@ export default function RemindersManager() {
   const fetchReminders = async () => {
     try {
       const token = localStorage.getItem('token');
-      const API_URL = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : (import.meta.env.PROD ? '/api' : 'http://localhost:5002/api');
-      const res = await fetch(`${API_URL}/reminders`, {
+      const res = await fetch(`${BASE_API_URL}/reminders`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -55,8 +55,7 @@ export default function RemindersManager() {
   const fetchProducts = async () => {
     try {
       const token = localStorage.getItem('token');
-      const API_URL = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : (import.meta.env.PROD ? '/api' : 'http://localhost:5002/api');
-      const res = await fetch(`${API_URL}/products`, {
+      const res = await fetch(`${BASE_API_URL}/products`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -88,9 +87,8 @@ export default function RemindersManager() {
 
     try {
       const token = localStorage.getItem('token');
-      const API_URL = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : (import.meta.env.PROD ? '/api' : 'http://localhost:5002/api');
       
-      const response = await fetch(`${API_URL}/reminders`, {
+      const response = await fetch(`${BASE_API_URL}/reminders`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -138,9 +136,8 @@ export default function RemindersManager() {
       
 
       const token = localStorage.getItem('token');
-      const API_URL = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : (import.meta.env.PROD ? '/api' : 'http://localhost:5002/api');
       
-      const response = await fetch(`${API_URL}/reminders/${id}`, {
+      const response = await fetch(`${BASE_API_URL}/reminders/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });

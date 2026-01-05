@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { BASE_API_URL } from '../services/api';
 import { CreditCard, X } from 'lucide-react';
 
 export default function CreditRequestForm({ product, onClose, onSubmit }) {
@@ -13,8 +14,7 @@ export default function CreditRequestForm({ product, onClose, onSubmit }) {
     try {
       const token = localStorage.getItem('token');
 
-      const API_URL = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : (import.meta.env.PROD ? '/api' : 'http://localhost:5002/api');
-      const res = await fetch(`${API_URL}/credit-requests`, {
+      const res = await fetch(`${BASE_API_URL}/credit-requests`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

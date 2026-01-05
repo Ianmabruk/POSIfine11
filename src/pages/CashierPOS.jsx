@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { products, sales, expenses, stats, batches } from '../services/api';
+import { BASE_API_URL } from '../services/api';
 import { ShoppingCart, Trash2, LogOut, Plus, Minus, DollarSign, TrendingDown, Package, Edit2, Search, BarChart3, Camera, Upload, AlertTriangle } from 'lucide-react';
 
 export default function CashierPOS() {
@@ -194,7 +195,7 @@ export default function CashierPOS() {
       try {
         // Clear backend data by overwriting files
         const token = localStorage.getItem('token');
-        const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:5002/api' : '/api';
+        const API_URL = BASE_API_URL;
         
         // Clear sales and expenses by making requests to clear them
         await fetch(`${API_URL}/clear-data`, {

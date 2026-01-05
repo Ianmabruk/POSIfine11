@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Users, DollarSign, CheckCircle, XCircle, Lock, Unlock } from 'lucide-react';
+import { BASE_API_URL } from '../../services/api';
 
 export default function AdminPaymentDashboard() {
   const [users, setUsers] = useState([]);
@@ -16,7 +17,7 @@ export default function AdminPaymentDashboard() {
   const fetchData = async () => {
     try {
       const token = localStorage.getItem('token');
-      const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:5002/api' : '/api';
+      const API_URL = BASE_API_URL;
       
       const [usersRes, paymentsRes] = await Promise.all([
         fetch(`${API_URL}/users`, {
@@ -43,7 +44,7 @@ export default function AdminPaymentDashboard() {
   const activateUser = async (userId) => {
     try {
       const token = localStorage.getItem('token');
-      const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:5002/api' : '/api';
+      const API_URL = BASE_API_URL;
       
       await fetch(`${API_URL}/users/${userId}`, {
         method: 'PUT',
@@ -63,7 +64,7 @@ export default function AdminPaymentDashboard() {
   const lockUser = async (userId, locked) => {
     try {
       const token = localStorage.getItem('token');
-      const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:5002/api' : '/api';
+      const API_URL = BASE_API_URL;
       
       await fetch(`${API_URL}/users/${userId}/lock`, {
         method: 'POST',
@@ -83,7 +84,7 @@ export default function AdminPaymentDashboard() {
   const createCashier = async (userData) => {
     try {
       const token = localStorage.getItem('token');
-      const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:5002/api' : '/api';
+      const API_URL = BASE_API_URL;
       
       await fetch(`${API_URL}/users`, {
         method: 'POST',

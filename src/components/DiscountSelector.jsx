@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Tag, Percent } from 'lucide-react';
+import { BASE_API_URL } from '../services/api';
 
 export default function DiscountSelector({ originalPrice, onApply }) {
   const [discounts, setDiscounts] = useState([]);
@@ -13,7 +14,7 @@ export default function DiscountSelector({ originalPrice, onApply }) {
   const fetchDiscounts = async () => {
     try {
       const token = localStorage.getItem('token');
-      const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:5002/api' : '/api';
+      const API_URL = BASE_API_URL;
       const res = await fetch(`${API_URL}/discounts`, {
         headers: { Authorization: `Bearer ${token}` }
       });

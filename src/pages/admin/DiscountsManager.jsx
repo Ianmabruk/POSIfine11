@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Tag, Plus, Edit2, Trash2, Calendar } from 'lucide-react';
+import { BASE_API_URL } from '../../services/api';
 
 export default function DiscountsManager() {
   const [discounts, setDiscounts] = useState([]);
@@ -20,7 +21,7 @@ export default function DiscountsManager() {
   const fetchDiscounts = async () => {
     try {
       const token = localStorage.getItem('token');
-      const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:5002/api' : '/api';
+      const API_URL = BASE_API_URL;
       const res = await fetch(`${API_URL}/discounts`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -35,7 +36,7 @@ export default function DiscountsManager() {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:5002/api' : '/api';
+      const API_URL = BASE_API_URL;
       
       if (editingDiscount) {
         await fetch(`${API_URL}/discounts/${editingDiscount.id}`, {
@@ -77,7 +78,7 @@ export default function DiscountsManager() {
     
     try {
       const token = localStorage.getItem('token');
-      const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:5002/api' : '/api';
+      const API_URL = BASE_API_URL;
       await fetch(`${API_URL}/discounts/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }

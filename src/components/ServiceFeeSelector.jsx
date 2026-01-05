@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { DollarSign } from 'lucide-react';
+import { BASE_API_URL } from '../services/api';
 
 export default function ServiceFeeSelector({ onApply }) {
   const [fees, setFees] = useState([]);
@@ -12,8 +13,7 @@ export default function ServiceFeeSelector({ onApply }) {
   const fetchFees = async () => {
     try {
       const token = localStorage.getItem('token');
-      const API_URL = import.meta.env.PROD ? '/api' : 'http://localhost:5002/api';
-      const res = await fetch(`${API_URL}/service-fees`, {
+      const res = await fetch(`${BASE_API_URL}/service-fees`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();

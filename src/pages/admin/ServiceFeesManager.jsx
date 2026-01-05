@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { DollarSign, Plus, Edit2, Trash2 } from 'lucide-react';
+import { BASE_API_URL } from '../../services/api';
 
 export default function ServiceFeesManager() {
   const [fees, setFees] = useState([]);
@@ -19,7 +20,7 @@ export default function ServiceFeesManager() {
   const fetchFees = async () => {
     try {
       const token = localStorage.getItem('token');
-      const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:5002/api' : '/api';
+      const API_URL = BASE_API_URL;
       const res = await fetch(`${API_URL}/service-fees`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -34,8 +35,7 @@ export default function ServiceFeesManager() {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:5002/api' : '/api';
-      
+      const API_URL = BASE_API_URL;
       if (editingFee) {
         await fetch(`${API_URL}/service-fees/${editingFee.id}`, {
           method: 'PUT',
@@ -76,7 +76,7 @@ export default function ServiceFeesManager() {
     
     try {
       const token = localStorage.getItem('token');
-      const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:5002/api' : '/api';
+      const API_URL = BASE_API_URL;
       await fetch(`${API_URL}/service-fees/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }

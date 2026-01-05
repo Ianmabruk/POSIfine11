@@ -21,7 +21,7 @@ function ProtectedRoute({ children, adminOnly = false }) {
     const loadSettings = async () => {
       try {
         const token = localStorage.getItem('token');
-        const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:5002/api' : '/api';
+        const API_URL = BASE_API_URL;
         const res = await fetch(`${API_URL}/settings`, {
           headers: { Authorization: `Bearer ${token}` }
         });

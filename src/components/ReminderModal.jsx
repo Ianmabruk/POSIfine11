@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { BASE_API_URL } from '../services/api';
 import { X, CheckCircle, AlertCircle } from 'lucide-react';
 
 export default function ReminderModal({ onClose }) {
@@ -15,14 +16,7 @@ export default function ReminderModal({ onClose }) {
   const fetchReminders = async () => {
     try {
       const token = localStorage.getItem('token');
-      const getApiUrl = () => {
-        const envUrl = import.meta.env.VITE_API_URL;
-        if (envUrl) {
-          return envUrl.endsWith('/api') ? envUrl : `${envUrl}/api`;
-        }
-        return import.meta.env.PROD ? '/api' : 'http://localhost:5002/api';
-      };
-      const res = await fetch(`${getApiUrl()}/reminders/today`, {
+      const res = await fetch(`${BASE_API_URL}/reminders/today`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -55,14 +49,7 @@ export default function ReminderModal({ onClose }) {
   const markFulfilled = async (id) => {
     try {
       const token = localStorage.getItem('token');
-      const getApiUrl = () => {
-        const envUrl = import.meta.env.VITE_API_URL;
-        if (envUrl) {
-          return envUrl.endsWith('/api') ? envUrl : `${envUrl}/api`;
-        }
-        return import.meta.env.PROD ? '/api' : 'http://localhost:5002/api';
-      };
-      await fetch(`${getApiUrl()}/reminders/${id}`, {
+      await fetch(`${BASE_API_URL}/reminders/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ status: 'fulfilled' })

@@ -139,14 +139,12 @@ export default function Auth() {
         const action = isLogin ? 'logged in' : 'signed up';
         console.log(`✅ User ${res.user.name} ${action} successfully`);
         
-        // Redirect based on plan selection
-      const selectedPlan = getSelectedPlan();
-      
-      if (selectedPlan?.id === 'ultra' || (res.user.role === 'admin' && res.user.plan === 'ultra')) {
-        navigate('/admin');
-      } else {
-        navigate('/dashboard/cashier');
-      }
+        // Redirect based on user role and plan
+        if (res.user.role === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/dashboard/cashier');
+        }
 
     } catch (err) {
       console.error('Authentication error:', err);

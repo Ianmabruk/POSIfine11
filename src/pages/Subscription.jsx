@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { BASE_API_URL } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import { Check, Crown, Zap, ArrowLeft } from 'lucide-react';
 
@@ -67,7 +68,7 @@ export default function Subscription() {
   const handleDemoRequest = async (e) => {
     e.preventDefault();
     try {
-      const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:5002/api' : '/api';
+      const API_URL = BASE_API_URL;
       await fetch(`${API_URL}/demo-requests`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

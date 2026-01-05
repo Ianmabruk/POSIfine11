@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { BASE_API_URL } from '../../services/api';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -98,7 +99,7 @@ export default function AdminDashboard() {
     if (window.confirm('Are you sure you want to clear all sales and data? This action cannot be undone.')) {
       try {
         const token = localStorage.getItem('token');
-        const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:5002/api' : '/api';
+        const API_URL = BASE_API_URL;
         
         await fetch(`${API_URL}/clear-data`, {
           method: 'POST',

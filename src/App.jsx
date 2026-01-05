@@ -13,6 +13,7 @@ import MainAdminDashboard from './pages/MainAdminDashboard';
 import ReminderModal from './components/ReminderModal';
 import ScreenLock from './components/ScreenLock';
 import useInactivity from './hooks/useInactivity';
+import { BASE_API_URL } from './services/api';
 import { useState, useEffect } from 'react';
 
 function ProtectedRoute({ children, adminOnly = false, ultraOnly = false, ownerOnly = false }) {
@@ -27,7 +28,7 @@ function ProtectedRoute({ children, adminOnly = false, ultraOnly = false, ownerO
     const loadSettings = async () => {
       try {
         const token = localStorage.getItem('token');
-        const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:5002/api' : '/api';
+        const API_URL = BASE_API_URL;
         const res = await fetch(`${API_URL}/settings`, {
           headers: { Authorization: `Bearer ${token}` }
         });

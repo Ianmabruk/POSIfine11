@@ -1,7 +1,7 @@
 
 
 import { useState, useEffect } from 'react';
-import { users as usersApi, sales as salesApi } from '../../services/api';
+import { users as usersApi, sales as salesApi, BASE_API_URL } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { Plus, Edit2, Trash2, Mail, Shield, Eye, Monitor, X, Clock, ShoppingCart, UserCheck, UserX, Users, Lock } from 'lucide-react';
 
@@ -69,8 +69,10 @@ export default function UserManagement() {
   const handleAddUser = async (e) => {
     e.preventDefault();
     
+    console.log('Form submitted with data:', newUser);
+    
     // Validate input
-    if (!newUser.name || !newUser.email || !newUser.password) {
+    if (!newUser.name?.trim() || !newUser.email?.trim() || !newUser.password?.trim()) {
       alert('Please fill in all required fields');
       return;
     }
@@ -86,23 +88,25 @@ export default function UserManagement() {
       // Generate PIN for cashier login
       const cashierPIN = generatePIN();
       
+      const userData = {
+        name: newUser.name.trim(),
+        email: newUser.email.trim().toLowerCase(),
+        password: newUser.password.trim(),
+        pin: cashierPIN
+      };
+      
+      console.log('Sending user data:', userData);
+      
       // Create the user with proper cashier role and PIN
-      const result = await usersApi.create({
-        ...newUser,
-        role: 'cashier',
-        plan: 'basic',
-        active: true,
-        addedByAdmin: true,
-        needsPasswordSetup: false, // Password is already set
-        cashierPIN: cashierPIN, // Add PIN for cashier login
-        createdAt: new Date().toISOString()
-      });
+      const result = await usersApi.create(userData);
+      
+      console.log('User creation result:', result);
       
       // Refresh the users list
       await loadUsers();
       
       // Show success message with login credentials including PIN
-      const loginInstructions = `✅ Cashier added successfully!\n\n📧 Email: ${newUser.email}\n🔑 Password: ${newUser.password}\n🔢 PIN: ${cashierPIN}\n\n💡 LOGIN OPTIONS:\n1. Email + Password: Use email and password above\n2. PIN Login: Use email + ${cashierPIN}\n\nPlease share these credentials securely with the new cashier.`;
+      const loginInstructions = `✅ Cashier added successfully!\n\n📧 Email: ${userData.email}\n🔑 Password: ${userData.password}\n🔢 PIN: ${cashierPIN}\n\n💡 LOGIN OPTIONS:\n1. Email + Password: Use email and password above\n2. PIN Login: Use email + ${cashierPIN}\n\nPlease share these credentials securely with the new cashier.`;
       
       alert(loginInstructions);
       
@@ -119,7 +123,9 @@ export default function UserManagement() {
       console.error('Error creating cashier:', error);
       let errorMessage = 'Failed to add cashier';
       
-      if (error.message.includes('email')) {
+      if (error.message.includes('Current user not found')) {
+        errorMessage = 'Authentication error. Please refresh the page and try again.';
+      } else if (error.message.includes('email')) {
         errorMessage = 'Email already exists. Please use a different email.';
       } else if (error.message.includes('network') || error.message.includes('fetch')) {
         errorMessage = 'Network error. Please check your connection and try again.';
@@ -156,14 +162,7 @@ export default function UserManagement() {
 
 
       // Call the backend API to update user status
-      const getApiUrl = () => {
-        const envUrl = import.meta.env.VITE_API_URL;
-        if (envUrl) {
-          return envUrl.endsWith('/api') ? envUrl : `${envUrl}/api`;
-        }
-        return import.meta.env.PROD ? '/api' : 'http://localhost:5002/api';
-      };
-      const response = await fetch(`${getApiUrl()}/users/${userId}/activate`, {
+      const response = await fetch(`${BASE_API_URL}/users/${userId}/activate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -194,14 +193,7 @@ export default function UserManagement() {
 
 
       // Call the backend API to lock/unlock user
-      const getApiUrl = () => {
-        const envUrl = import.meta.env.VITE_API_URL;
-        if (envUrl) {
-          return envUrl.endsWith('/api') ? envUrl : `${envUrl}/api`;
-        }
-        return import.meta.env.PROD ? '/api' : 'http://localhost:5002/api';
-      };
-      const response = await fetch(`${getApiUrl()}/users/${userId}/lock`, {
+      const response = await fetch(`${BASE_API_URL}/users/${userId}/lock`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -568,8 +560,11 @@ export default function UserManagement() {
                 type="text"
                 placeholder="Full Name"
                 className="input"
-                value={newUser.name}
-                onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                value={newUser.name || ''}
+                onChange={(e) => {
+                  console.log('Name input changed:', e.target.value);
+                  setNewUser({ ...newUser, name: e.target.value });
+                }}
                 required
                 disabled={loading}
               />
@@ -577,8 +572,11 @@ export default function UserManagement() {
                 type="email"
                 placeholder="Email"
                 className="input"
-                value={newUser.email}
-                onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                value={newUser.email || ''}
+                onChange={(e) => {
+                  console.log('Email input changed:', e.target.value);
+                  setNewUser({ ...newUser, email: e.target.value });
+                }}
                 required
                 disabled={loading}
               />
@@ -586,8 +584,11 @@ export default function UserManagement() {
                 type="password"
                 placeholder="Password (min 6 characters)"
                 className="input"
-                value={newUser.password}
-                onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                value={newUser.password || ''}
+                onChange={(e) => {
+                  console.log('Password input changed:', e.target.value);
+                  setNewUser({ ...newUser, password: e.target.value });
+                }}
                 required
                 minLength={6}
                 disabled={loading}
