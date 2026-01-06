@@ -22,37 +22,17 @@ export const ProductsProvider = ({ children }) => {
 
     try {
       const data = await productsApi.getAll();
-      let productList = [];
-
-      // Handle different response structures
-      if (Array.isArray(data)) {
-        productList = data;
-      } else if (data && Array.isArray(data.products)) {
-        productList = data.products;
-      } else if (data && Array.isArray(data.data)) {
-         productList = data.data;
-      }
-
-      // Filter out deleted products globally
-      const activeProducts = productList.filter(p => !p.pendingDelete);
       
-      setProducts(prev => {
-        // Only update if products actually changed to prevent glitching
-        const prevIds = prev.map(p => p.id).sort().join(',');
-        const newIds = activeProducts.map(p => p.id).sort().join(',');
-        const prevData = JSON.stringify(prev.map(p => ({id: p.id, quantity: p.quantity, price: p.price})));
-        const newData = JSON.stringify(activeProducts.map(p => ({id: p.id, quantity: p.quantity, price: p.price})));
-        
-        if (prevIds !== newIds || prevData !== newData) {
-            return activeProducts;
-        }
-        return prev;
-      });
+      // Ensure we always get an array
+      const productList = Array.isArray(data) ? data : [];
+      
+      setProducts(productList);
       setError(null);
     } catch (err) {
       console.error('Failed to fetch products:', err);
-      // Don't use demo data - let the error be handled properly
       setError(`Failed to load products: ${err.message}`);
+      // Set empty array on error
+      setProducts([]);
     } finally {
       setLoading(false);
       setLastUpdated(Date.now());
@@ -64,11 +44,11 @@ export const ProductsProvider = ({ children }) => {
     fetchProducts();
   }, [fetchProducts, user]); 
 
-  // Auto-refresh interval (every 1 second) for instant sync
+  // Auto-refresh interval (every 5 seconds) for sync
   useEffect(() => {
     const intervalId = setInterval(() => {
         fetchProducts();
-    }, 1000); // 1 second for instant sync
+    }, 5000); // 5 seconds
 
     return () => clearInterval(intervalId);
   }, [fetchProducts]);
