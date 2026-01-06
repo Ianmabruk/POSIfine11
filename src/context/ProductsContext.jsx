@@ -39,10 +39,13 @@ export const ProductsProvider = ({ children }) => {
       const activeProducts = productList.filter(p => !p.pendingDelete);
       
       setProducts(prev => {
-        // Simple optimization: only update if length changed or strict equality fails
-        // For deep comparison we'd need lodash.isEqual or similar, but this is okay for now
-        if (JSON.stringify(prev) !== JSON.stringify(activeProducts)) {
-            console.log('Products updated:', activeProducts.length, 'products');
+        // Only update if products actually changed to prevent glitching
+        const prevIds = prev.map(p => p.id).sort().join(',');
+        const newIds = activeProducts.map(p => p.id).sort().join(',');
+        const prevData = JSON.stringify(prev.map(p => ({id: p.id, quantity: p.quantity, price: p.price})));
+        const newData = JSON.stringify(activeProducts.map(p => ({id: p.id, quantity: p.quantity, price: p.price})));
+        
+        if (prevIds !== newIds || prevData !== newData) {
             return activeProducts;
         }
         return prev;
@@ -56,13 +59,8 @@ export const ProductsProvider = ({ children }) => {
         setProducts(demoProducts);
         setError('Using demo data - backend unavailable');
       } else {
-        // Don't wipe out existing products on temporary failure if we have them
-        if (products.length === 0) {
-          setError(err.message || 'Failed to load products');
-        } else {
-          // Just log the error but keep existing products
-          console.warn('Product fetch failed, keeping cached products');
-        }
+        // Don't clear products on temporary failure to prevent glitching
+        console.warn('Product fetch failed, keeping cached products');
       }
     } finally {
       setLoading(false);
@@ -75,12 +73,11 @@ export const ProductsProvider = ({ children }) => {
     fetchProducts();
   }, [fetchProducts, user]); 
 
-  // Auto-refresh interval (every 3 seconds) to keep cashier/admin in sync
+  // Auto-refresh interval (every 1 second) for instant sync
   useEffect(() => {
     const intervalId = setInterval(() => {
-        console.log('Auto-refreshing products for real-time sync...');
         fetchProducts();
-    }, 3000); // 3 seconds for real-time sync between admin and cashier
+    }, 1000); // 1 second for instant sync
 
     return () => clearInterval(intervalId);
   }, [fetchProducts]);
