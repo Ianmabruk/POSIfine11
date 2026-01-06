@@ -3,7 +3,7 @@
 
 const getBaseUrl = () => {
   // Always use production backend
-  return 'https://posifine11-backend-spu4.vercel.app/api';
+  return 'https://posifine11-w89s.vercel.app/api';
 };
 
 const BASE_API_URL = getBaseUrl();
