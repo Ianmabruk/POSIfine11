@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 # posifine11
 =======
 # 🏪 Universal POS System
@@ -203,3 +204,6 @@ All major issues have been fixed:
 
 **Need help?** Check the documentation files or the browser console for errors.
 >>>>>>> 8d97750 (Initial commit)
+=======
+# POSIfine11
+>>>>>>> a3910de478cea69f1dc6cdee5364a6c42bbd50ae
