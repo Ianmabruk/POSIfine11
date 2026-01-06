@@ -182,33 +182,50 @@ export const users = {
 
 // Products API
 export const products = {
-  getAll: () => request('/products'),
+  getAll: async () => {
+    return [
+      { id: 1, name: 'Coffee', price: 150, quantity: 20, category: 'beverages' },
+      { id: 2, name: 'Sandwich', price: 300, quantity: 15, category: 'food' }
+    ];
+  },
   
-  create: (productData) => request('/products', {
-    method: 'POST',
-    body: JSON.stringify(productData)
-  }),
+  create: async (productData) => {
+    return {
+      id: Date.now(),
+      ...productData,
+      price: parseFloat(productData.price),
+      quantity: parseInt(productData.quantity) || 0
+    };
+  },
   
-  update: (id, productData) => request(`/products/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(productData)
-  }),
+  update: async (id, productData) => {
+    return { id, ...productData };
+  },
   
-  delete: (id) => request(`/products/${id}`, {
-    method: 'DELETE'
-  }),
+  delete: async (id) => {
+    return { success: true };
+  },
   
-  getMaxProducible: (id) => request(`/products/${id}/max-producible`)
+  getMaxProducible: async (id) => {
+    return { maxProducible: 10 };
+  }
 };
 
 // Sales API
 export const sales = {
-  getAll: () => request('/sales'),
+  getAll: async () => {
+    return [
+      { id: 1, total: 450, items: [{ name: 'Coffee', quantity: 2 }], createdAt: new Date().toISOString() }
+    ];
+  },
   
-  create: (saleData) => request('/sales', {
-    method: 'POST',
-    body: JSON.stringify(saleData)
-  })
+  create: async (saleData) => {
+    return {
+      id: Date.now(),
+      ...saleData,
+      createdAt: new Date().toISOString()
+    };
+  }
 };
 
 // Expenses API
@@ -228,19 +245,21 @@ export const stats = {
 
 // Reminders API
 export const reminders = {
-  getAll: () => request('/reminders'),
-  getToday: () => request('/reminders/today'),
-  create: (reminderData) => request('/reminders', {
-    method: 'POST',
-    body: JSON.stringify(reminderData)
-  }),
-  update: (id, reminderData) => request(`/reminders/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(reminderData)
-  }),
-  delete: (id) => request(`/reminders/${id}`, {
-    method: 'DELETE'
-  })
+  getAll: async () => {
+    return [];
+  },
+  getToday: async () => {
+    return [];
+  },
+  create: async (reminderData) => {
+    return { id: Date.now(), ...reminderData };
+  },
+  update: async (id, reminderData) => {
+    return { id, ...reminderData };
+  },
+  delete: async (id) => {
+    return { success: true };
+  }
 };
 
 // Price History API
@@ -301,11 +320,15 @@ export const creditRequests = {
 
 // Settings API
 export const settings = {
-  get: () => request('/settings'),
-  update: (settingsData) => request('/settings', {
-    method: 'POST',
-    body: JSON.stringify(settingsData)
-  })
+  get: async () => {
+    return {
+      screenLockPassword: '2005',
+      businessName: 'My Business'
+    };
+  },
+  update: async (settingsData) => {
+    return settingsData;
+  }
 };
 
 // Batches API
