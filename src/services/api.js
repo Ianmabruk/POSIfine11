@@ -2,8 +2,8 @@
 // Updated API Service Layer - Connected to Deployed Backend
 
 const getBaseUrl = () => {
-  // Always use production backend
-  return 'https://posifine11-backend-spu4.vercel.app/api';
+  // Use the working backend URL
+  return 'https://universal-backend-eight.vercel.app/api';
 };
 
 const BASE_API_URL = getBaseUrl();
