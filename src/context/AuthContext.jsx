@@ -63,32 +63,9 @@ export const AuthProvider = ({ children }) => {
           }
         } catch (err) {
           console.warn('Auth check failed:', err);
-          // Demo mode fallback when backend is unavailable
-          if (err.message.includes('fetch') || err.message.includes('Network')) {
-            const demoUser = {
-              id: 1,
-              name: 'Demo Admin',
-              email: 'admin@demo.com',
-              role: 'admin',
-              plan: 'ultra',
-              active: true
-            };
-            setUser(demoUser);
-            localStorage.setItem('user', JSON.stringify(demoUser));
-            return;
-          }
-          // Fallback to local storage only if present and parseable (offline/slow networks)
-          if (savedUser) {
-            try {
-              const parsed = JSON.parse(savedUser);
-              setUser(parsed);
-            } catch (e) {
-              localStorage.removeItem('token');
-              localStorage.removeItem('user');
-            }
-          } else {
-            localStorage.removeItem('token');
-          }
+          // Clear invalid tokens
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
         }
       }
     } catch (error) {
@@ -123,22 +100,6 @@ export const AuthProvider = ({ children }) => {
       throw new Error('Invalid response from server');
     } catch (error) {
       console.error('Login failed:', error);
-      // Demo mode fallback for 500 errors
-      if (error.message.includes('500') || error.message.includes('Network') || error.message.includes('fetch')) {
-        const demoUser = {
-          id: 1,
-          name: 'Demo User',
-          email: payload.email || 'demo@example.com',
-          role: 'admin',
-          plan: 'ultra',
-          active: true
-        };
-        const demoToken = 'demo-token-' + Date.now();
-        localStorage.setItem('token', demoToken);
-        localStorage.setItem('user', JSON.stringify(demoUser));
-        setUser(demoUser);
-        return { user: demoUser, token: demoToken };
-      }
       throw error;
     }
   };
@@ -155,22 +116,6 @@ export const AuthProvider = ({ children }) => {
       throw new Error('Invalid response from server');
     } catch (error) {
       console.error('Signup failed:', error);
-      // Demo mode fallback for 500 errors
-      if (error.message.includes('500') || error.message.includes('Network') || error.message.includes('fetch')) {
-        const demoUser = {
-          id: Date.now(),
-          name: userData.name || 'Demo User',
-          email: userData.email,
-          role: 'admin',
-          plan: userData.plan || 'ultra',
-          active: true
-        };
-        const demoToken = 'demo-token-' + Date.now();
-        localStorage.setItem('token', demoToken);
-        localStorage.setItem('user', JSON.stringify(demoUser));
-        setUser(demoUser);
-        return { user: demoUser, token: demoToken };
-      }
       throw error;
     }
   };

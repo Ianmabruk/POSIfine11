@@ -2,20 +2,8 @@
 // Updated API Service Layer - Connected to Deployed Backend
 
 const getBaseUrl = () => {
-  // Use environment variable for backend URL
-  const envUrl = import.meta.env.VITE_API_URL;
-  if (envUrl) {
-    // Remove trailing slash if present
-    const cleanUrl = envUrl.replace(/\/$/, '');
-    // If envUrl already contains /api, DO NOT add it again
-    if (cleanUrl.endsWith('/api')) {
-        return cleanUrl;
-    }
-    // Otherwise add /api
-    return `${cleanUrl}/api`;
-  }
-  // Fallback to local development
-  return 'http://localhost:5000/api';
+  // Always use production backend
+  return 'https://posifine11-backend-spu4.vercel.app/api';
 };
 
 const BASE_API_URL = getBaseUrl();
@@ -65,6 +53,11 @@ const request = async (endpoint, options = {}) => {
       throw err;
     }
 
+    // Handle 500 errors - throw specific error for demo mode
+    if (response.status === 500) {
+      throw new Error('Server error 500 - Backend unavailable');
+    }
+
     // Handle successful responses
     if (response.ok) {
       // Handle empty responses (like DELETE operations)
@@ -83,7 +76,7 @@ const request = async (endpoint, options = {}) => {
     if (error.name === 'TypeError' && error.message.includes('fetch')) {
       console.error("API Fetch Error:", error);
       console.error("Attempted URL:", `${BASE_API_URL}${cleanEndpoint}`);
-      throw new Error('Backend server unavailable. Using demo mode.');
+      throw new Error('Cannot connect to server. Please check your internet connection.');
     }
     throw error;
   }

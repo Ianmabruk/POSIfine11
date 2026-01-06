@@ -75,12 +75,12 @@ export const ProductsProvider = ({ children }) => {
     fetchProducts();
   }, [fetchProducts, user]); 
 
-  // Auto-refresh interval (every 5 seconds) to keep cashier/admin in sync
+  // Auto-refresh interval (every 3 seconds) to keep cashier/admin in sync
   useEffect(() => {
     const intervalId = setInterval(() => {
-        console.log('Auto-refreshing products...');
+        console.log('Auto-refreshing products for real-time sync...');
         fetchProducts();
-    }, 5000); // Reduced to 5 seconds for faster sync
+    }, 3000); // 3 seconds for real-time sync between admin and cashier
 
     return () => clearInterval(intervalId);
   }, [fetchProducts]);

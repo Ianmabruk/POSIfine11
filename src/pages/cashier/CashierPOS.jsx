@@ -83,14 +83,10 @@ export default function CashierPOS() {
   // Sync with global products
   useEffect(() => {
     if (globalProducts) {
+      // Show ALL products to cashiers - don't filter them out
       const visibleProducts = globalProducts.filter(p => {
-        // Include product if it's not expenseOnly and not deleted
-        const isVisible = !p.expenseOnly && !p.pendingDelete;
-        
-        // For products without explicit visibleToCashier field, assume visible unless expenseOnly
-        const isNotHidden = p.visibleToCashier !== false;
-        
-        return isVisible && isNotHidden;
+        // Only exclude products that are explicitly marked as deleted or expense-only
+        return !p.pendingDelete && !p.expenseOnly;
       });
       setProductList(visibleProducts);
     }
@@ -755,7 +751,7 @@ export default function CashierPOS() {
 
 
                 <tbody>
-                  {productList.filter(p => !p.pendingDelete && p.visibleToCashier !== false).map((product) => (
+                  {productList.map((product) => (
                     <tr key={product.id} className="border-t border-gray-100 hover:bg-gray-50">
                       <td className="px-4 py-3 text-sm font-medium">{product.name}</td>
                       <td className="px-4 py-3 text-sm font-semibold text-green-600">KSH {product.price?.toLocaleString()}</td>
