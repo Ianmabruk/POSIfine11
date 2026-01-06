@@ -15,8 +15,6 @@ export const ProductsProvider = ({ children }) => {
   const [lastUpdated, setLastUpdated] = useState(Date.now());
 
   const fetchProducts = useCallback(async () => {
-    // We can fetch products even if not logged in (e.g. for public display if needed),
-    // but typically we want a user. For now, let's allow it but handling 401s is done in api.js
     if (!localStorage.getItem('token')) {
        setLoading(false);
        return;
@@ -53,15 +51,8 @@ export const ProductsProvider = ({ children }) => {
       setError(null);
     } catch (err) {
       console.error('Failed to fetch products:', err);
-      // Use demo data when backend returns 500 error
-      if (err.message.includes('500') || err.message.includes('Network') || err.message.includes('fetch')) {
-        console.log('Using demo products due to backend error');
-        setProducts(demoProducts);
-        setError('Using demo data - backend unavailable');
-      } else {
-        // Don't clear products on temporary failure to prevent glitching
-        console.warn('Product fetch failed, keeping cached products');
-      }
+      // Don't use demo data - let the error be handled properly
+      setError(`Failed to load products: ${err.message}`);
     } finally {
       setLoading(false);
       setLastUpdated(Date.now());

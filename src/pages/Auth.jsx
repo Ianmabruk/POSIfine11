@@ -142,8 +142,15 @@ export default function Auth() {
         // Redirect based on user role and plan
         if (res.user.role === 'admin') {
           navigate('/admin');
-        } else {
+        } else if (res.user.role === 'cashier') {
           navigate('/dashboard/cashier');
+        } else {
+          // Fallback based on plan
+          if (res.user.plan === 'basic') {
+            navigate('/dashboard/cashier');
+          } else {
+            navigate('/admin');
+          }
         }
 
     } catch (err) {

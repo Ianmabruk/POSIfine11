@@ -2,8 +2,8 @@
 // Updated API Service Layer - Connected to Deployed Backend
 
 const getBaseUrl = () => {
-  // Use the working backend URL
-  return 'https://universal-backend-eight.vercel.app/api';
+  // Use environment variable if available, otherwise fallback to deployed backend
+  return process.env.REACT_APP_API_URL || 'https://universal-backend-eight.vercel.app/api';
 };
 
 const BASE_API_URL = getBaseUrl();
@@ -100,7 +100,7 @@ export const auth = {
     body: JSON.stringify(data)
   }),
   
-  signupWithPayment: (data) => request('/signup-with-payment', {
+  signupWithPayment: (data) => request('/auth/signup', {
     method: 'POST',
     body: JSON.stringify(data)
   }),
@@ -113,29 +113,10 @@ export const auth = {
 export const users = {
   getAll: () => request('/users'),
   
-  create: async (userData) => {
-    try {
-      return await request('/users', {
-        method: 'POST',
-        body: JSON.stringify(userData)
-      });
-    } catch (error) {
-      // If ultra admin error, try with simplified data
-      if (error.message.includes('Ultra admin') || error.message.includes('Admin access')) {
-        console.log('Retrying user creation with fallback...');
-        // Return success with demo data to unblock the user
-        return {
-          id: Date.now(),
-          email: userData.email,
-          name: userData.name,
-          role: 'cashier',
-          plan: 'ultra',
-          created: true
-        };
-      }
-      throw error;
-    }
-  },
+  create: (userData) => request('/users', {
+    method: 'POST',
+    body: JSON.stringify(userData)
+  }),
   
   update: (id, userData) => request(`/users/${id}`, {
     method: 'PUT',

@@ -29,7 +29,7 @@ export default function Subscription() {
     },
     {
       id: 'ultra',
-      name: 'Ultra Package',
+      name: 'Ultra Package (Admin + Cashier)',
       price: 2400,
       icon: Crown,
       color: 'from-blue-600 to-purple-600',

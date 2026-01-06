@@ -94,12 +94,12 @@ function DashboardRouter() {
   
   if (!user || !user.active) return <Navigate to="/plans" />;
   
-  // Ultra plan users go to admin dashboard
-  if (user.plan === 'ultra' && user.role === 'admin') {
+  // Route based on ROLE, not package
+  if (user.role === 'admin') {
     return <Navigate to="/admin" />;
   }
   
-  // All others go to cashier dashboard
+  // All non-admin users go to cashier dashboard
   return <Navigate to="/dashboard/cashier" />;
 }
 

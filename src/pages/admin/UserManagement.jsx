@@ -411,7 +411,7 @@ export default function UserManagement() {
                     {user.role === 'cashier' ? (
                       <div className="flex items-center gap-2">
                         <span className="font-mono text-lg font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                          {user.cashierPIN || '----'}
+                          {user.pin || user.cashierPIN || '----'}
                         </span>
                         <button
                           onClick={() => handleResetPIN(user)}
