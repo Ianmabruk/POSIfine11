@@ -26,29 +26,42 @@ export const ProductsProvider = ({ children }) => {
       // Ensure we always get an array
       const productList = Array.isArray(data) ? data : [];
       
-      setProducts(productList);
+      // Filter visible products for cashiers
+      const visibleProducts = productList.filter(p => {
+        // Show all products to admins
+        if (user?.role === 'admin') return true;
+        // For cashiers, hide expense-only and deleted products
+        return !p.expenseOnly && !p.pendingDelete && p.visibleToCashier !== false;
+      });
+      
+      setProducts(visibleProducts);
       setError(null);
+      
+      // Dispatch sync event for real-time updates
+      window.dispatchEvent(new CustomEvent('productsSync', { 
+        detail: { products: visibleProducts, timestamp: Date.now() }
+      }));
+      
     } catch (err) {
       console.error('Failed to fetch products:', err);
       setError(`Failed to load products: ${err.message}`);
-      // Set empty array on error
       setProducts([]);
     } finally {
       setLoading(false);
       setLastUpdated(Date.now());
     }
-  }, []);
+  }, [user]);
 
   // Initial fetch
   useEffect(() => {
     fetchProducts();
   }, [fetchProducts, user]); 
 
-  // Auto-refresh interval (every 5 seconds) for sync
+  // Auto-refresh interval (every 2 seconds) for instant sync
   useEffect(() => {
     const intervalId = setInterval(() => {
         fetchProducts();
-    }, 5000); // 5 seconds
+    }, 2000); // 2 seconds for instant sync
 
     return () => clearInterval(intervalId);
   }, [fetchProducts]);

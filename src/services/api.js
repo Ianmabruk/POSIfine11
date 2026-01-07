@@ -2,8 +2,8 @@
 // Updated API Service Layer - Connected to Deployed Backend
 
 const getBaseUrl = () => {
-  // Return empty string to use mock responses only
-  return '';
+  // Use working backend URL
+  return 'https://universal-backend-eight.vercel.app/api';
 };
 
 const BASE_API_URL = getBaseUrl();
@@ -11,97 +11,95 @@ const BASE_API_URL = getBaseUrl();
 const getToken = () => localStorage.getItem('token');
 
 const request = async (endpoint, options = {}) => {
-  // Return mock data instead of making HTTP requests
-  return { success: true, data: [] };
+  const token = getToken();
+  
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  
+  const config = {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token && !(cleanEndpoint.startsWith('/auth') && cleanEndpoint !== '/auth/me') && !cleanEndpoint.includes('/main-admin/auth/login') && { Authorization: `Bearer ${token}` }),
+      ...options.headers
+    }
+  };
+
+  try {
+    const response = await fetch(`${BASE_API_URL}${cleanEndpoint}`, config);
+
+    if (response.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      const path = window.location.pathname || '';
+      if (!path.includes('/login') && !path.includes('/signup') && !path.includes('/auth') && !path.includes('/main.admin')) {
+        try {
+          window.location.href = '/login';
+        } catch (e) {}
+      }
+      const err = new Error('Unauthorized');
+      err.status = 401;
+      throw err;
+    }
+
+    if (response.status === 500) {
+      throw new Error('Server error 500 - Backend unavailable');
+    }
+
+    if (response.ok) {
+      if (response.status === 204) {
+        return { success: true };
+      }
+      return await response.json();
+    }
+
+    const errorData = await response.json().catch(() => ({ error: 'Network error' }));
+    throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+
+  } catch (error) {
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      console.error("API Fetch Error:", error);
+      console.error("Attempted URL:", `${BASE_API_URL}${cleanEndpoint}`);
+      throw new Error('Cannot connect to server. Please check your internet connection.');
+    }
+    throw error;
+  }
 };
 
 
 // Authentication API
 export const auth = {
-  login: async (credentials) => {
-    // Mock successful login
-    return {
-      token: 'demo_token_' + Date.now(),
-      user: {
-        id: 1,
-        email: credentials.email,
-        name: 'Demo User',
-        role: 'admin',
-        plan: 'ultra',
-        accountId: 1,
-        active: true
-      }
-    };
-  },
+  login: (credentials) => request('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify(credentials)
+  }),
   
-  pinLogin: async (credentials) => {
-    // Mock successful PIN login
-    return {
-      token: 'demo_token_' + Date.now(),
-      user: {
-        id: 2,
-        email: credentials.email,
-        name: 'Demo Cashier',
-        role: 'cashier',
-        plan: 'ultra',
-        accountId: 1,
-        active: true
-      }
-    };
-  },
+  pinLogin: (credentials) => request('/auth/pin-login', {
+    method: 'POST',
+    body: JSON.stringify(credentials)
+  }),
   
-  signup: async (data) => {
-    // Mock successful signup
-    return {
-      token: 'demo_token_' + Date.now(),
-      user: {
-        id: Date.now(),
-        email: data.email,
-        name: data.name,
-        role: data.plan === 'ultra' ? 'admin' : 'cashier',
-        plan: data.plan || 'basic',
-        accountId: Date.now(),
-        active: true
-      }
-    };
-  },
+  signup: (data) => request('/auth/signup', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  }),
   
-  signupWithPayment: async (data) => {
-    return auth.signup(data);
-  },
+  signupWithPayment: (data) => request('/signup-with-payment', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  }),
   
-  me: async () => {
-    return {
-      id: 1,
-      email: 'demo@example.com',
-      name: 'Demo User',
-      role: 'admin',
-      plan: 'ultra',
-      accountId: 1,
-      active: true
-    };
-  }
+  me: () => request('/auth/me')
 };
 
 
 // Users API
 export const users = {
-  getAll: async () => {
-    return [
-      { id: 1, name: 'Admin User', email: 'admin@demo.com', role: 'admin', active: true },
-      { id: 2, name: 'Cashier User', email: 'cashier@demo.com', role: 'cashier', active: true, pin: '1234' }
-    ];
-  },
+  getAll: () => request('/users'),
   
-  create: async (userData) => {
-    return {
-      id: Date.now(),
-      ...userData,
-      role: 'cashier',
-      active: true,
-      pin: userData.pin || '1234'
-    };
-  },
+  create: (userData) => request('/users', {
+    method: 'POST',
+    body: JSON.stringify(userData)
+  }),
   
   update: (id, userData) => request(`/users/${id}`, {
     method: 'PUT',
@@ -125,33 +123,23 @@ export const users = {
 
 // Products API
 export const products = {
-  getAll: async () => {
-    return [
-      { id: 1, name: 'Coffee', price: 150, quantity: 20, category: 'beverages' },
-      { id: 2, name: 'Sandwich', price: 300, quantity: 15, category: 'food' }
-    ];
-  },
+  getAll: () => request('/products'),
   
-  create: async (productData) => {
-    return {
-      id: Date.now(),
-      ...productData,
-      price: parseFloat(productData.price),
-      quantity: parseInt(productData.quantity) || 0
-    };
-  },
+  create: (productData) => request('/products', {
+    method: 'POST',
+    body: JSON.stringify(productData)
+  }),
   
-  update: async (id, productData) => {
-    return { id, ...productData };
-  },
+  update: (id, productData) => request(`/products/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(productData)
+  }),
   
-  delete: async (id) => {
-    return { success: true };
-  },
+  delete: (id) => request(`/products/${id}`, {
+    method: 'DELETE'
+  }),
   
-  getMaxProducible: async (id) => {
-    return { maxProducible: 10 };
-  }
+  getMaxProducible: (id) => request(`/products/${id}/max-producible`)
 };
 
 // Sales API
