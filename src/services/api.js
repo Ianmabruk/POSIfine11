@@ -2,8 +2,8 @@
 // Updated API Service Layer - Connected to Deployed Backend
 
 const getBaseUrl = () => {
-  // Use working backend URL
-  return 'https://universal-backend-eight.vercel.app/api';
+  // Use Render backend URL
+  return 'https://posfine-backend11.onrender.com/api';
 };
 
 const BASE_API_URL = getBaseUrl();
