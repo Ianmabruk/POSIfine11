@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useProducts } from '../../context/ProductsContext';
 import { products, batches } from '../../services/api';
+import websocketService from '../../services/websocketService';
 import { Plus, Search, Edit2, Trash2, ChevronDown, ChevronUp, AlertTriangle, Camera, Package } from 'lucide-react';
 
 
@@ -55,6 +56,24 @@ export default function Inventory() {
 
   useEffect(() => {
     loadData();
+    
+    // Connect to WebSocket for real-time stock updates
+    const token = localStorage.getItem('token');
+    if (token) {
+      websocketService.connect(token, (data) => {
+        // When stock update received, update product list
+        if (data && data.allProducts) {
+          setProductList(data.allProducts);
+        }
+      }).catch((error) => {
+        console.warn('WebSocket connection failed:', error);
+      });
+    }
+
+    // Cleanup on unmount
+    return () => {
+      websocketService.disconnect();
+    };
   }, []);
 
   const loadData = async () => {
@@ -197,16 +216,7 @@ export default function Inventory() {
         setShowAddStock(false);
         setSelectedProduct(null);
         
-        // Broadcast stock update to other tabs/windows
-        window.dispatchEvent(new CustomEvent('stockUpdated', { 
-          detail: { 
-            productId: selectedProduct.id, 
-            addedQuantity: parseInt(newStock.quantity),
-            timestamp: Date.now()
-          }
-        }));
-        
-        // Refresh data to sync with backend immediately
+        // Refresh data to sync with backend
         await loadData();
         
         showNotification(`✅ Stock added successfully for ${selectedProduct.name}!`, 'success');
@@ -254,14 +264,6 @@ export default function Inventory() {
         const result = await products.update(editProduct.id, updateData);
         
         setShowEditModal(false);
-        
-        // Broadcast update to other tabs/windows
-        window.dispatchEvent(new CustomEvent('stockUpdated', { 
-          detail: { 
-            productId: editProduct.id,
-            timestamp: Date.now()
-          }
-        }));
         
         // Trigger real-time sync notification if enabled
         if (isRealTimeProductSyncEnabled()) {

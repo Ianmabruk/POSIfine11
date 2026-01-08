@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { products, sales, expenses, stats, batches, subscribeProducts, unsubscribeAllProductSubscriptions } from '../services/api';
+import websocketService from '../services/websocketService';
 import { BASE_API_URL } from '../services/api';
 import { ShoppingCart, Trash2, LogOut, Plus, Minus, DollarSign, TrendingDown, Package, Edit2, Search, BarChart3, Camera, Upload, AlertTriangle } from 'lucide-react';
 
@@ -28,6 +29,20 @@ export default function CashierPOS() {
 
   // Subscribe to real-time product updates
   useEffect(() => {
+    // Connect to WebSocket for real-time stock updates
+    const token = localStorage.getItem('token');
+    if (token) {
+      websocketService.connect(token, (data) => {
+        // When stock update received, reload products to show new stock
+        if (data && data.allProducts) {
+          const filtered = data.allProducts.filter(p => p.visibleToCashier !== false && !p.expenseOnly);
+          setProductList(filtered);
+        }
+      }).catch((error) => {
+        console.warn('WebSocket connection failed:', error);
+      });
+    }
+
     const unsub = subscribeProducts((msg) => {
       try {
         if (!msg) return;
@@ -42,7 +57,7 @@ export default function CashierPOS() {
 
     return () => {
       try { unsub(); } catch (e) {}
-      // If you want to fully tear down all subscriptions across the app, call unsubscribeAllProductSubscriptions()
+      websocketService.disconnect();
     };
   }, []);
 
