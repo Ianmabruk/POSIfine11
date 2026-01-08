@@ -197,7 +197,16 @@ export default function Inventory() {
         setShowAddStock(false);
         setSelectedProduct(null);
         
-        // Refresh data to sync with backend
+        // Broadcast stock update to other tabs/windows
+        window.dispatchEvent(new CustomEvent('stockUpdated', { 
+          detail: { 
+            productId: selectedProduct.id, 
+            addedQuantity: parseInt(newStock.quantity),
+            timestamp: Date.now()
+          }
+        }));
+        
+        // Refresh data to sync with backend immediately
         await loadData();
         
         showNotification(`✅ Stock added successfully for ${selectedProduct.name}!`, 'success');
@@ -245,6 +254,14 @@ export default function Inventory() {
         const result = await products.update(editProduct.id, updateData);
         
         setShowEditModal(false);
+        
+        // Broadcast update to other tabs/windows
+        window.dispatchEvent(new CustomEvent('stockUpdated', { 
+          detail: { 
+            productId: editProduct.id,
+            timestamp: Date.now()
+          }
+        }));
         
         // Trigger real-time sync notification if enabled
         if (isRealTimeProductSyncEnabled()) {
