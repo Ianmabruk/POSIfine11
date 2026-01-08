@@ -54,8 +54,9 @@ Port 5175 is in use, trying another one...
 
   ➜  Local:   http://localhost:5176/
   ➜  Network: use --host to expose
-:07 PM [vite] (client) page reload src/hooks/useInactivity.js
-1:38:07 PM [vite] (client) hmr update /src/index.css
+1:44:55 PM [vite] .env.development changed, restarting server...
+1:44:55 PM [vite] server restarted.
+src/index.css
 1:38:07 PM [vite] (client) page reload src/main.jsx
 1:38:07 PM [vite] (client) page reload src/pages/AdminDashboard.jsx
 1:38:07 PM [vite] (client) page reload src/pages/Auth.jsx
@@ -161,9 +162,11 @@ vite.config.js:9:2: ERROR: Unexpected "<<"
 
   ➜  Local:   http://localhost:5173/
   ➜  Network: use --host to expose
-sal/my-react-app/node_modules/vite/dist/node/chunks/config.js:35793:24)
-    at loadConfigFromFile (file:///home/ian-mabruk/universal/my-react-app/node_modules/vite/dist/node/chunks/config.js:35762:179)
-    at resolveConfig (file:///home/ian-mabruk/universal/my-react-app/node_modules/vite/dist/node/chunks/config.js:35411:28)
+1:44:55 PM [vite] .env.development changed, restarting server...
+1:44:55 PM [vite] (client) Re-optimizing dependencies because vite config has changed
+1:44:55 PM [vite] server restarted.
+1:44:55 PM [vite] (client) page reload test-data-sync.html
+k/universal/my-react-app/node_modules/vite/dist/node/chunks/config.js:35411:28)
     at _createServer (file:///home/ian-mabruk/universal/my-react-app/node_modules/vite/dist/node/chunks/config.js:25361:73)
     at restartServer (file:///home/ian-mabruk/universal/my-react-app/node_modules/vite/dist/node/chunks/config.js:25766:22)
     at Object.restart (file:///home/ian-mabruk/universal/my-react-app/node_modules/vite/dist/node/chunks/config.js:25519:30)
@@ -237,3 +240,6 @@ Port 5176 is in use, trying another one...
 
   ➜  Local:   http://localhost:5177/
   ➜  Network: use --host to expose
+1:44:55 PM [vite] .env.development changed, restarting server...
+1:44:55 PM [vite] (client) Re-optimizing dependencies because vite config has changed
+1:44:55 PM [vite] server restarted.

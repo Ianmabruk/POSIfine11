@@ -1,0 +1,49 @@
+TESTING ADMIN CASHIER CREATION
+================================
+
+1. CLEAR ALL DATA:
+   - Delete src/backend/data/*.json files
+   - Clear browser localStorage: Open DevTools > Application > Local Storage > Clear All
+
+2. START SERVERS:
+   Terminal 1: cd src/backend && python3 app.py
+   Terminal 2: npm run dev
+
+3. SIGN UP AS ADMIN:
+   - Go to http://localhost:5173
+   - Click "Get Started" or "Sign Up"
+   - Enter: Name, Email, Password
+   - Click "Sign Up"
+   - You should be redirected to subscription page
+
+4. SELECT ULTRA PACKAGE:
+   - Select "Ultra Package" (KSH 1,600)
+   - Click "Continue to Dashboard"
+   - Wait for redirect to /admin
+
+5. VERIFY ADMIN ACCESS:
+   - Open Browser DevTools (F12)
+   - Go to Console tab
+   - Type: localStorage.getItem('user')
+   - Should show: role: "admin", plan: "ultra", active: true
+
+6. ADD CASHIER:
+   - In Admin Dashboard, click "Users" in sidebar
+   - Click "Add Cashier" button
+   - Enter: Name and Email
+   - Set permissions (checkboxes)
+   - Click "Add Cashier"
+   - Should show success message
+
+7. IF IT FAILS:
+   - Check Console for errors
+   - Check Network tab for API response
+   - Verify token has role: "admin"
+   - Try logging out and back in
+
+8. ALTERNATIVE FIX:
+   If still failing, manually edit src/backend/data/users.json:
+   - Find your user entry
+   - Change "role": "cashier" to "role": "admin"
+   - Restart backend
+   - Logout and login again

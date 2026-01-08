@@ -1,0 +1,20 @@
+// Generate a secure JWT secret
+const crypto = require('crypto');
+const secret = crypto.randomBytes(64).toString('hex');
+console.log('\n=================================');
+console.log('Your JWT Secret Key:');
+console.log('=================================');
+console.log(secret);
+console.log('=================================\n');
+console.log('📋 Copy this secret and add it to Netlify:\n');
+console.log('Steps:');
+console.log('1. Go to https://app.netlify.com');
+console.log('2. Select your site');
+console.log('3. Click "Site settings" (in top menu)');
+console.log('4. Click "Environment variables" (left sidebar)');
+console.log('5. Click "Add a variable" button');
+console.log('6. Enter:');
+console.log('   Key: JWT_SECRET');
+console.log('   Value: (paste the secret above)');
+console.log('7. Click "Create variable"');
+console.log('8. Redeploy your site\n');
