@@ -56,16 +56,19 @@ Port 5175 is in use, trying another one...
   ➜  Network: use --host to expose
 1:44:55 PM [vite] .env.development changed, restarting server...
 1:44:55 PM [vite] server restarted.
-src/index.css
-1:38:07 PM [vite] (client) page reload src/main.jsx
-1:38:07 PM [vite] (client) page reload src/pages/AdminDashboard.jsx
-1:38:07 PM [vite] (client) page reload src/pages/Auth.jsx
-1:38:07 PM [vite] (client) page reload src/pages/BasicDashboard.jsx
-1:38:07 PM [vite] (client) page reload src/pages/CashierPOS.jsx
-1:38:07 PM [vite] (client) page reload src/pages/Landing.jsx
-1:38:07 PM [vite] (client) page reload src/pages/MainAdmin.jsx
-1:38:07 PM [vite] (client) page reload src/pages/MainAdminDashboard.jsx
-1:38:07 PM [vite] (client) page reload src/pages/MainAdminLogin.jsx
+8:10:01 PM [vite] .env.development changed, restarting server...
+8:10:01 PM [vite] (client) Re-optimizing dependencies because vite config has changed
+Port 3002 is in use, trying another one...
+Port 3003 is in use, trying another one...
+Port 3004 is in use, trying another one...
+8:10:01 PM [vite] server restarted.
+
+  ➜  Local:   http://localhost:3005/
+  ➜  Network: http://192.168.0.31:3005/
+8:29:37 PM [vite] .env.development changed, restarting server...
+8:29:37 PM [vite] (client) Re-optimizing dependencies because vite config has changed
+8:29:37 PM [vite] server restarted.
+sx
 1:38:07 PM [vite] (client) page reload src/pages/PaymentInput.jsx
 1:38:07 PM [vite] (client) page reload src/pages/Subscription.jsx
 1:38:07 PM [vite] (client) page reload src/pages/admin/AdminDashboard.jsx
@@ -166,10 +169,15 @@ vite.config.js:9:2: ERROR: Unexpected "<<"
 1:44:55 PM [vite] (client) Re-optimizing dependencies because vite config has changed
 1:44:55 PM [vite] server restarted.
 1:44:55 PM [vite] (client) page reload test-data-sync.html
-k/universal/my-react-app/node_modules/vite/dist/node/chunks/config.js:35411:28)
-    at _createServer (file:///home/ian-mabruk/universal/my-react-app/node_modules/vite/dist/node/chunks/config.js:25361:73)
-    at restartServer (file:///home/ian-mabruk/universal/my-react-app/node_modules/vite/dist/node/chunks/config.js:25766:22)
-    at Object.restart (file:///home/ian-mabruk/universal/my-react-app/node_modules/vite/dist/node/chunks/config.js:25519:30)
+8:10:01 PM [vite] .env.development changed, restarting server...
+8:10:01 PM [vite] (client) Re-optimizing dependencies because vite config has changed
+8:10:01 PM [vite] server restarted.
+
+  ➜  Local:   http://localhost:3002/
+  ➜  Network: http://192.168.0.31:3002/
+8:29:37 PM [vite] .env.development changed, restarting server...
+8:29:37 PM [vite] server restarted.
+bruk/universal/my-react-app/node_modules/vite/dist/node/chunks/config.js:25519:30)
     at restartServerWithUrls (file:///home/ian-mabruk/universal/my-react-app/node_modules/vite/dist/node/chunks/config.js:25802:15)
     at handleHMRUpdate (file:///home/ian-mabruk/universal/my-react-app/node_modules/vite/dist/node/chunks/config.js:25962:10)
     at onHMRUpdate (file:///home/ian-mabruk/universal/my-react-app/node_modules/vite/dist/node/chunks/config.js:25555:41)
@@ -243,3 +251,13 @@ Port 5176 is in use, trying another one...
 1:44:55 PM [vite] .env.development changed, restarting server...
 1:44:55 PM [vite] (client) Re-optimizing dependencies because vite config has changed
 1:44:55 PM [vite] server restarted.
+8:10:01 PM [vite] .env.development changed, restarting server...
+8:10:01 PM [vite] (client) Re-optimizing dependencies because vite config has changed
+Port 3002 is in use, trying another one...
+Port 3003 is in use, trying another one...
+8:10:01 PM [vite] server restarted.
+
+  ➜  Local:   http://localhost:3004/
+  ➜  Network: http://192.168.0.31:3004/
+8:29:37 PM [vite] .env.development changed, restarting server...
+8:29:37 PM [vite] server restarted.
