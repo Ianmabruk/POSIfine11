@@ -2,8 +2,8 @@
 // Updated API Service Layer - Connected to Deployed Backend
 
 const getBaseUrl = () => {
-  // Use Render backend URL
-  return 'https://posfine-backend11.onrender.com/api';
+  // Use environment variable if available, otherwise use Render backend URL
+  return import.meta.env.VITE_API_BASE || 'https://posifine22.onrender.com/api';
 };
 
 const BASE_API_URL = getBaseUrl();
