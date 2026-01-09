@@ -520,5 +520,3 @@ export const cashierNotes = {
     method: 'DELETE'
   })
 };
-
-export { BASE_API_URL };
