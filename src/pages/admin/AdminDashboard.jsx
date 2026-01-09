@@ -96,12 +96,12 @@ export default function AdminDashboard() {
 
 
   const handleClearData = async () => {
-    if (window.confirm('Are you sure you want to clear all sales and data? This action cannot be undone.')) {
+    if (window.confirm('Are you sure you want to clear all sales and expenses data? This action cannot be undone.')) {
       try {
         const token = localStorage.getItem('token');
         const API_URL = BASE_API_URL;
         
-        await fetch(`${API_URL}/clear-data`, {
+        const response = await fetch(`${API_URL}/clear-data`, {
           method: 'POST',
           headers: { 
             'Authorization': `Bearer ${token}`,
@@ -110,11 +110,16 @@ export default function AdminDashboard() {
           body: JSON.stringify({ type: 'all' })
         });
         
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || 'Failed to clear data');
+        }
+        
         alert('Data cleared successfully!');
         window.location.reload();
       } catch (error) {
         console.error('Failed to clear data:', error);
-        alert('Failed to clear data');
+        alert('Failed to clear data: ' + error.message);
       }
     }
   };
