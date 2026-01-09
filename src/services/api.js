@@ -206,7 +206,6 @@ export const expenses = {
 export const stats = {
   get: async () => {
     return {
-      totalSales: 1500,
       totalExpenses: 300,
       profit: 1200,
       productCount: 5
