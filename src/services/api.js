@@ -350,7 +350,10 @@ export const mainAdmin = {
     const token = localStorage.getItem('ownerToken');
     return request('/main-admin/users', {
       headers: {
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
       }
     });
   },
@@ -358,7 +361,10 @@ export const mainAdmin = {
     const token = localStorage.getItem('ownerToken');
     return request('/main-admin/stats', {
       headers: {
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
       }
     });
   },

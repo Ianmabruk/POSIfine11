@@ -52,14 +52,42 @@ export default function MainAdminNew() {
     };
   }, []);
 
+  // Auto-refresh dashboard data every 15 seconds to keep it fresh
+  useEffect(() => {
+    if (currentPage !== 'dashboard') return;
+    
+    const interval = setInterval(() => {
+      loadDashboardData();
+    }, 15000); // 15 seconds
+    
+    return () => clearInterval(interval);
+  }, [currentPage]);
+
   const loadDashboardData = async () => {
     try {
+      // Add cache-busting timestamp to force fresh data
+      const timestamp = Date.now();
       const [usersData, statsData] = await Promise.all([
         mainAdmin.getUsers(),
         mainAdmin.getStats()
       ]);
+      
+      // Ensure data defaults to 0 if not present
+      const cleanStats = {
+        totalSales: statsData?.totalSales ?? 0,
+        totalExpenses: statsData?.totalExpenses ?? 0,
+        profit: statsData?.profit ?? 0,
+        salesCount: statsData?.salesCount ?? 0,
+        expensesCount: statsData?.expensesCount ?? 0,
+        productsCount: statsData?.productsCount ?? 0,
+        usersCount: statsData?.usersCount ?? 0,
+        activeUsers: statsData?.activeUsers ?? 0,
+        lockedUsers: statsData?.lockedUsers ?? 0
+      };
+      
       setUsers(usersData || []);
-      setStats(statsData || {});
+      setStats(cleanStats);
+      console.log('Dashboard data loaded:', { users: usersData?.length, stats: cleanStats });
     } catch (error) {
       console.error('Failed to load data:', error);
       setError('Failed to load dashboard data');
@@ -79,9 +107,15 @@ export default function MainAdminNew() {
       const response = await mainAdmin.login(formData);
 
       if (response.token && response.user && response.user.role === 'owner') {
+        // Clear any old cached data
+        sessionStorage.clear();
+        
         localStorage.setItem('ownerToken', response.token);
         localStorage.setItem('ownerUser', JSON.stringify(response.user));
         setCurrentPage('dashboard');
+        
+        // Force fresh data load after login
+        await new Promise(resolve => setTimeout(resolve, 100));
         await loadDashboardData();
       } else {
         throw new Error('Invalid credentials');
