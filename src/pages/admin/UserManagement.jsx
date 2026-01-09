@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { users as usersApi, sales as salesApi, BASE_API_URL } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import { Plus, Edit2, Trash2, Mail, Shield, Eye, Monitor, X, Clock, ShoppingCart, UserCheck, UserX, Users, Lock } from 'lucide-react';
+import { Plus, Edit2, Trash2, Mail, Shield, Eye, Monitor, X, Clock, ShoppingCart, UserCheck, UserX, Users, Lock, Trash } from 'lucide-react';
 
 
 export default function UserManagement() {
@@ -232,6 +232,32 @@ export default function UserManagement() {
     }
   };
 
+  const handleClearAllUsers = async () => {
+    if (!window.confirm('Clear ALL users data? This will delete all users and cannot be undone.')) return;
+    
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${BASE_API_URL}/clear-data`, {
+        method: 'POST',
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ type: 'users' })
+      });
+      
+      if (!response.ok) throw new Error('Failed to clear users');
+      
+      setUsers([]);
+      alert('All users data cleared');
+    } catch (error) {
+      alert('Failed to clear users: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleResetPIN = (user) => {
     setSelectedUserForPIN(user);
     setNewPIN(generatePIN());
@@ -332,16 +358,28 @@ export default function UserManagement() {
           <h2 className="text-2xl font-bold">User Management</h2>
           <p className="text-sm text-gray-600 mt-1">Manage cashiers and their permissions</p>
         </div>
-        {isCashierUserManagementEnabled() && (
-          <button 
-            onClick={() => setShowAddModal(true)}
-            className="btn-primary flex items-center gap-2"
-            disabled={loading}
-          >
-            <Plus className="w-4 h-4" />
-            Add Cashier
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {isCashierUserManagementEnabled() && (
+            <>
+              <button 
+                onClick={handleClearAllUsers}
+                disabled={loading || users.length === 0}
+                className="px-4 py-2 bg-red-700 hover:bg-red-800 disabled:bg-gray-400 text-white rounded font-medium flex items-center gap-2"
+              >
+                <Trash className="w-4 h-4" />
+                Clear All Users
+              </button>
+              <button 
+                onClick={() => setShowAddModal(true)}
+                className="btn-primary flex items-center gap-2"
+                disabled={loading}
+              >
+                <Plus className="w-4 h-4" />
+                Add Cashier
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Show informational message for cashiers when user management is disabled */}

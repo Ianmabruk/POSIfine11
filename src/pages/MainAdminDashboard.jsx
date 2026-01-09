@@ -4,20 +4,18 @@ import {
   Users, DollarSign, Lock, Unlock, Shield, Trash2, RefreshCw,
   Calendar, Activity, AlertTriangle, CheckCircle, XCircle, 
   LogOut, Database, Settings, Crown, Clock, TrendingUp,
-  UserCheck, UserX, Edit3, Eye
+  UserCheck, UserX, Edit3, Eye, Download, Mail, Filter,
+  Zap, BarChart3, TrendingDown, Send
 } from 'lucide-react';
 import { mainAdmin, BASE_API_URL } from '../services/api';
 
 export default function MainAdminDashboard() {
   const [users, setUsers] = useState([]);
-  const [activities, setActivities] = useState([]);
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview');
   const [actionLoading, setActionLoading] = useState(null);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [showPlanModal, setShowPlanModal] = useState(false);
-  const [timeEntries, setTimeEntries] = useState([]);
+  const [filterPlan, setFilterPlan] = useState('all');
+  const [selectedUserId, setSelectedUserId] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -42,34 +40,21 @@ export default function MainAdminDashboard() {
     }
 
     loadData();
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(loadData, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const loadData = async () => {
     try {
       setLoading(true);
-      const [usersData, statsData, activitiesData] = await Promise.all([
+      const [usersData, statsData] = await Promise.all([
         mainAdmin.getUsers(),
-        mainAdmin.getStats(),
-        mainAdmin.getActivities()
+        mainAdmin.getStats()
       ]);
       
-      setUsers(usersData);
-      setStats(statsData);
-      setActivities(activitiesData);
-      
-      // Load time entries from backend
-      try {
-        const token = localStorage.getItem('ownerToken');
-        const response = await fetch(`${BASE_API_URL}/time-entries/today`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (response.ok) {
-          const entries = await response.json();
-          setTimeEntries(entries);
-        }
-      } catch (err) {
-        console.warn('Failed to load time entries:', err);
-      }
+      setUsers(usersData || []);
+      setStats(statsData || {});
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
@@ -80,74 +65,46 @@ export default function MainAdminDashboard() {
   const toggleUserLock = async (userId, currentLockStatus) => {
     try {
       setActionLoading(`lock-${userId}`);
-      const newLockStatus = !currentLockStatus;
-      
-      await mainAdmin.lockUser(userId, newLockStatus);
-      
-      // Update local state
-      setUsers(users.map(u => 
-        u.id === userId ? { ...u, locked: newLockStatus, active: !newLockStatus } : u
-      ));
-      
-      // Reload data to get updated stats
-      setTimeout(loadData, 1000);
-      
+      await mainAdmin.lockUser(userId, !currentLockStatus);
+      await loadData();
     } catch (error) {
-      console.error('Failed to toggle lock:', error);
       alert('Failed to update user status');
     } finally {
       setActionLoading(null);
     }
   };
 
-  const changePlan = async (userId, newPlan) => {
+  const calculatePlanStats = () => {
+    const stats = {
+      freeDemo: users.filter(u => u.planType === 'free_demo' || !u.planType).length,
+      trial: users.filter(u => u.planType === 'trial' || u.requestedTrial).length,
+      paid: users.filter(u => u.planType === 'paid').length
+    };
+    return stats;
+  };
+
+  const getFilteredUsers = () => {
+    if (filterPlan === 'all') return users;
+    if (filterPlan === 'free_demo') return users.filter(u => u.planType === 'free_demo' || !u.planType);
+    if (filterPlan === 'trial') return users.filter(u => u.planType === 'trial' || u.requestedTrial);
+    if (filterPlan === 'paid') return users.filter(u => u.planType === 'paid');
+    return users;
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
     try {
-      setActionLoading(`plan-${userId}`);
-      
-      await mainAdmin.changePlan(userId, newPlan);
-      
-      // Update local state
-      setUsers(users.map(u => 
-        u.id === userId ? { ...u, plan: newPlan, price: newPlan === 'ultra' ? 2400 : newPlan === 'basic' ? 1000 : 0 } : u
-      ));
-      
-      setShowPlanModal(false);
-      setSelectedUser(null);
-      
-      // Reload data to get updated stats
-      setTimeout(loadData, 1000);
-      
-    } catch (error) {
-      console.error('Failed to change plan:', error);
-      alert('Failed to change user plan');
-    } finally {
-      setActionLoading(null);
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch {
+      return 'N/A';
     }
   };
 
-  const clearSystemData = async (type) => {
-    const confirmMessage = type === 'all' 
-      ? 'Are you sure you want to clear ALL system data? This will remove all sales, expenses, and products from ALL users. This cannot be undone.'
-      : `Are you sure you want to clear ${type} data from ALL users? This cannot be undone.`;
-    
-    if (!confirm(confirmMessage)) {
-      return;
-    }
-
-    try {
-      setActionLoading(`clear-${type}`);
-      await mainAdmin.clearData(type);
-      alert(`${type.charAt(0).toUpperCase() + type.slice(1)} data cleared successfully`);
-      loadData();
-    } catch (error) {
-      console.error('Clear data failed:', error);
-      alert('Failed to clear data');
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const logout = () => {
+  const handleLogout = () => {
     localStorage.removeItem('ownerToken');
     localStorage.removeItem('ownerUser');
     navigate('/main.admin');
@@ -157,706 +114,357 @@ export default function MainAdminDashboard() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-black flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-red-400 mx-auto mb-4"></div>
-          <p className="text-red-400 text-xl">Loading System Control...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-red-600 border-t-transparent mx-auto mb-4"></div>
+          <p className="text-white text-lg">Loading system data...</p>
         </div>
       </div>
     );
   }
 
+  const planStats = calculatePlanStats();
+  const filteredUsers = getFilteredUsers();
+  const activeCount = users.filter(u => u.active && !u.locked).length;
+  const lockedCount = users.filter(u => u.locked).length;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-black">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-black text-white">
       {/* Header */}
-      <header className="bg-black/50 backdrop-blur-lg border-b border-red-500/30 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-red-600 to-red-800 rounded-2xl flex items-center justify-center border-2 border-red-400 shadow-lg">
-              <span className="text-lg font-bold text-white">MTC</span>
+      <div className="border-b border-red-500/30 bg-black/50 backdrop-blur-lg sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-red-600 to-red-800 rounded-2xl flex items-center justify-center border-2 border-red-400">
+                <Crown className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-red-400">🎯 MTC System Owner</h1>
+                <p className="text-gray-400 text-sm">Comprehensive Analytics & Control Dashboard</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-3xl font-bold text-red-400">MAIN.ADMIN</h1>
-              <p className="text-gray-400 text-sm">Mabrixel Trading Co. - System Owner</p>
-            </div>
-          </div>
-          <button
-            onClick={logout}
-            className="flex items-center gap-2 bg-red-600/20 hover:bg-red-600/30 text-red-300 px-4 py-2 rounded-lg transition-colors border border-red-500/30"
-          >
-            <LogOut className="w-4 h-4" />
-            Logout
-          </button>
-        </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto p-6">
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-          <div className="bg-black/30 backdrop-blur-lg rounded-xl p-6 border border-red-500/30">
-            <div className="flex items-center justify-between mb-2">
-              <Users className="w-8 h-8 text-blue-400" />
-              <span className="text-2xl font-bold text-white">{stats.totalUsers || 0}</span>
-            </div>
-            <p className="text-gray-300 text-sm">Total Users</p>
-          </div>
-
-          <div className="bg-black/30 backdrop-blur-lg rounded-xl p-6 border border-red-500/30">
-            <div className="flex items-center justify-between mb-2">
-              <CheckCircle className="w-8 h-8 text-green-400" />
-              <span className="text-2xl font-bold text-white">{stats.activeUsers || 0}</span>
-            </div>
-            <p className="text-gray-300 text-sm">Active Users</p>
-          </div>
-
-          <div className="bg-black/30 backdrop-blur-lg rounded-xl p-6 border border-red-500/30">
-            <div className="flex items-center justify-between mb-2">
-              <Calendar className="w-8 h-8 text-yellow-400" />
-              <span className="text-2xl font-bold text-white">{stats.trialUsers || 0}</span>
-            </div>
-            <p className="text-gray-300 text-sm">Free Trials</p>
-          </div>
-
-          <div className="bg-black/30 backdrop-blur-lg rounded-xl p-6 border border-red-500/30">
-            <div className="flex items-center justify-between mb-2">
-              <DollarSign className="w-8 h-8 text-green-400" />
-              <span className="text-2xl font-bold text-white">KSH {(stats.mrr || 0).toLocaleString()}</span>
-            </div>
-            <p className="text-gray-300 text-sm">Monthly Revenue</p>
-          </div>
-
-          <div className="bg-black/30 backdrop-blur-lg rounded-xl p-6 border border-red-500/30">
-            <div className="flex items-center justify-between mb-2">
-              <Activity className="w-8 h-8 text-purple-400" />
-              <span className="text-2xl font-bold text-white">{(stats.totalSignups || 0) + (stats.totalLogins || 0)}</span>
-            </div>
-            <p className="text-gray-300 text-sm">Total Activities</p>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-medium transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+              Logout
+            </button>
           </div>
         </div>
+      </div>
 
-        {/* Navigation Tabs */}
-        <div className="flex gap-4 mb-6 overflow-x-auto">
-          {[
-            { id: 'overview', label: 'Overview', icon: TrendingUp },
-            { id: 'users', label: `Users (${users.length})`, icon: Users },
-            { id: 'activities', label: `Activities (${activities.length})`, icon: Activity },
-            { id: 'time-entries', label: `Time Tracking (${timeEntries.length})`, icon: Clock },
-            { id: 'system', label: 'System Control', icon: Settings }
-          ].map(tab => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? 'bg-red-600 text-white'
-                    : 'bg-black/30 text-gray-300 hover:bg-black/50'
-                }`}
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Key Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+          <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl p-6 border border-blue-500/30">
+            <div className="flex items-center justify-between mb-2">
+              <Users className="w-8 h-8 text-blue-200" />
+              <span className="text-3xl font-bold">{users.length}</span>
+            </div>
+            <p className="text-blue-100 text-sm font-medium">Total Users</p>
+            <p className="text-blue-300 text-xs mt-2">All registered</p>
+          </div>
+
+          <div className="bg-gradient-to-br from-green-600 to-green-800 rounded-xl p-6 border border-green-500/30">
+            <div className="flex items-center justify-between mb-2">
+              <CheckCircle className="w-8 h-8 text-green-200" />
+              <span className="text-3xl font-bold">{activeCount}</span>
+            </div>
+            <p className="text-green-100 text-sm font-medium">Active Users</p>
+            <p className="text-green-300 text-xs mt-2">Currently active</p>
+          </div>
+
+          <div className="bg-gradient-to-br from-yellow-600 to-yellow-800 rounded-xl p-6 border border-yellow-500/30">
+            <div className="flex items-center justify-between mb-2">
+              <Clock className="w-8 h-8 text-yellow-200" />
+              <span className="text-3xl font-bold">{planStats.trial}</span>
+            </div>
+            <p className="text-yellow-100 text-sm font-medium">Trial/Demo</p>
+            <p className="text-yellow-300 text-xs mt-2">Free & trial users</p>
+          </div>
+
+          <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-xl p-6 border border-purple-500/30">
+            <div className="flex items-center justify-between mb-2">
+              <DollarSign className="w-8 h-8 text-purple-200" />
+              <span className="text-3xl font-bold">{planStats.paid}</span>
+            </div>
+            <p className="text-purple-100 text-sm font-medium">Paid Users</p>
+            <p className="text-purple-300 text-xs mt-2">Active subscriptions</p>
+          </div>
+
+          <div className="bg-gradient-to-br from-red-600 to-red-800 rounded-xl p-6 border border-red-500/30">
+            <div className="flex items-center justify-between mb-2">
+              <Lock className="w-8 h-8 text-red-200" />
+              <span className="text-3xl font-bold">{lockedCount}</span>
+            </div>
+            <p className="text-red-100 text-sm font-medium">Locked Users</p>
+            <p className="text-red-300 text-xs mt-2">Access restricted</p>
+          </div>
+        </div>
+
+        {/* Plan Distribution Overview */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <div className="bg-black/50 border border-red-500/30 rounded-xl p-6 backdrop-blur-lg">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-red-400">🆓 Free Demo Users</h3>
+              <Zap className="w-6 h-6 text-red-400" />
+            </div>
+            <p className="text-4xl font-bold text-white mb-2">{planStats.freeDemo}</p>
+            <p className="text-gray-400 text-sm">Users on free demo</p>
+            <div className="mt-4 w-full bg-gray-700 rounded-full h-2">
+              <div 
+                className="bg-red-500 h-2 rounded-full transition-all" 
+                style={{ width: `${users.length > 0 ? (planStats.freeDemo / users.length) * 100 : 0}%` }}
+              ></div>
+            </div>
+            <p className="text-xs text-gray-400 mt-2">{users.length > 0 ? Math.round((planStats.freeDemo / users.length) * 100) : 0}% of users</p>
+          </div>
+
+          <div className="bg-black/50 border border-yellow-500/30 rounded-xl p-6 backdrop-blur-lg">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-yellow-400">⏱️ Trial Users</h3>
+              <Clock className="w-6 h-6 text-yellow-400" />
+            </div>
+            <p className="text-4xl font-bold text-white mb-2">{planStats.trial}</p>
+            <p className="text-gray-400 text-sm">Requested/active trials</p>
+            <div className="mt-4 w-full bg-gray-700 rounded-full h-2">
+              <div 
+                className="bg-yellow-500 h-2 rounded-full transition-all" 
+                style={{ width: `${users.length > 0 ? (planStats.trial / users.length) * 100 : 0}%` }}
+              ></div>
+            </div>
+            <p className="text-xs text-gray-400 mt-2">{users.length > 0 ? Math.round((planStats.trial / users.length) * 100) : 0}% of users</p>
+          </div>
+
+          <div className="bg-black/50 border border-green-500/30 rounded-xl p-6 backdrop-blur-lg">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-green-400">💰 Paid Users</h3>
+              <DollarSign className="w-6 h-6 text-green-400" />
+            </div>
+            <p className="text-4xl font-bold text-white mb-2">{planStats.paid}</p>
+            <p className="text-gray-400 text-sm">Paid subscription users</p>
+            <div className="mt-4 w-full bg-gray-700 rounded-full h-2">
+              <div 
+                className="bg-green-500 h-2 rounded-full transition-all" 
+                style={{ width: `${users.length > 0 ? (planStats.paid / users.length) * 100 : 0}%` }}
+              ></div>
+            </div>
+            <p className="text-xs text-gray-400 mt-2">{users.length > 0 ? Math.round((planStats.paid / users.length) * 100) : 0}% of users</p>
+          </div>
+        </div>
+
+        {/* Users Analytics Table */}
+        <div className="bg-black/50 border border-red-500/30 rounded-xl p-6 backdrop-blur-lg mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-white">📊 User Analytics & Management</h2>
+            <div className="flex items-center gap-2">
+              <select
+                value={filterPlan}
+                onChange={(e) => setFilterPlan(e.target.value)}
+                className="px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-red-500"
               >
-                <Icon className="w-4 h-4" />
-                {tab.label}
+                <option value="all">All Users ({users.length})</option>
+                <option value="free_demo">Free Demo ({planStats.freeDemo})</option>
+                <option value="trial">Trial Users ({planStats.trial})</option>
+                <option value="paid">Paid Users ({planStats.paid})</option>
+              </select>
+              <button
+                onClick={loadData}
+                className="px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                title="Refresh data"
+              >
+                <RefreshCw className="w-5 h-5" />
               </button>
-            );
-          })}
-        </div>
-
-        {/* Overview Tab */}
-        {activeTab === 'overview' && (
-          <div className="space-y-6">
-            {/* Plan Distribution */}
-            <div className="bg-black/30 backdrop-blur-lg rounded-xl p-6 border border-red-500/30">
-              <h2 className="text-xl font-bold text-white mb-4">Plan Distribution</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-yellow-300 font-semibold">Free Trial</p>
-                      <p className="text-2xl font-bold text-white">{stats.planDistribution?.trial || 0}</p>
-                    </div>
-                    <Calendar className="w-8 h-8 text-yellow-400" />
-                  </div>
-                </div>
-                <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-blue-300 font-semibold">Basic Plan</p>
-                      <p className="text-2xl font-bold text-white">{stats.planDistribution?.basic || 0}</p>
-                    </div>
-                    <UserCheck className="w-8 h-8 text-blue-400" />
-                  </div>
-                </div>
-                <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-purple-300 font-semibold">Ultra Plan</p>
-                      <p className="text-2xl font-bold text-white">{stats.planDistribution?.ultra || 0}</p>
-                    </div>
-                    <Crown className="w-8 h-8 text-purple-400" />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Recent Activity Summary */}
-            <div className="bg-black/30 backdrop-blur-lg rounded-xl p-6 border border-red-500/30">
-              <h2 className="text-xl font-bold text-white mb-4">Recent Activity Summary</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-300 mb-2">User Activity</h3>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Total Signups:</span>
-                      <span className="text-green-400">{stats.totalSignups || 0}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Total Logins:</span>
-                      <span className="text-blue-400">{stats.totalLogins || 0}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Recent Signups (7d):</span>
-                      <span className="text-yellow-400">{stats.recentSignups || 0}</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-300 mb-2">System Health</h3>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Active Users:</span>
-                      <span className="text-green-400">{stats.activeUsers || 0}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Locked Users:</span>
-                      <span className="text-red-400">{stats.lockedUsers || 0}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Total Revenue:</span>
-                      <span className="text-green-400">KSH {(stats.totalRevenue || 0).toLocaleString()}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
-        )}
 
-        {/* Users Management Tab */}
-        {activeTab === 'users' && (
-          <div className="bg-black/30 backdrop-blur-lg rounded-xl border border-red-500/30 overflow-hidden">
-            <div className="p-4 border-b border-red-500/30">
-              <h2 className="text-xl font-bold text-white">User Management</h2>
-              <p className="text-gray-400 text-sm">Manage all system users, plans, and access control</p>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-black/50">
-                  <tr>
-                    <th className="px-4 py-4 text-left text-sm font-semibold text-gray-200">User Details</th>
-                    <th className="px-4 py-4 text-left text-sm font-semibold text-gray-200">Plan & Status</th>
-                    <th className="px-4 py-4 text-left text-sm font-semibold text-gray-200">Trial Info</th>
-                    <th className="px-4 py-4 text-left text-sm font-semibold text-gray-200">Account Status</th>
-                    <th className="px-4 py-4 text-left text-sm font-semibold text-gray-200">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map(user => {
-                    const isFreeTrial = user.isFreeTrial;
-                    const createdDate = user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Unknown';
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gray-800/50 border-b border-gray-700">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">User Info</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Plan Type</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Service Start</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Days Used</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Trial Request</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Status</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredUsers.length > 0 ? (
+                  filteredUsers.map((user) => {
+                    const planType = user.planType || 'free_demo';
+                    const daysUsed = user.daysUsed || 0;
                     
                     return (
-                      <tr key={user.id} className="border-t border-red-500/20 hover:bg-black/20 transition">
-                        <td className="px-4 py-4">
+                      <tr key={user.id} className="border-b border-gray-700 hover:bg-gray-800/30 transition-colors">
+                        <td className="px-4 py-3 text-sm">
                           <div>
-                            <p className="font-semibold text-white">{user.name}</p>
-                            <p className="text-sm text-gray-400">{user.email}</p>
-                            <p className="text-xs text-gray-500">ID: {user.id} | Role: {user.role}</p>
-                            <p className="text-xs text-gray-500">Created: {createdDate}</p>
-                          </div>
-                        </td>
-                        <td className="px-4 py-4">
-                          <div className="space-y-1">
-                            {isFreeTrial ? (
-                              <span className="px-3 py-1 rounded-full text-xs font-bold bg-yellow-500/20 text-yellow-300 flex items-center gap-1 w-fit">
-                                <Calendar className="w-3 h-3" />
-                                FREE TRIAL
-                              </span>
-                            ) : (
-                              <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                                user.plan === 'ultra' 
-                                  ? 'bg-purple-500/20 text-purple-300' 
-                                  : 'bg-blue-500/20 text-blue-300'
-                              }`}>
-                                {user.plan?.toUpperCase()}
-                              </span>
-                            )}
-                            {user.price && (
-                              <p className="text-xs text-gray-400">KSH {user.price}/month</p>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-4 py-4">
-                          {isFreeTrial ? (
-                            <div className="space-y-1">
-                              <span className="px-2 py-1 rounded text-xs bg-yellow-500/20 text-yellow-300">
-                                {user.trialDaysLeft || 0} days left
-                              </span>
-                              {user.trialDaysLeft <= 7 && (
-                                <p className="text-xs text-red-400">⚠️ Expiring soon</p>
+                            <div className="flex items-center gap-2">
+                              {user.email === 'ianmabruk3@gmail.com' && (
+                                <Crown className="w-4 h-4 text-yellow-500" title="Main Admin" />
                               )}
+                              <span className="font-medium text-white">{user.name}</span>
                             </div>
-                          ) : (
-                            <span className="text-xs text-gray-500">Paid Plan</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-4">
-                          <div className="space-y-1">
-                            {user.locked ? (
-                              <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-500/20 text-red-300 flex items-center gap-1 w-fit">
-                                <Lock className="w-3 h-3" />
-                                Locked
-                              </span>
-                            ) : user.active ? (
-                              <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-500/20 text-green-300 flex items-center gap-1 w-fit">
-                                <CheckCircle className="w-3 h-3" />
-                                Active
-                              </span>
-                            ) : (
-                              <span className="px-3 py-1 rounded-full text-xs font-bold bg-gray-500/20 text-gray-300 w-fit">
-                                Inactive
-                              </span>
-                            )}
-                            {user.pin && (
-                              <p className="text-xs text-blue-400">PIN Set</p>
-                            )}
+                            <p className="text-gray-400 text-xs">{user.email}</p>
                           </div>
                         </td>
-                        <td className="px-4 py-4">
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => toggleUserLock(user.id, user.locked)}
-                              disabled={actionLoading === `lock-${user.id}`}
-                              className={`p-2 rounded-lg transition ${
-                                user.locked
-                                  ? 'bg-green-500/20 hover:bg-green-500/30 text-green-300'
-                                  : 'bg-red-500/20 hover:bg-red-500/30 text-red-300'
-                              } ${actionLoading === `lock-${user.id}` ? 'opacity-50 cursor-not-allowed' : ''}`}
-                              title={user.locked ? 'Unlock User' : 'Lock User'}
-                            >
-                              {actionLoading === `lock-${user.id}` ? (
-                                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                              ) : user.locked ? (
-                                <Unlock className="w-4 h-4" />
-                              ) : (
-                                <Lock className="w-4 h-4" />
-                              )}
-                            </button>
-                            <button
-                              onClick={() => {
-                                setSelectedUser(user);
-                                setShowPlanModal(true);
-                              }}
-                              disabled={actionLoading === `plan-${user.id}`}
-                              className="p-2 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 transition"
-                              title="Change Plan"
-                            >
-                              {actionLoading === `plan-${user.id}` ? (
-                                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                              ) : (
-                                <Edit3 className="w-4 h-4" />
-                              )}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-              {users.length === 0 && (
-                <div className="p-8 text-center text-gray-400">
-                  <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No users registered yet</p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Activities Tab */}
-        {activeTab === 'activities' && (
-          <div className="bg-black/30 backdrop-blur-lg rounded-xl border border-red-500/30 overflow-hidden">
-            <div className="p-4 border-b border-red-500/30">
-              <h2 className="text-xl font-bold text-white">System Activity Log</h2>
-              <p className="text-gray-400 text-sm">All user activities and admin actions</p>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-black/50">
-                  <tr>
-                    <th className="px-4 py-4 text-left text-sm font-semibold text-gray-200">Activity Type</th>
-                    <th className="px-4 py-4 text-left text-sm font-semibold text-gray-200">User Details</th>
-                    <th className="px-4 py-4 text-left text-sm font-semibold text-gray-200">Plan/Action</th>
-                    <th className="px-4 py-4 text-left text-sm font-semibold text-gray-200">Time</th>
-                    <th className="px-4 py-4 text-left text-sm font-semibold text-gray-200">IP Address</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {activities.slice(0, 100).map(activity => {
-                    const activityTime = activity.timestamp ? new Date(activity.timestamp).toLocaleString() : 'Unknown';
-                    const isSignup = activity.type === 'signup';
-                    const isAdminAction = activity.type === 'admin_action';
-                    
-                    return (
-                      <tr key={activity.id} className="border-t border-red-500/20 hover:bg-black/20 transition">
-                        <td className="px-4 py-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                            isSignup 
-                              ? 'bg-green-500/20 text-green-300' 
-                              : isAdminAction
-                              ? 'bg-red-500/20 text-red-300'
-                              : 'bg-blue-500/20 text-blue-300'
+                        <td className="px-4 py-3 text-sm">
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                            planType === 'paid' ? 'bg-green-900 text-green-200' :
+                            planType === 'trial' ? 'bg-yellow-900 text-yellow-200' :
+                            'bg-gray-700 text-gray-200'
                           }`}>
-                            {isSignup ? 'SIGNUP' : isAdminAction ? 'ADMIN' : 'LOGIN'}
+                            {planType === 'free_demo' ? '🆓 Free Demo' : 
+                             planType === 'trial' ? '⏱️ Trial' : '💰 Paid'}
                           </span>
-                          {isAdminAction && (
-                            <p className="text-xs text-gray-400 mt-1">{activity.action}</p>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-300">
+                          {formatDate(user.serviceStartDate)}
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          <span className="font-bold text-blue-400">{daysUsed} days</span>
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          {user.requestedTrial ? (
+                            <span className="px-2 py-1 bg-yellow-900/30 text-yellow-300 text-xs rounded flex items-center gap-1 w-fit">
+                              <AlertTriangle className="w-3 h-3" /> Requested
+                            </span>
+                          ) : (
+                            <span className="text-gray-500 text-xs">—</span>
                           )}
                         </td>
-                        <td className="px-4 py-4">
-                          <div>
-                            <p className="font-semibold text-white">{activity.name || activity.targetUserEmail}</p>
-                            <p className="text-sm text-gray-400">{activity.email || activity.targetUserEmail}</p>
-                            {isAdminAction && (
-                              <p className="text-xs text-red-400">By: {activity.adminEmail}</p>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-4 py-4">
-                          {isAdminAction ? (
-                            <div className="text-xs">
-                              {activity.oldPlan && activity.newPlan && (
-                                <span className="text-yellow-400">
-                                  {activity.oldPlan} → {activity.newPlan}
-                                </span>
-                              )}
-                              {activity.action === 'user_locked' && (
-                                <span className="text-red-400">User Locked</span>
-                              )}
-                              {activity.action === 'user_unlocked' && (
-                                <span className="text-green-400">User Unlocked</span>
-                              )}
-                            </div>
+                        <td className="px-4 py-3 text-sm">
+                          {user.active && !user.locked ? (
+                            <span className="flex items-center gap-1 text-green-400 font-medium text-xs">
+                              <CheckCircle className="w-4 h-4" /> Active
+                            </span>
+                          ) : user.locked ? (
+                            <span className="flex items-center gap-1 text-red-400 font-medium text-xs">
+                              <Lock className="w-4 h-4" /> Locked
+                            </span>
                           ) : (
-                            <span className={`px-2 py-1 rounded text-xs font-bold ${
-                              activity.plan === 'ultra' 
-                                ? 'bg-purple-500/20 text-purple-300'
-                                : activity.plan === 'basic'
-                                ? 'bg-blue-500/20 text-blue-300'
-                                : 'bg-yellow-500/20 text-yellow-300'
-                            }`}>
-                              {activity.plan?.toUpperCase() || 'TRIAL'}
+                            <span className="flex items-center gap-1 text-gray-400 font-medium text-xs">
+                              <XCircle className="w-4 h-4" /> Inactive
                             </span>
                           )}
                         </td>
-                        <td className="px-4 py-4 text-gray-300 text-sm">
-                          {activityTime}
-                        </td>
-                        <td className="px-4 py-4 text-gray-400 text-sm">
-                          {activity.ipAddress || 'Unknown'}
+                        <td className="px-4 py-3 text-sm">
+                          <button
+                            onClick={() => toggleUserLock(user.id, user.locked)}
+                            disabled={actionLoading === `lock-${user.id}` || user.email === 'ianmabruk3@gmail.com'}
+                            className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                              user.locked
+                                ? 'bg-green-600 hover:bg-green-700 disabled:bg-gray-500 text-white'
+                                : 'bg-red-600 hover:bg-red-700 disabled:bg-gray-500 text-white'
+                            }`}
+                          >
+                            {actionLoading === `lock-${user.id}` ? 'Processing...' : (user.locked ? 'Unlock' : 'Lock')}
+                          </button>
                         </td>
                       </tr>
                     );
-                  })}
-                </tbody>
-              </table>
-              {activities.length === 0 && (
-                <div className="p-8 text-center text-gray-400">
-                  <Activity className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No activity recorded yet</p>
-                </div>
-              )}
-            </div>
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan="7" className="px-4 py-8 text-center text-gray-400">
+                      No users found in this category
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
-        )}
 
-        {/* System Control Tab */}
-        {activeTab === 'time-entries' && (
-          <div className="space-y-6">
-            <div className="bg-black/30 backdrop-blur-lg rounded-xl p-6 border border-red-500/30">
-              <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                <Clock className="w-6 h-6 text-yellow-400" />
-                Cashier Time Tracking
-              </h2>
-              
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-black/50 border-b border-red-500/30">
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Cashier</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Clock In Time</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Clock Out Time</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Duration</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {timeEntries.length === 0 ? (
-                      <tr>
-                        <td colSpan="5" className="px-4 py-8 text-center text-gray-400">
-                          No time entries today
-                        </td>
-                      </tr>
-                    ) : (
-                      timeEntries.map((entry, idx) => {
-                        const clockIn = new Date(entry.clockInTime);
-                        const clockOut = entry.clockOutTime ? new Date(entry.clockOutTime) : null;
-                        const duration = entry.duration ? `${Math.floor(entry.duration / 60)}h ${entry.duration % 60}m` : 'In Progress';
-                        
-                        return (
-                          <tr key={idx} className="border-b border-red-500/20 hover:bg-red-500/10 transition-colors">
-                            <td className="px-4 py-3 text-sm">
-                              <div>
-                                <p className="text-white font-medium">{entry.cashierName}</p>
-                                <p className="text-gray-400 text-xs">{entry.cashierEmail}</p>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3 text-sm text-gray-300">
-                              {clockIn.toLocaleString()}
-                            </td>
-                            <td className="px-4 py-3 text-sm text-gray-300">
-                              {clockOut ? clockOut.toLocaleString() : '-'}
-                            </td>
-                            <td className="px-4 py-3 text-sm text-gray-300">
-                              {duration}
-                            </td>
-                            <td className="px-4 py-3 text-sm">
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                entry.status === 'clocked_in' 
-                                  ? 'bg-green-500/30 text-green-300' 
-                                  : 'bg-blue-500/30 text-blue-300'
-                              }`}>
-                                {entry.status === 'clocked_in' ? 'Clocked In' : 'Clocked Out'}
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
+          <div className="mt-6 pt-4 border-t border-gray-700 text-sm text-gray-400 flex justify-between">
+            <p>Showing {filteredUsers.length} of {users.length} users</p>
+            <p>Last updated: {new Date().toLocaleTimeString()}</p>
+          </div>
+        </div>
+
+        {/* System Statistics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-black/50 border border-blue-500/30 rounded-xl p-6 backdrop-blur-lg">
+            <h3 className="text-lg font-bold text-blue-400 mb-4 flex items-center gap-2">
+              <BarChart3 className="w-5 h-5" /> System Overview
+            </h3>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center pb-2 border-b border-gray-700">
+                <span className="text-gray-400">Total Sales</span>
+                <span className="font-bold text-white">KSH {(stats.totalSales || 0).toLocaleString()}</span>
               </div>
-              
-              <div className="mt-6 p-4 bg-red-500/20 rounded-lg border border-red-500/30">
-                <h3 className="text-sm font-semibold text-red-300 mb-2">Today's Summary</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div>
-                    <p className="text-xs text-gray-400">Total Cashiers</p>
-                    <p className="text-lg font-bold text-white">{new Set(timeEntries.map(e => e.cashierId)).size}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-400">Clocked In</p>
-                    <p className="text-lg font-bold text-green-400">{timeEntries.filter(e => e.status === 'clocked_in').length}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-400">Clocked Out</p>
-                    <p className="text-lg font-bold text-blue-400">{timeEntries.filter(e => e.status === 'clocked_out').length}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-400">Total Hours</p>
-                    <p className="text-lg font-bold text-yellow-400">
-                      {Math.floor(timeEntries.filter(e => e.duration).reduce((sum, e) => sum + e.duration, 0) / 60)}h
-                    </p>
-                  </div>
-                </div>
+              <div className="flex justify-between items-center pb-2 border-b border-gray-700">
+                <span className="text-gray-400">Total Expenses</span>
+                <span className="font-bold text-white">KSH {(stats.totalExpenses || 0).toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between items-center pb-2 border-b border-gray-700">
+                <span className="text-gray-400">Profit</span>
+                <span className="font-bold text-green-400">KSH {(stats.profit || 0).toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400">Products</span>
+                <span className="font-bold text-white">{stats.productsCount || 0}</span>
               </div>
             </div>
           </div>
-        )}
 
-        {/* System Control Tab */}
-        {activeTab === 'system' && (
-          <div className="space-y-6">
-            <div className="bg-black/30 backdrop-blur-lg rounded-xl p-6 border border-red-500/30">
-              <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                <Database className="w-6 h-6" />
-                System Data Management
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <button
-                  onClick={() => clearSystemData('sales')}
-                  disabled={actionLoading === 'clear-sales'}
-                  className="p-4 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/30 rounded-lg text-orange-300 transition-colors disabled:opacity-50"
-                >
-                  {actionLoading === 'clear-sales' ? (
-                    <div className="w-6 h-6 mx-auto mb-2 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <Trash2 className="w-6 h-6 mx-auto mb-2" />
-                  )}
-                  <p className="font-medium">Clear Sales</p>
-                  <p className="text-xs opacity-75">All user sales data</p>
-                </button>
-                
-                <button
-                  onClick={() => clearSystemData('expenses')}
-                  disabled={actionLoading === 'clear-expenses'}
-                  className="p-4 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded-lg text-red-300 transition-colors disabled:opacity-50"
-                >
-                  {actionLoading === 'clear-expenses' ? (
-                    <div className="w-6 h-6 mx-auto mb-2 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <DollarSign className="w-6 h-6 mx-auto mb-2" />
-                  )}
-                  <p className="font-medium">Clear Expenses</p>
-                  <p className="text-xs opacity-75">All user expense data</p>
-                </button>
-                
-                <button
-                  onClick={() => clearSystemData('products')}
-                  disabled={actionLoading === 'clear-products'}
-                  className="p-4 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 rounded-lg text-blue-300 transition-colors disabled:opacity-50"
-                >
-                  {actionLoading === 'clear-products' ? (
-                    <div className="w-6 h-6 mx-auto mb-2 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <RefreshCw className="w-6 h-6 mx-auto mb-2" />
-                  )}
-                  <p className="font-medium">Clear Inventory</p>
-                  <p className="text-xs opacity-75">All products & batches</p>
-                </button>
-                
-                <button
-                  onClick={() => clearSystemData('all')}
-                  disabled={actionLoading === 'clear-all'}
-                  className="p-4 bg-red-600/20 hover:bg-red-600/30 border border-red-600/30 rounded-lg text-red-300 transition-colors disabled:opacity-50"
-                >
-                  {actionLoading === 'clear-all' ? (
-                    <div className="w-6 h-6 mx-auto mb-2 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <AlertTriangle className="w-6 h-6 mx-auto mb-2" />
-                  )}
-                  <p className="font-medium">Clear All Data</p>
-                  <p className="text-xs opacity-75">⚠️ Everything except users</p>
-                </button>
+          <div className="bg-black/50 border border-purple-500/30 rounded-xl p-6 backdrop-blur-lg">
+            <h3 className="text-lg font-bold text-purple-400 mb-4 flex items-center gap-2">
+              <Activity className="w-5 h-5" /> Quick Stats
+            </h3>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center pb-2 border-b border-gray-700">
+                <span className="text-gray-400">Sales Records</span>
+                <span className="font-bold text-white">{stats.salesCount || 0}</span>
               </div>
-            </div>
-
-            <div className="bg-black/30 backdrop-blur-lg rounded-xl p-6 border border-red-500/30">
-              <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                <Settings className="w-6 h-6" />
-                System Information
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-300 mb-2">User Statistics</h3>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Total Users:</span>
-                      <span className="text-white">{users.length}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Active Users:</span>
-                      <span className="text-green-400">{users.filter(u => u.active && !u.locked).length}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Locked Users:</span>
-                      <span className="text-red-400">{users.filter(u => u.locked).length}</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-300 mb-2">Plan Distribution</h3>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Basic Plans:</span>
-                      <span className="text-blue-400">{users.filter(u => u.plan === 'basic').length}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Ultra Plans:</span>
-                      <span className="text-purple-400">{users.filter(u => u.plan === 'ultra').length}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Free Trials:</span>
-                      <span className="text-yellow-400">{users.filter(u => !u.plan || u.plan === 'trial').length}</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-300 mb-2">Revenue</h3>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Monthly Revenue:</span>
-                      <span className="text-green-400">KSH {(stats.mrr || 0).toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Total Revenue:</span>
-                      <span className="text-green-400">KSH {(stats.totalRevenue || 0).toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Activities:</span>
-                      <span className="text-blue-400">{activities.length}</span>
-                    </div>
-                  </div>
-                </div>
+              <div className="flex justify-between items-center pb-2 border-b border-gray-700">
+                <span className="text-gray-400">Expense Records</span>
+                <span className="font-bold text-white">{stats.expensesCount || 0}</span>
               </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Plan Change Modal */}
-      {showPlanModal && selectedUser && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-black/80 backdrop-blur-lg rounded-xl p-6 border border-red-500/30 max-w-md w-full mx-4">
-            <h3 className="text-xl font-bold text-white mb-4">Change User Plan</h3>
-            <div className="mb-4">
-              <p className="text-gray-300">User: <span className="text-white font-semibold">{selectedUser.name}</span></p>
-              <p className="text-gray-400 text-sm">{selectedUser.email}</p>
-              <p className="text-gray-400 text-sm">Current Plan: <span className="text-yellow-400">{selectedUser.plan || 'trial'}</span></p>
-            </div>
-            <div className="space-y-3 mb-6">
-              {['trial', 'basic', 'ultra'].map(plan => (
-                <button
-                  key={plan}
-                  onClick={() => changePlan(selectedUser.id, plan)}
-                  disabled={actionLoading === `plan-${selectedUser.id}` || selectedUser.plan === plan}
-                  className={`w-full p-3 rounded-lg border transition ${
-                    selectedUser.plan === plan
-                      ? 'bg-gray-500/20 border-gray-500/30 text-gray-400 cursor-not-allowed'
-                      : plan === 'trial'
-                      ? 'bg-yellow-500/20 border-yellow-500/30 text-yellow-300 hover:bg-yellow-500/30'
-                      : plan === 'basic'
-                      ? 'bg-blue-500/20 border-blue-500/30 text-blue-300 hover:bg-blue-500/30'
-                      : 'bg-purple-500/20 border-purple-500/30 text-purple-300 hover:bg-purple-500/30'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="text-left">
-                      <p className="font-semibold">{plan.charAt(0).toUpperCase() + plan.slice(1)} Plan</p>
-                      <p className="text-xs opacity-75">
-                        {plan === 'trial' ? 'Free - 30 days' : plan === 'basic' ? 'KSH 1,000/month' : 'KSH 2,400/month'}
-                      </p>
-                    </div>
-                    {selectedUser.plan === plan && <CheckCircle className="w-5 h-5" />}
-                  </div>
-                </button>
-              ))}
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  setShowPlanModal(false);
-                  setSelectedUser(null);
-                }}
-                className="flex-1 px-4 py-2 bg-gray-500/20 border border-gray-500/30 text-gray-300 rounded-lg hover:bg-gray-500/30 transition"
-              >
-                Cancel
-              </button>
+              <div className="flex justify-between items-center pb-2 border-b border-gray-700">
+                <span className="text-gray-400">Active Accounts</span>
+                <span className="font-bold text-green-400">{activeCount}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400">Locked Accounts</span>
+                <span className="font-bold text-red-400">{lockedCount}</span>
+              </div>
             </div>
           </div>
         </div>
-      )}
+
+        {/* Legend & Information */}
+        <div className="mt-8 bg-black/50 border border-gray-700 rounded-xl p-6 backdrop-blur-lg">
+          <h4 className="text-lg font-semibold text-gray-300 mb-4">📋 User Plan Types & Information</h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="flex items-start gap-3 p-4 bg-gray-800/30 rounded-lg border border-gray-700">
+              <Zap className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-medium text-gray-300">🆓 Free Demo</p>
+                <p className="text-gray-500 text-sm">New users getting initial access to test the system</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 p-4 bg-gray-800/30 rounded-lg border border-gray-700">
+              <Clock className="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-medium text-gray-300">⏱️ Trial Users</p>
+                <p className="text-gray-500 text-sm">Users who requested trial period or using extended trial</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 p-4 bg-gray-800/30 rounded-lg border border-gray-700">
+              <DollarSign className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-medium text-gray-300">💰 Paid Users</p>
+                <p className="text-gray-500 text-sm">Users with active paid subscriptions</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+            <p className="text-blue-300 text-sm"><span className="font-semibold">📊 Days Used:</span> Calculated from service start date to today</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
