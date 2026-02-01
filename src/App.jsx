@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ProductsProvider } from './context/ProductsContext';
 import { ScreenLockProvider, useScreenLock } from './context/ScreenLockContext';
-import { ProtectedRoute as RouteGuard, ProPlanGuard, RoleGuard, BusinessTypeGuard, AdminGuard } from './components/RouteGuards';
+import { ProtectedRoute as RouteGuard, ProPlanGuard, RoleGuard, BusinessTypeGuard, AdminGuard, PetroleumPlanGuard } from './components/RouteGuards';
 import ReminderModal from './components/ReminderModal';
 import ScreenLock from './components/ScreenLock';
 import SubscriptionReminderBar from './components/SubscriptionReminderBar';
@@ -38,6 +38,7 @@ const MainAdminLogin = lazy(() => import('./pages/MainAdminLogin'));
 const MainAdminLanding = lazy(() => import('./pages/MainAdminLanding'));
 const AdminClinicDashboard = lazy(() => import('./pages/admin/AdminClinicDashboard'));
 const AdminBarDashboard = lazy(() => import('./pages/admin/AdminBarDashboard'));
+const PetrolAdminDashboard = lazy(() => import('./pages/admin/PetrolAdminDashboard'));
 const AdminHotelDashboard = lazy(() => import('./pages/admin/AdminHotelDashboard'));
 const AdminSupermarketDashboard = lazy(() => import('./pages/admin/AdminSupermarketDashboard'));
 const ClinicDoctorDashboard = lazy(() => import('./pages/dashboards/clinic/ClinicDoctorDashboard'));
@@ -110,7 +111,7 @@ function ProtectedRoute({ children, adminOnly = false, ultraOnly = false, ownerO
     }
     try {
       const userData = JSON.parse(ownerUser);
-      if (userData.type !== 'main_admin') {
+      if (userData.role !== 'main_admin') {
         return <Navigate to="/main.admin" />;
       }
     } catch (e) {
@@ -124,7 +125,7 @@ function ProtectedRoute({ children, adminOnly = false, ultraOnly = false, ownerO
     if (ultraOnly && (user.role !== 'admin' || user.plan !== 'ultra')) return <Navigate to="/dashboard" />;
   }
   
-  const userType = ownerOnly ? 'owner' : 'user';
+  const userType = ownerOnly ? 'main_admin' : 'user';
   
   return (
     <>
@@ -279,6 +280,17 @@ function App() {
                     </ProPlanGuard>
                   </RouteGuard>
                 } />
+                <Route path="/admin/petrol" element={
+                  <RouteGuard>
+                    <PetroleumPlanGuard>
+                      <BusinessTypeGuard requiredType="petrol">
+                        <AdminGuard>
+                          <PetrolAdminDashboard />
+                        </AdminGuard>
+                      </BusinessTypeGuard>
+                    </PetroleumPlanGuard>
+                  </RouteGuard>
+                } />
                 
                 {/* Pro Plan Role Dashboards */}
                 <Route path="/dashboard/clinic/doctor" element={
@@ -305,7 +317,13 @@ function App() {
                 <Route path="/cashier/hospital" element={<ProtectedRoute><HospitalCashierPOS /></ProtectedRoute>} />
                 <Route path="/cashier/school" element={<ProtectedRoute><SchoolCashierPOS /></ProtectedRoute>} />
                 <Route path="/cashier/kiosk" element={<ProtectedRoute><KioskCashierPOS /></ProtectedRoute>} />
-                <Route path="/cashier/petrol" element={<ProtectedRoute><PetrolCashierPOS /></ProtectedRoute>} />
+                <Route path="/cashier/petrol" element={
+                  <ProtectedRoute>
+                    <PetroleumPlanGuard>
+                      <PetrolCashierPOS />
+                    </PetroleumPlanGuard>
+                  </ProtectedRoute>
+                } />
                 <Route path="/cashier/shoes" element={<ProtectedRoute><ShoesCashierPOS /></ProtectedRoute>} />
                 
                 {/* Admin Dashboard - ORIGINAL OLD version with tabs */}

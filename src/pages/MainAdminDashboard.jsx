@@ -12,6 +12,7 @@ import { mainAdmin, BASE_API_URL } from '../services/api';
 export default function MainAdminDashboard() {
   const [users, setUsers] = useState([]);
   const [stats, setStats] = useState({});
+  const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
   const [filterPlan, setFilterPlan] = useState('all');
@@ -19,7 +20,7 @@ export default function MainAdminDashboard() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Verify owner access
+    // Verify main admin access
     const token = localStorage.getItem('token') || localStorage.getItem('mainAdminToken') || localStorage.getItem('ownerToken');
     const userStr = localStorage.getItem('user') || localStorage.getItem('mainAdminUser') || localStorage.getItem('ownerUser');
     
@@ -30,7 +31,7 @@ export default function MainAdminDashboard() {
 
     try {
       const userData = JSON.parse(userStr);
-      if (userData.role !== 'owner' || userData.email !== 'ianmabruk3@gmail.com') {
+      if (userData.role !== 'main_admin') {
         navigate('/main.admin/login', { replace: true });
         return;
       }
@@ -48,13 +49,15 @@ export default function MainAdminDashboard() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [usersData, statsData] = await Promise.all([
+      const [usersData, statsData, sessionsData] = await Promise.all([
         mainAdmin.getUsers(),
-        mainAdmin.getStats()
+        mainAdmin.getStats(),
+        mainAdmin.getSessions()
       ]);
       
       setUsers(usersData || []);
       setStats(statsData || {});
+      setSessions(Array.isArray(sessionsData) ? sessionsData : []);
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
@@ -69,6 +72,18 @@ export default function MainAdminDashboard() {
       await loadData();
     } catch (error) {
       alert('Failed to update user status');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleRevokeSession = async (sessionId) => {
+    try {
+      setActionLoading(`revoke-${sessionId}`);
+      await mainAdmin.revokeSession(sessionId);
+      await loadData();
+    } catch (error) {
+      alert('Failed to revoke session');
     } finally {
       setActionLoading(null);
     }
@@ -107,6 +122,10 @@ export default function MainAdminDashboard() {
   const handleLogout = () => {
     localStorage.removeItem('ownerToken');
     localStorage.removeItem('ownerUser');
+    localStorage.removeItem('mainAdminToken');
+    localStorage.removeItem('mainAdminUser');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('csrfToken');
     navigate('/main.admin');
   };
 
@@ -301,7 +320,7 @@ export default function MainAdminDashboard() {
                         <td className="px-4 py-3 text-sm">
                           <div>
                             <div className="flex items-center gap-2">
-                              {user.email === 'ianmabruk3@gmail.com' && (
+                              {user.role === 'main_admin' && (
                                 <Crown className="w-4 h-4 text-yellow-500" title="Main Admin" />
                               )}
                               <span className="font-medium text-white">{user.name}</span>
@@ -379,6 +398,62 @@ export default function MainAdminDashboard() {
           <div className="mt-6 pt-4 border-t border-gray-700 text-sm text-gray-400 flex justify-between">
             <p>Showing {filteredUsers.length} of {users.length} users</p>
             <p>Last updated: {new Date().toLocaleTimeString()}</p>
+          </div>
+        </div>
+
+        {/* Active Sessions */}
+        <div className="bg-black/50 border border-red-500/30 rounded-xl p-6 backdrop-blur-lg mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-white">🧭 Active Sessions</h2>
+            <span className="text-sm text-gray-400">{sessions.length} sessions</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gray-800/50 border-b border-gray-700">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Session ID</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">User ID</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">IP</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Created</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Expires</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Status</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sessions.length > 0 ? (
+                  sessions.slice(0, 20).map((session) => (
+                    <tr key={session.id} className="border-b border-gray-700 hover:bg-gray-800/30 transition-colors">
+                      <td className="px-4 py-3 text-sm text-gray-300">#{session.id}</td>
+                      <td className="px-4 py-3 text-sm text-gray-300">{session.user_id}</td>
+                      <td className="px-4 py-3 text-sm text-gray-400">{session.ip_address || 'N/A'}</td>
+                      <td className="px-4 py-3 text-sm text-gray-400">{formatDate(session.created_at)}</td>
+                      <td className="px-4 py-3 text-sm text-gray-400">{formatDate(session.expires_at)}</td>
+                      <td className="px-4 py-3 text-sm">
+                        {session.revoked_at ? (
+                          <span className="text-red-400 text-xs">Revoked</span>
+                        ) : (
+                          <span className="text-green-400 text-xs">Active</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        <button
+                          onClick={() => handleRevokeSession(session.id)}
+                          disabled={session.revoked_at || actionLoading === `revoke-${session.id}`}
+                          className="px-3 py-1 rounded text-xs font-medium bg-red-600 hover:bg-red-700 disabled:bg-gray-600"
+                        >
+                          {actionLoading === `revoke-${session.id}` ? 'Revoking...' : 'Revoke'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="7" className="px-4 py-8 text-center text-gray-400">No sessions found</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
 

@@ -9,6 +9,8 @@ const getBaseUrl = () => {
 const BASE_API_URL = getBaseUrl();
 
 const getToken = () => localStorage.getItem('token');
+const getRefreshToken = () => localStorage.getItem('refreshToken');
+const getCsrfToken = () => localStorage.getItem('csrfToken');
 
 const toQueryString = (params = {}) => {
   const entries = Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== '');
@@ -18,8 +20,9 @@ const toQueryString = (params = {}) => {
 };
 
 // Retry logic for network failures (handles Render free tier spindown)
-const requestWithRetry = async (endpoint, options = {}, retryCount = 0, maxRetries = 3) => {
+const requestWithRetry = async (endpoint, options = {}, retryCount = 0, maxRetries = 3, didRefresh = false) => {
   const token = getToken();
+  const csrfToken = getCsrfToken();
   
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   
@@ -28,6 +31,7 @@ const requestWithRetry = async (endpoint, options = {}, retryCount = 0, maxRetri
     headers: {
       'Content-Type': 'application/json',
       ...(token && !(cleanEndpoint.startsWith('/auth') && cleanEndpoint !== '/auth/me') && !cleanEndpoint.includes('/main-admin/auth/login') && { Authorization: `Bearer ${token}` }),
+      ...(csrfToken && { 'X-CSRF-Token': csrfToken }),
       ...options.headers
     }
   };
@@ -36,6 +40,33 @@ const requestWithRetry = async (endpoint, options = {}, retryCount = 0, maxRetri
     const response = await fetch(`${BASE_API_URL}${cleanEndpoint}`, config);
 
     if (response.status === 401) {
+      if (!didRefresh) {
+        const refreshToken = getRefreshToken();
+        if (refreshToken) {
+          try {
+            const refreshResp = await fetch(`${BASE_API_URL}/auth/refresh`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ refreshToken })
+            });
+            if (refreshResp.ok) {
+              const refreshData = await refreshResp.json();
+              if (refreshData.token) {
+                localStorage.setItem('token', refreshData.token);
+              }
+              if (refreshData.refreshToken) {
+                localStorage.setItem('refreshToken', refreshData.refreshToken);
+              }
+              if (refreshData.csrfToken) {
+                localStorage.setItem('csrfToken', refreshData.csrfToken);
+              }
+              return requestWithRetry(endpoint, options, retryCount, maxRetries, true);
+            }
+          } catch (e) {
+            // fall through to auth reset
+          }
+        }
+      }
       // For login endpoints, return the error response instead of throwing
       if (cleanEndpoint.includes('/auth/login') || cleanEndpoint.includes('/main-admin/auth/login')) {
         const errorData = await response.json().catch(() => ({ error: 'Unauthorized' }));
@@ -45,6 +76,8 @@ const requestWithRetry = async (endpoint, options = {}, retryCount = 0, maxRetri
       // For other endpoints, clear tokens and redirect
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('csrfToken');
       const path = window.location.pathname || '';
       
       // Public pages that should NOT redirect on 401
@@ -250,7 +283,7 @@ export const expenses = {
 
 // Statistics API
 export const stats = {
-  get: () => request('/stats')
+  get: (params) => request(`/stats${toQueryString(params)}`)
 };
 
 // Reminders API
@@ -515,6 +548,23 @@ export const mainAdmin = {
   getSubscribersAnalytics: () => {
     const token = localStorage.getItem('token') || localStorage.getItem('ownerToken') || localStorage.getItem('mainAdminToken');
     return request('/main-admin/subscribers/analytics', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  },
+  getSessions: () => {
+    const token = localStorage.getItem('token') || localStorage.getItem('ownerToken') || localStorage.getItem('mainAdminToken');
+    return request('/main-admin/sessions', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  },
+  revokeSession: (sessionId) => {
+    const token = localStorage.getItem('token') || localStorage.getItem('ownerToken') || localStorage.getItem('mainAdminToken');
+    return request(`/main-admin/sessions/${sessionId}/revoke`, {
+      method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`
       }

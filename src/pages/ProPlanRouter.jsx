@@ -19,6 +19,7 @@ import AdminDashboard from './admin/AdminDashboard';
 
 // Import new business-specific dashboards
 import SupermarketDashboard from './business/SupermarketDashboard';
+import PetrolAdminDashboard from './admin/PetrolAdminDashboard';
 
 /**
  * ProPlanRouter - Routes Pro Plan users to business-specific dashboards
@@ -136,10 +137,14 @@ export default function ProPlanRouter() {
     return <SupermarketDashboard />;
   }
 
+  if (businessType === 'petrol') {
+    return <PetrolAdminDashboard />;
+  }
+
   // For hospital, pharmacy, and other business types - use standard admin dashboard for now
   // These can be replaced with specialized dashboards as they're built
   if (businessType === 'hospital' || businessType === 'pharmacy' || 
-      businessType === 'petrol' || businessType === 'school' ||
+      businessType === 'school' ||
       businessType === 'gym' || businessType === 'salon') {
     console.log(`[PRO PLAN ROUTER] Using standard admin dashboard for ${businessType}`);
     return <AdminDashboard />;

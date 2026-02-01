@@ -104,11 +104,23 @@ export default function CashierPOS() {
       refreshProducts();
     };
 
+    const handleSaleCompleted = () => {
+      console.log('💹 Sale completed event received - refreshing stats');
+      refreshStats();
+    };
+
+    const handleExpenseAdded = () => {
+      console.log('💸 Expense added event received - refreshing stats');
+      refreshStats();
+    };
+
     // Add event listeners
     window.addEventListener('stock_updated', handleStockUpdated);
     window.addEventListener('productsSync', handleProductsSync);
     window.addEventListener('productUpdated', handleProductUpdated);
     window.addEventListener('productCreated', handleProductUpdated);
+    window.addEventListener('sale_completed', handleSaleCompleted);
+    window.addEventListener('expense_added', handleExpenseAdded);
 
     // Connect to WebSocket for real-time stock updates
     const token = localStorage.getItem('token');
@@ -176,6 +188,8 @@ export default function CashierPOS() {
       window.removeEventListener('productsSync', handleProductsSync);
       window.removeEventListener('productUpdated', handleProductUpdated);
       window.removeEventListener('productCreated', handleProductUpdated);
+      window.removeEventListener('sale_completed', handleSaleCompleted);
+      window.removeEventListener('expense_added', handleExpenseAdded);
       
       try { unsub(); } catch (e) {}
       websocketService.disconnect();
@@ -400,7 +414,7 @@ export default function CashierPOS() {
         products.getAll(),
         sales.getAll(),
         expenses.getAll(),
-        stats.get(),
+        stats.get({ cashierId: user?.id }),
         batches.getAll(),
         discounts.getAll().catch(() => [])  // Fallback to empty array if discounts fail
       ]);
@@ -426,6 +440,18 @@ export default function CashierPOS() {
       if (!productList.length) {
         alert('⚠️ Failed to load data\n\n' + errorMsg + '\n\nSome features may not work correctly.');
       }
+    }
+  };
+
+  const refreshStats = async () => {
+    try {
+      const st = await stats.get({ cashierId: user?.id });
+      setData(prev => ({
+        ...prev,
+        stats: st || {}
+      }));
+    } catch (error) {
+      console.warn('Stats refresh failed:', error);
     }
   };
 
@@ -668,6 +694,7 @@ export default function CashierPOS() {
           
           // Trigger global product refresh
           refreshProducts();
+          refreshStats();
           
           // Background: refresh products from server and reload data
           setTimeout(async () => {
@@ -809,7 +836,12 @@ export default function CashierPOS() {
   const handleAddExpense = async (e) => {
     e.preventDefault();
     try {
-      const expenseData = { ...newExpense, amount: parseFloat(newExpense.amount) };
+      const expenseData = { 
+        ...newExpense,
+        amount: parseFloat(newExpense.amount),
+        cashierId: user?.id,
+        cashierName: user?.name || user?.email
+      };
       await expenses.create(expenseData);
       setNewExpense({ description: '', amount: '', category: '' });
       setShowAddExpense(false);
@@ -820,6 +852,7 @@ export default function CashierPOS() {
       }));
       
       await loadData(); // Reload all data immediately
+      await refreshStats();
     } catch (error) {
       console.error('Failed to add expense:', error);
       alert('Failed to add expense');

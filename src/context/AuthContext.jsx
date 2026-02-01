@@ -97,6 +97,12 @@ export const AuthProvider = ({ children }) => {
       if (payload && payload.token && payload.user) {
         const normalized = normalizeUser(payload.user);
         localStorage.setItem('token', payload.token);
+        if (payload.refreshToken) {
+          localStorage.setItem('refreshToken', payload.refreshToken);
+        }
+        if (payload.csrfToken) {
+          localStorage.setItem('csrfToken', payload.csrfToken);
+        }
         localStorage.setItem('user', JSON.stringify(normalized));
         setUser(normalized);
         return payload;
@@ -107,6 +113,12 @@ export const AuthProvider = ({ children }) => {
       if (response.token && response.user) {
         const normalized = normalizeUser(response.user);
         localStorage.setItem('token', response.token);
+        if (response.refreshToken) {
+          localStorage.setItem('refreshToken', response.refreshToken);
+        }
+        if (response.csrfToken) {
+          localStorage.setItem('csrfToken', response.csrfToken);
+        }
         localStorage.setItem('user', JSON.stringify(normalized));
         setUser(normalized);
         return response;
@@ -124,6 +136,12 @@ export const AuthProvider = ({ children }) => {
       if (response.token && response.user) {
         const normalized = normalizeUser(response.user);
         localStorage.setItem('token', response.token);
+        if (response.refreshToken) {
+          localStorage.setItem('refreshToken', response.refreshToken);
+        }
+        if (response.csrfToken) {
+          localStorage.setItem('csrfToken', response.csrfToken);
+        }
         localStorage.setItem('user', JSON.stringify(normalized));
         setUser(normalized);
         return response;
@@ -162,11 +180,26 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setUser(null);
-    window.location.href = '/auth/login';
+  const logout = async () => {
+    try {
+      const refreshToken = localStorage.getItem('refreshToken');
+      if (refreshToken) {
+        await fetch(`${BASE_API_URL}/auth/logout`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken })
+        });
+      }
+    } catch (e) {
+      // ignore
+    } finally {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('csrfToken');
+      setUser(null);
+      window.location.href = '/auth/login';
+    }
   };
 
   const isAuthenticated = () => !!user && !!localStorage.getItem('token');
@@ -174,10 +207,10 @@ export const AuthProvider = ({ children }) => {
   const hasRole = (role) => user && (user.role === role);
   
   // Helper to check if user is owner/main admin
-  const isOwner = () => user && (user.role === 'owner');
+  const isOwner = () => user && (user.role === 'main_admin');
   
   // Helper to check if user is admin
-  const isAdmin = () => user && (user.role === 'admin' || user.role === 'main-admin');
+  const isAdmin = () => user && (user.role === 'admin' || user.role === 'main_admin');
   
   // Helper to check if user is cashier
   const isCashier = () => user && (user.role === 'cashier');
@@ -186,15 +219,15 @@ export const AuthProvider = ({ children }) => {
    * Get the correct dashboard URL for the current user's role
    * This ensures consistent redirects across the application
    * 
-   * Role hierarchy:
-  * - 'owner' (Main Admin/Super Admin) → /main.admin
+  * Role hierarchy:
+  * - 'main_admin' (Main Admin/Super Admin) → /main.admin
    * - 'admin' (Regular Business Admin) → /admin
    * - 'cashier' (POS Staff) → /cashier
    */
   const getDashboardUrl = (userRole = null) => {
     const role = userRole || user?.role;
     
-    if (role === 'owner') {
+    if (role === 'main_admin') {
       return '/main.admin';
     } else if (role === 'admin') {
       return '/admin';

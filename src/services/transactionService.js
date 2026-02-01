@@ -28,6 +28,9 @@ const getToken = () => {
   return cachedToken;
 };
 
+const getCsrfToken = () => localStorage.getItem('csrfToken');
+const getRefreshToken = () => localStorage.getItem('refreshToken');
+
 /**
  * Invalidate token cache (call on logout)
  */
@@ -42,6 +45,7 @@ export const invalidateTokenCache = () => {
 const apiRequest = async (endpoint, options = {}) => {
   const startTime = performance.now();
   const token = getToken();
+  const csrfToken = getCsrfToken();
   
   try {
     const response = await fetch(`${API_BASE}${endpoint}`, {
@@ -49,12 +53,42 @@ const apiRequest = async (endpoint, options = {}) => {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
+        ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
         ...options.headers
       },
       // Performance optimizations
       keepalive: true,  // Reuse connections
       priority: 'high'  // Browser hint for critical requests
     });
+
+    if (response.status === 401) {
+      const refreshToken = getRefreshToken();
+      if (refreshToken) {
+        try {
+          const refreshResp = await fetch(`${API_BASE}/api/auth/refresh`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refreshToken })
+          });
+          if (refreshResp.ok) {
+            const refreshData = await refreshResp.json();
+            if (refreshData.token) {
+              localStorage.setItem('token', refreshData.token);
+              cachedToken = refreshData.token;
+            }
+            if (refreshData.refreshToken) {
+              localStorage.setItem('refreshToken', refreshData.refreshToken);
+            }
+            if (refreshData.csrfToken) {
+              localStorage.setItem('csrfToken', refreshData.csrfToken);
+            }
+            return apiRequest(endpoint, options);
+          }
+        } catch (e) {
+          // fall through
+        }
+      }
+    }
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ error: 'Request failed' }));

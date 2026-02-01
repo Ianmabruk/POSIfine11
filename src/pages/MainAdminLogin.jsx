@@ -25,7 +25,7 @@ export default function MainAdminLogin() {
     if (token && userStr) {
       try {
         const userData = JSON.parse(userStr);
-        if (userData.role === 'owner') {
+        if (userData.role === 'main_admin') {
           navigate('/main.admin/dashboard', { replace: true });
         }
       } catch (e) {
@@ -53,6 +53,12 @@ export default function MainAdminLogin() {
         localStorage.setItem('ownerUser', JSON.stringify(response.user));
         localStorage.setItem('mainAdminToken', response.token);
         localStorage.setItem('mainAdminUser', JSON.stringify(response.user));
+        if (response.refreshToken) {
+          localStorage.setItem('refreshToken', response.refreshToken);
+        }
+        if (response.csrfToken) {
+          localStorage.setItem('csrfToken', response.csrfToken);
+        }
         navigate('/main.admin/dashboard', { replace: true });
       } else {
         throw new Error('Invalid response from server or insufficient permissions');
@@ -130,7 +136,7 @@ export default function MainAdminLogin() {
 
         <div className="mt-8 p-4 bg-white/5 border border-white/10 rounded-lg">
           <p className="text-white/60 text-xs text-center">
-            Enter any email address to continue.
+            Credentials are managed securely via environment configuration.
           </p>
         </div>
       </div>

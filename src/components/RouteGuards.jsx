@@ -35,9 +35,28 @@ export function ProPlanGuard({ children }) {
     return <Navigate to="/auth/login" replace />;
   }
 
-  const isPro = user.subscription === 'pro' || user.plan === 'pro' || user.subscription === 'custom';
+  const isPro = user.subscription === 'pro' || user.plan === 'pro' || user.subscription === 'custom' || user.subscription === 'PRO_PETROLEUM' || user.plan === 'PRO_PETROLEUM';
 
   if (!isPro) {
+    return <Navigate to="/upgrade" replace />;
+  }
+
+  return children;
+}
+
+/**
+ * Petroleum Plan Guard - Requires PRO_PETROLEUM subscription
+ */
+export function PetroleumPlanGuard({ children }) {
+  const { user } = useAuth();
+
+  if (!user) {
+    return <Navigate to="/auth/login" replace />;
+  }
+
+  const hasPetroleum = user.subscription === 'PRO_PETROLEUM' || user.plan === 'PRO_PETROLEUM';
+
+  if (!hasPetroleum) {
     return <Navigate to="/upgrade" replace />;
   }
 

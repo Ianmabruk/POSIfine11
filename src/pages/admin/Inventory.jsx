@@ -37,7 +37,8 @@ export default function Inventory() {
     unit: 'pcs',
     expenseOnly: false,
     image: '',
-    visibleToCashier: true
+    visibleToCashier: true,
+    reorder_level: ''
   });
   const [newStock, setNewStock] = useState({
     quantity: '',
@@ -54,7 +55,8 @@ export default function Inventory() {
     category: 'raw',
     expenseOnly: false,
     image: '',
-    visibleToCashier: true
+    visibleToCashier: true,
+    reorder_level: ''
   });
 
   // Load data function
@@ -244,7 +246,8 @@ export default function Inventory() {
         price: parseFloat(newProduct.price),
         cost: parseFloat(newProduct.cost || 0),
         quantity: 0, // Stock managed through batches
-        visibleToCashier: !newProduct.expenseOnly && newProduct.visibleToCashier !== false
+        visibleToCashier: !newProduct.expenseOnly && newProduct.visibleToCashier !== false,
+        reorder_level: newProduct.reorder_level === '' ? undefined : parseFloat(newProduct.reorder_level)
       };
       
       // OPTIMISTIC UPDATE: Add product to UI immediately with temporary ID
@@ -253,7 +256,7 @@ export default function Inventory() {
       setProductList(prev => [...prev, optimisticProduct]);
       
       // Reset form and close modal IMMEDIATELY
-      setNewProduct({ name: '', price: '', cost: '', category: 'finished', unit: 'pcs', expenseOnly: false, image: '', visibleToCashier: true });
+      setNewProduct({ name: '', price: '', cost: '', category: 'finished', unit: 'pcs', expenseOnly: false, image: '', visibleToCashier: true, reorder_level: '' });
       setImagePreview('');
       setShowAddModal(false);
       
@@ -345,15 +348,24 @@ export default function Inventory() {
 
       try {
         // Make API call - backend will update product quantity AND create batch
-        const result = await batches.create({
-          productId: selectedProduct.id,
-          quantity: quantityToAdd,
-          expiryDate: newStock.expiryDate,
-          batchNumber: newStock.batchNumber || `BATCH-${Date.now()}`,
-          cost: parseFloat(newStock.cost || selectedProduct.cost || 0)
-        });
+        let result = null;
+        try {
+          result = await batches.create({
+            productId: selectedProduct.id,
+            quantity: quantityToAdd,
+            expiryDate: newStock.expiryDate,
+            batchNumber: newStock.batchNumber || `BATCH-${Date.now()}`,
+            cost: parseFloat(newStock.cost || selectedProduct.cost || 0)
+          });
+        } catch (batchError) {
+          console.warn('Batches API failed, falling back to direct stock update:', batchError.message);
+          const fallbackQuantity = oldQuantity + quantityToAdd;
+          await products.updateStock(selectedProduct.id, { quantity: fallbackQuantity });
+        }
         
-        console.log('✅ BACKEND: Batch created successfully:', result);
+        if (result) {
+          console.log('✅ BACKEND: Batch created successfully:', result);
+        }
         
         // CRITICAL: Force immediate refresh from backend to get authoritative state
         // This ensures DB state is reflected in UI
@@ -385,7 +397,13 @@ export default function Inventory() {
         setNewStock({ quantity: '', expiryDate: '', batchNumber: '', cost: '' });
         setShowAddStock(false);
         
-        showNotification(`✅ Stock added! ${selectedProduct.name} quantity: ${oldQuantity} → ${updatedProduct?.quantity || (oldQuantity + quantityToAdd)}`, 'success');
+        const latestQuantity = updatedProduct?.quantity || (oldQuantity + quantityToAdd);
+        const threshold = parseFloat(updatedProduct?.reorder_level || selectedProduct.reorder_level || 0) || 0;
+        if (threshold > 0 && latestQuantity <= threshold) {
+          showNotification(`⚠️ Low stock alert: ${selectedProduct.name} is at ${latestQuantity} (threshold ${threshold})`, 'warning');
+        } else {
+          showNotification(`✅ Stock added! ${selectedProduct.name} quantity: ${oldQuantity} → ${latestQuantity}`, 'success');
+        }
         
       } catch (apiError) {
         console.error('❌ BACKEND ERROR:', apiError);
@@ -423,7 +441,8 @@ export default function Inventory() {
         ...editProduct,
         price: parseFloat(editProduct.price),
         cost: parseFloat(editProduct.cost),
-        quantity: originalProduct.quantity  // Preserve existing quantity
+        quantity: originalProduct.quantity,  // Preserve existing quantity
+        reorder_level: editProduct.reorder_level === '' ? originalProduct.reorder_level : parseFloat(editProduct.reorder_level)
       };
 
       // OPTIMISTIC UPDATE: Update UI immediately with preserved quantity
@@ -566,7 +585,7 @@ export default function Inventory() {
       (filter === 'raw' && !p.recipe) ||
       (filter === 'composite' && p.recipe) ||
       (filter === 'expense' && p.expenseOnly) ||
-      (filter === 'low-stock' && p.quantity < 10);
+      (filter === 'low-stock' && (p.reorder_level || 0) > 0 && (p.quantity || 0) <= (p.reorder_level || 0));
     return matchesSearch && matchesFilter;
   });
 
@@ -793,7 +812,7 @@ export default function Inventory() {
                             </button>
                           )}
                           <span className="font-medium">{product.name}</span>
-                          {product.quantity < 10 && !product.recipe && (
+                          {(product.reorder_level || 0) > 0 && (product.quantity || 0) <= (product.reorder_level || 0) && !product.recipe && (
                             <AlertTriangle className="w-4 h-4 text-orange-500" />
                           )}
                         </div>
@@ -817,11 +836,11 @@ export default function Inventory() {
                         <div className="flex items-center gap-2">
                           <span className={`font-medium ${
                             (product.quantity || 0) === 0 ? 'text-red-600' : 
-                            (product.quantity || 0) < 10 ? 'text-yellow-600' : 'text-gray-900'
+                            ((product.reorder_level || 0) > 0 && (product.quantity || 0) <= (product.reorder_level || 0)) ? 'text-yellow-600' : 'text-gray-900'
                           }`}>
                             {product.quantity || 0} {product.unit}
                           </span>
-                          {(product.quantity || 0) < 10 && (product.quantity || 0) > 0 && (
+                          {(product.reorder_level || 0) > 0 && (product.quantity || 0) <= (product.reorder_level || 0) && (product.quantity || 0) > 0 && (
                             <AlertTriangle className="w-4 h-4 text-yellow-500" />
                           )}
                           {(product.quantity || 0) === 0 && (
@@ -1049,6 +1068,15 @@ export default function Inventory() {
                   onChange={(e) => setNewProduct({ ...newProduct, cost: e.target.value })}
                 />
               </div>
+              <input
+                type="number"
+                step="1"
+                min="0"
+                placeholder="Low stock alert at (e.g. 10)"
+                className="input"
+                value={newProduct.reorder_level}
+                onChange={(e) => setNewProduct({ ...newProduct, reorder_level: e.target.value })}
+              />
               <div className="grid grid-cols-2 gap-4">
                 <select
                   className="input"
@@ -1169,6 +1197,15 @@ export default function Inventory() {
                   required
                 />
               </div>
+              <input
+                type="number"
+                step="1"
+                min="0"
+                placeholder="Low stock alert at (e.g. 10)"
+                className="input"
+                value={editProduct.reorder_level || ''}
+                onChange={(e) => setEditProduct({ ...editProduct, reorder_level: e.target.value })}
+              />
               <div className="grid grid-cols-2 gap-4">
                 <div className="relative">
                   <input

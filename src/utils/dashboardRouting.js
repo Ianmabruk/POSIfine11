@@ -3,7 +3,7 @@
  * 
  * Determines the correct dashboard route based on user attributes:
  * - subscription (basic, ultra, pro, custom)
- * - role (owner, admin, cashier)
+ * - role (main_admin, admin, cashier)
  * - businessType (bar, clinic, hotel, supermarket, etc.)
  * - businessRole (doctor, waiter, reception, etc.)
  */
@@ -34,17 +34,28 @@ export function getDashboardRoute(user) {
   });
 
   // ============================================================
-  // 1. OWNER/SUPER ADMIN - Always goes to /main.admin
+  // 1. MAIN ADMIN - Always goes to /main.admin
   // ============================================================
-  if (role === 'owner') {
-    console.log('[getDashboardRoute] → /main.admin (Owner)');
+    // 1. MAIN ADMIN - Always goes to /main.admin
+    if (role === 'main_admin') {
+      console.log('[getDashboardRoute] → /main.admin (Main Admin)');
     return '/main.admin';
   }
 
   // ============================================================
   // 2. PRO/CUSTOM SUBSCRIPTION with BUSINESS TYPE
   // ============================================================
-  const isPro = subscription === 'pro' || subscription === 'custom' || subscription === 3400 || subscription === 3000;
+  const isPro = subscription === 'pro' || subscription === 'custom' || subscription === 3400 || subscription === 3000 || subscription === 'PRO_PETROLEUM';
+
+  // Petroleum access is restricted to PRO_PETROLEUM only
+  if (businessType === 'petrol' && subscription !== 'PRO_PETROLEUM') {
+    if (role === 'admin') {
+      return '/admin';
+    }
+    if (role === 'cashier') {
+      return '/cashier';
+    }
+  }
 
   if (isPro && businessType) {
     // Pro Admin with Business Type → Business-specific admin dashboard
@@ -111,7 +122,7 @@ export function getDashboardRoute(user) {
 export function isProUser(user) {
   if (!user) return false;
   const subscription = user.subscription || user.plan;
-  return subscription === 'pro' || subscription === 'custom';
+  return subscription === 'pro' || subscription === 'custom' || subscription === 'PRO_PETROLEUM';
 }
 
 /**
