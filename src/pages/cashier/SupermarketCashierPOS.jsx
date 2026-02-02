@@ -3,16 +3,39 @@ import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import CashierPOS from '../CashierPOS';
 import { ShoppingCart, LogOut, Barcode } from 'lucide-react';
+// import { monitoredRequest } from '../../services/monitoring';
 
 export default function SupermarketCashierPOS() {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const [dayStats, setDayStats] = useState({ sales: 0, count: 0 });
+  const [performance, setPerformance] = useState({ avgCheckout: 0, successRate: 100 });
 
   useEffect(() => {
     const stats = JSON.parse(localStorage.getItem('dayStats') || '{"sales": 0, "count": 0}');
     setDayStats(stats);
+    
+    // Track page view
+    window.frontendMonitor?.trackUserAction('page_view', { page: 'supermarket_pos' });
+    
+    // Load performance metrics
+    // const loadPerformance = async () => {
+    //   try {
+    //     const data = await monitoredRequest('/api/stats/performance');
+    //     setPerformance(data);
+    //   } catch (error) {
+    //     console.warn('Failed to load performance metrics:', error);
+    //   }
+    // };
+    
+    // loadPerformance();
   }, []);
+
+  const handleLogout = () => {
+    window.frontendMonitor?.trackUserAction('logout', { from: 'supermarket_pos' });
+    logout();
+    navigate('/auth/login');
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-amber-50">
@@ -29,15 +52,15 @@ export default function SupermarketCashierPOS() {
           </div>
           <div className="flex items-center gap-6">
             <div className="text-right">
-              <p className="text-slate-500 text-sm">Today&apos;s Sales</p>
+              <p className="text-slate-500 text-sm">Today's Sales</p>
               <p className="text-2xl font-bold text-emerald-600">{dayStats.sales.toLocaleString()} KES</p>
               <p className="text-slate-400 text-xs">{dayStats.count} transactions</p>
+              <div className="mt-1 text-xs text-slate-400">
+                Avg: {performance.avgCheckout}ms • {performance.successRate}% success
+              </div>
             </div>
             <button
-              onClick={() => {
-                logout();
-                navigate('/auth/login');
-              }}
+              onClick={handleLogout}
               className="flex items-center gap-2 bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white transition"
             >
               <LogOut size={18} />
