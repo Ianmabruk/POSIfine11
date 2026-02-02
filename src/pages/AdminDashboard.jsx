@@ -20,22 +20,80 @@ export default function AdminDashboard() {
     loadOverview();
   }, []);
 
-  // Add polling for live stats (every 5 seconds)
+  // Add polling for live stats (every 5 seconds) with smart caching
   useEffect(() => {
-    const pollInterval = setInterval(async () => {
+    let pollInterval;
+    let isPolling = false;
+    
+    const pollStats = async () => {
+      if (isPolling) return; // Prevent concurrent polls
+      isPolling = true;
+      
       try {
         const st = await stats.get();
-        setData(prev => ({
-          ...prev,
-          stats: st || {}
-        }));
-        setLastUpdateTime(new Date().toLocaleTimeString());
+        setData(prev => {
+          // 🔥 CRITICAL FIX: Only update if stats actually changed
+          const currentStats = prev.stats || {};
+          const hasChanges = (
+            currentStats.totalSales !== st?.totalSales ||
+            currentStats.totalExpenses !== st?.totalExpenses ||
+            currentStats.profit !== st?.profit ||
+            currentStats.productsCount !== st?.productsCount ||
+            currentStats.salesCount !== st?.salesCount
+          );
+          
+          if (hasChanges) {
+            console.log('📊 [AdminStats] Stats updated:', {
+              sales: st?.totalSales,
+              expenses: st?.totalExpenses,
+              profit: st?.profit
+            });
+            setLastUpdateTime(new Date().toLocaleTimeString());
+            return { ...prev, stats: st || {} };
+          }
+          
+          return prev;
+        });
       } catch (error) {
         console.warn('Stats polling failed:', error);
+      } finally {
+        isPolling = false;
       }
-    }, 5000); // Poll every 5 seconds
+    };
+    
+    // Initial load
+    pollStats();
+    
+    // Set up polling interval
+    pollInterval = setInterval(pollStats, 5000);
 
-    return () => clearInterval(pollInterval);
+    // 🔥 CRITICAL FIX: Listen for real-time events from cashier actions
+    const handleSaleCompleted = () => {
+      console.log('💰 [AdminStats] Sale completed event - refreshing stats');
+      setTimeout(pollStats, 500); // Small delay to ensure backend is updated
+    };
+    
+    const handleExpenseAdded = () => {
+      console.log('💸 [AdminStats] Expense added event - refreshing stats');
+      setTimeout(pollStats, 500);
+    };
+    
+    const handleStockUpdated = () => {
+      console.log('📦 [AdminStats] Stock updated event - refreshing stats');
+      setTimeout(pollStats, 500);
+    };
+    
+    // Add event listeners for real-time updates
+    window.addEventListener('sale_completed', handleSaleCompleted);
+    window.addEventListener('expense_added', handleExpenseAdded);
+    window.addEventListener('stock_updated', handleStockUpdated);
+
+    return () => {
+      if (pollInterval) clearInterval(pollInterval);
+      window.removeEventListener('sale_completed', handleSaleCompleted);
+      window.removeEventListener('expense_added', handleExpenseAdded);
+      window.removeEventListener('stock_updated', handleStockUpdated);
+    };
   }, []);
 
   const loadOverview = async () => {

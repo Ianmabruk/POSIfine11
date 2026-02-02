@@ -202,9 +202,23 @@ export default function CashierPOS() {
       const visibleProducts = globalProducts.filter(p => 
         p.visibleToCashier !== false && !p.expenseOnly && !p.pendingDelete
       );
-      setProductList(visibleProducts);
-      setLastProductUpdate(Date.now());
-      setProductUpdateCount(prev => prev + 1);
+      
+      // 🔥 CRITICAL FIX: Only update if products actually changed
+      // This prevents unnecessary re-renders that reset stock values
+      const currentProductIds = productList.map(p => p.id).sort().join(',');
+      const newProductIds = visibleProducts.map(p => p.id).sort().join(',');
+      const currentProductHash = productList.map(p => `${p.id}:${p.quantity}`).sort().join('|');
+      const newProductHash = visibleProducts.map(p => `${p.id}:${p.quantity}`).sort().join('|');
+      
+      // Only update if structure or quantities actually changed
+      if (currentProductIds !== newProductIds || currentProductHash !== newProductHash) {
+        console.log('📦 [ProductSync] Updating products - actual changes detected');
+        setProductList(visibleProducts);
+        setLastProductUpdate(Date.now());
+        setProductUpdateCount(prev => prev + 1);
+      } else {
+        console.log('📦 [ProductSync] Skipping update - no changes detected');
+      }
     }
   }, [globalProducts]);
 
@@ -795,41 +809,72 @@ export default function CashierPOS() {
   const handleAddStock = async (e) => {
     e.preventDefault();
     try {
-      // Get current batch list to calculate new ID
-      const currentBatches = Array.isArray(batchList) ? batchList : [];
-      const newBatchId = currentBatches.length > 0 
-        ? Math.max(...currentBatches.map(b => b.id || 0)) + 1 
-        : 1;
-      
-      // OPTIMISTIC UPDATE: Show stock immediately
-      const optimisticBatch = {
-        id: newBatchId,
+      const quantity = parseInt(newStock.quantity);
+      if (quantity <= 0) {
+        alert('Quantity must be positive');
+        return;
+      }
+
+      console.log('📦 [AddStock] Adding stock:', {
         productId: selectedProduct.id,
-        quantity: parseInt(newStock.quantity),
-        expiryDate: newStock.expiryDate,
-        batchNumber: newStock.batchNumber || `BATCH-${Date.now()}`,
-        cost: parseFloat(newStock.cost || selectedProduct.cost || 0)
+        productName: selectedProduct.name,
+        quantity: quantity,
+        currentStock: selectedProduct.quantity
+      });
+      
+      // 🔥 CRITICAL FIX: Optimistic update with proper state management
+      const optimisticProduct = {
+        ...selectedProduct,
+        quantity: (selectedProduct.quantity || 0) + quantity,
+        updated_at: new Date().toISOString()
       };
       
-      setBatchList(prev => [...prev, optimisticBatch]);
+      // Update local product list immediately
+      setProductList(prev => prev.map(p => 
+        p.id === selectedProduct.id ? optimisticProduct : p
+      ));
+      
+      // Update global context to prevent conflicts
+      if (refreshProducts) {
+        refreshProducts();
+      }
       
       // Make API call in background
-      await batches.create({
+      const result = await batches.create({
         productId: selectedProduct.id,
-        quantity: parseInt(newStock.quantity),
+        quantity: quantity,
         expiryDate: newStock.expiryDate,
         batchNumber: newStock.batchNumber || `BATCH-${Date.now()}`,
         cost: parseFloat(newStock.cost || selectedProduct.cost || 0)
       });
       
+      console.log('✅ [AddStock] Stock added successfully:', result);
+      
+      // Clear form and close modal
       setNewStock({ quantity: '', expiryDate: '', batchNumber: '', cost: '' });
       setShowAddStock(false);
       setSelectedProduct(null);
-      await loadData(); // Refresh to sync with backend
-      alert('Stock added successfully!');
+      
+      // Trigger real-time sync for admin dashboard
+      window.dispatchEvent(new CustomEvent('stock_updated', {
+        detail: {
+          productId: selectedProduct.id,
+          newQuantity: optimisticProduct.quantity,
+          added: quantity
+        }
+      }));
+      
+      alert(`✅ Stock Added Successfully!\n\nProduct: ${selectedProduct.name}\nAdded: +${quantity}\nNew Total: ${optimisticProduct.quantity}`);
+      
     } catch (error) {
-      console.error('Failed to add stock:', error);
-      alert('Failed to add stock');
+      console.error('❌ [AddStock] Failed:', error);
+      
+      // Rollback optimistic update on error
+      setProductList(prev => prev.map(p => 
+        p.id === selectedProduct.id ? selectedProduct : p
+      ));
+      
+      alert(`❌ Failed to add stock: ${error.message || 'Unknown error'}`);
     }
   };
 

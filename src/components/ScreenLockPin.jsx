@@ -1,171 +1,258 @@
-import { useState, useEffect } from 'react';
-import { Lock, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Lock, Unlock, Eye, EyeOff } from 'lucide-react';
 
-export default function ScreenLockPin({ isLocked, onUnlock, userPin, userName = 'Cashier' }) {
-  const [pinInput, setPinInput] = useState('');
+export default function ScreenLockPin({ isLocked, onUnlock, userPin = '1234', userName, businessLogo }) {
+  const [pin, setPin] = useState('');
+  const [showPin, setShowPin] = useState(false);
   const [error, setError] = useState('');
   const [attempts, setAttempts] = useState(0);
   const [isBlocked, setIsBlocked] = useState(false);
+  const [blockTimeLeft, setBlockTimeLeft] = useState(0);
 
-  // Auto-focus on PIN input when locked
+  // Auto-lock after inactivity
   useEffect(() => {
-    if (isLocked) {
-      setError('');
-      setPinInput('');
-      setAttempts(0);
-      setIsBlocked(false);
+    if (!isLocked) {
+      let inactivityTimer;
+      let warningTimer;
+      let showWarning = false;
+
+      const resetTimer = () => {
+        clearTimeout(inactivityTimer);
+        clearTimeout(warningTimer);
+        
+        // Show warning after 90 seconds of inactivity
+        warningTimer = setTimeout(() => {
+          if (!showWarning) {
+            showWarning = true;
+            const shouldLock = confirm('⚠️ Screen will lock in 30 seconds due to inactivity.\n\nClick OK to stay active or Cancel to lock now.');
+            if (!shouldLock) {
+              window.dispatchEvent(new CustomEvent('lockScreen'));
+            } else {
+              showWarning = false;
+              resetTimer(); // Reset if user chooses to stay active
+            }
+          }
+        }, 90000); // 90 seconds
+
+        // Auto-lock after 2 minutes total
+        inactivityTimer = setTimeout(() => {
+          console.log('🔒 Auto-locking screen due to inactivity');
+          window.dispatchEvent(new CustomEvent('lockScreen'));
+        }, 120000); // 2 minutes
+      };
+
+      const handleActivity = () => {
+        if (!showWarning) {
+          resetTimer();
+        }
+      };
+
+      // Listen for user activity
+      const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+      events.forEach(event => {
+        document.addEventListener(event, handleActivity, true);
+      });
+
+      resetTimer();
+
+      return () => {
+        clearTimeout(inactivityTimer);
+        clearTimeout(warningTimer);
+        events.forEach(event => {
+          document.removeEventListener(event, handleActivity, true);
+        });
+      };
     }
   }, [isLocked]);
 
-  // Block after 3 failed attempts
+  // Handle blocking countdown
   useEffect(() => {
-    if (attempts >= 3) {
-      setIsBlocked(true);
-      setTimeout(() => {
-        setIsBlocked(false);
-        setAttempts(0);
-      }, 30000); // 30 second lockout
+    if (isBlocked && blockTimeLeft > 0) {
+      const timer = setTimeout(() => {
+        setBlockTimeLeft(prev => prev - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (isBlocked && blockTimeLeft === 0) {
+      setIsBlocked(false);
+      setAttempts(0);
+      setError('');
     }
-  }, [attempts]);
+  }, [isBlocked, blockTimeLeft]);
 
-  const handlePinInput = (digit) => {
-    if (isBlocked) return;
+  const handlePinSubmit = (e) => {
+    e.preventDefault();
     
-    if (pinInput.length < 4) {
-      setPinInput(prev => prev + digit);
-      setError('');
-    }
-  };
-
-  const handleBackspace = () => {
-    if (isBlocked) return;
-    setPinInput(prev => prev.slice(0, -1));
-    setError('');
-  };
-
-  const handleUnlock = () => {
     if (isBlocked) {
-      setError('Too many attempts. Please wait.');
+      setError(`Too many attempts. Try again in ${blockTimeLeft} seconds.`);
       return;
     }
 
-    // Verify PIN
-    if (pinInput.length !== 4) {
-      setError('PIN must be 4 digits');
-      return;
-    }
-
-    // Check if PIN matches (compare as strings)
-    if (String(pinInput) === String(userPin)) {
-      setPinInput('');
+    if (pin === userPin) {
+      // Successful unlock
+      console.log('✅ Screen unlocked successfully');
+      setPin('');
       setError('');
+      setAttempts(0);
       onUnlock();
     } else {
-      setError('Incorrect PIN');
-      setAttempts(prev => prev + 1);
-      setPinInput('');
+      // Failed attempt
+      const newAttempts = attempts + 1;
+      setAttempts(newAttempts);
+      setPin('');
+      
+      if (newAttempts >= 3) {
+        // Block for 30 seconds after 3 failed attempts
+        setIsBlocked(true);
+        setBlockTimeLeft(30);
+        setError('Too many failed attempts. Blocked for 30 seconds.');
+        console.log('🚫 Screen lock blocked due to multiple failed attempts');
+      } else {
+        setError(`Incorrect PIN. ${3 - newAttempts} attempts remaining.`);
+      }
     }
   };
 
-  if (!isLocked) return null;
+  const handlePinChange = (value) => {
+    if (value.length <= 4 && /^\d*$/.test(value)) {
+      setPin(value);
+      if (error && !isBlocked) {
+        setError('');
+      }
+    }
+  };
+
+  if (!isLocked) {
+    return null;
+  }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-[9999] backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 w-96 max-w-full mx-4">
-        {/* Lock Icon */}
-        <div className="flex justify-center mb-6">
-          <div className="bg-red-100 p-4 rounded-full">
-            <Lock className="w-12 h-12 text-red-600" />
-          </div>
-        </div>
+    <div className="fixed inset-0 z-[9999] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-purple-500/20" />
+        <svg className="w-full h-full">
+          <defs>
+            <pattern id="lockPattern" width="60" height="60" patternUnits="userSpaceOnUse">
+              <circle cx="30" cy="30" r="2" fill="rgba(255,255,255,0.1)" />
+              <circle cx="10" cy="10" r="1" fill="rgba(255,255,255,0.05)" />
+              <circle cx="50" cy="10" r="1" fill="rgba(255,255,255,0.05)" />
+              <circle cx="10" cy="50" r="1" fill="rgba(255,255,255,0.05)" />
+              <circle cx="50" cy="50" r="1" fill="rgba(255,255,255,0.05)" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#lockPattern)" />
+        </svg>
+      </div>
 
-        {/* Title */}
-        <h1 className="text-2xl font-bold text-center text-gray-800 mb-2">
-          Screen Locked
-        </h1>
-        <p className="text-center text-gray-600 mb-6">
-          {userName}, enter your PIN to continue
-        </p>
-
-        {/* PIN Display */}
-        <div className="bg-gray-100 rounded-lg p-4 mb-6 flex justify-center gap-2">
-          {[0, 1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="w-12 h-12 bg-white border-2 border-gray-300 rounded-lg flex items-center justify-center font-bold text-xl text-gray-800"
-            >
-              {pinInput[i] ? '●' : ''}
-            </div>
-          ))}
-        </div>
-
-        {/* Error Message */}
-        {error && (
-          <div
-            className={`text-center text-sm font-medium mb-4 p-2 rounded ${
-              error.includes('Incorrect')
-                ? 'bg-red-100 text-red-700'
-                : error.includes('must be')
-                ? 'bg-yellow-100 text-yellow-700'
-                : 'bg-red-100 text-red-700'
-            }`}
-          >
-            {error}
-            {attempts > 0 && attempts < 3 && (
-              <p className="text-xs mt-1">
-                {3 - attempts} attempt{3 - attempts !== 1 ? 's' : ''} remaining
-              </p>
-            )}
-            {isBlocked && <p className="text-xs mt-1">Locked. Try again in 30 seconds.</p>}
+      <div className="relative z-10 w-full max-w-md mx-4">
+        {/* Business Logo */}
+        {businessLogo && (
+          <div className="text-center mb-8">
+            <img 
+              src={businessLogo} 
+              alt="Business Logo" 
+              className="w-24 h-24 mx-auto rounded-2xl shadow-2xl border-4 border-white/20"
+            />
           </div>
         )}
 
-        {/* PIN Keypad */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+        {/* Lock Screen Card */}
+        <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
+              <Lock className="w-10 h-10 text-white" />
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-2">Screen Locked</h2>
+            <p className="text-slate-300">
+              {userName ? `Welcome back, ${userName}` : 'Enter your PIN to continue'}
+            </p>
+          </div>
+
+          {/* PIN Form */}
+          <form onSubmit={handlePinSubmit} className="space-y-6">
+            {/* PIN Input */}
+            <div className="relative">
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Enter 4-digit PIN
+              </label>
+              <div className="relative">
+                <input
+                  type={showPin ? 'text' : 'password'}
+                  value={pin}
+                  onChange={(e) => handlePinChange(e.target.value)}
+                  className="w-full px-4 py-4 bg-white/10 border border-white/20 rounded-xl text-white text-center text-2xl font-mono tracking-widest placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="••••"
+                  maxLength={4}
+                  disabled={isBlocked}
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPin(!showPin)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+                  disabled={isBlocked}
+                >
+                  {showPin ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Error Message */}
+            {error && (
+              <div className="p-3 bg-red-500/20 border border-red-500/30 rounded-lg text-red-300 text-sm text-center">
+                {error}
+              </div>
+            )}
+
+            {/* Unlock Button */}
             <button
-              key={num}
-              onClick={() => handlePinInput(String(num))}
-              disabled={isBlocked || pinInput.length >= 4}
-              className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white font-bold py-3 rounded-lg transition-colors text-lg"
+              type="submit"
+              disabled={pin.length !== 4 || isBlocked}
+              className="w-full py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {num}
+              {isBlocked ? (
+                <>
+                  <Lock className="w-5 h-5" />
+                  Blocked ({blockTimeLeft}s)
+                </>
+              ) : (
+                <>
+                  <Unlock className="w-5 h-5" />
+                  Unlock Screen
+                </>
+              )}
             </button>
-          ))}
+          </form>
 
-          {/* 0 Button - spans 2 columns */}
-          <button
-            onClick={() => handlePinInput('0')}
-            disabled={isBlocked || pinInput.length >= 4}
-            className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white font-bold py-3 rounded-lg transition-colors col-span-1 text-lg"
-          >
-            0
-          </button>
+          {/* PIN Hint */}
+          <div className="mt-6 text-center">
+            <p className="text-xs text-slate-400">
+              Forgot your PIN? Contact your administrator
+            </p>
+          </div>
 
-          {/* Backspace Button */}
-          <button
-            onClick={handleBackspace}
-            disabled={isBlocked || pinInput.length === 0}
-            className="bg-red-500 hover:bg-red-600 disabled:bg-gray-300 text-white font-bold py-3 rounded-lg transition-colors col-span-2 flex items-center justify-center gap-2"
-          >
-            <X size={16} />
-            Back
-          </button>
+          {/* Security Info */}
+          <div className="mt-6 pt-6 border-t border-white/10">
+            <div className="flex items-center justify-center gap-4 text-xs text-slate-400">
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                <span>Secure Session</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Lock className="w-3 h-3" />
+                <span>Auto-lock: 2min</span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Unlock Button */}
-        <button
-          onClick={handleUnlock}
-          disabled={isBlocked || pinInput.length !== 4}
-          className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white font-bold py-3 rounded-lg transition-colors mb-3"
-        >
-          {isBlocked ? 'Locked' : 'Unlock'}
-        </button>
-
-        {/* Info Text */}
-        <p className="text-center text-xs text-gray-500 mt-4">
-          Enter your 4-digit PIN
-        </p>
+        {/* Footer */}
+        <div className="text-center mt-6">
+          <p className="text-xs text-slate-500">
+            Screen locked automatically for security
+          </p>
+        </div>
       </div>
     </div>
   );
