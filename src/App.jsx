@@ -7,8 +7,10 @@ import ReminderModal from './components/ReminderModal';
 import ScreenLock from './components/ScreenLock';
 import SubscriptionReminderBar from './components/SubscriptionReminderBar';
 import StockUpdateListener from './components/StockUpdateListener';
+import ErrorBoundary from './components/ErrorBoundary';
 import useInactivity from './hooks/useInactivity';
 import { BASE_API_URL } from './services/api';
+import performanceMonitor from './services/performanceMonitor';
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 
 import Landing from './pages/Landing';
@@ -204,17 +206,27 @@ function DashboardRouter() {
 }
 
 function App() {
+  // Initialize performance monitoring
+  useEffect(() => {
+    performanceMonitor.trackUserAction('app_loaded', {
+      timestamp: Date.now(),
+      userAgent: navigator.userAgent
+    });
+  }, []);
+
   return (
-    <AuthProvider>
-      <ProductsProvider>
-        <ScreenLockProvider>
-          <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-            <Suspense fallback={
-              <div className="min-h-screen flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-              </div>
-            }>
-              <Routes>
+    <ErrorBoundary>
+      <AuthProvider>
+        <ProductsProvider>
+          <ScreenLockProvider>
+            <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+              <Suspense fallback={
+                <div className="min-h-screen flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                </div>
+              }>
+                <ErrorBoundary>
+                  <Routes>
                 <Route path="/" element={<LandingModern />} />
                 <Route path="/landing-old" element={<Landing />} />
                 <Route path="/get-started" element={<LandingModern />} />
@@ -338,12 +350,14 @@ function App() {
                 
                 {/* OLD Cashier route - direct access to old CashierPOS */}
                 <Route path="/cashier" element={<ProtectedRoute><CashierPOS /></ProtectedRoute>} />
-              </Routes>
-            </Suspense>
-          </BrowserRouter>
-        </ScreenLockProvider>
-      </ProductsProvider>
-    </AuthProvider>
+                  </Routes>
+                </ErrorBoundary>
+              </Suspense>
+            </BrowserRouter>
+          </ScreenLockProvider>
+        </ProductsProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

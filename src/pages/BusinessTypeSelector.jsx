@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import api from '../services/api';
 import {
   Building2, Hotel, Stethoscope, ShoppingCart, Utensils, Pill,
   Fuel, GraduationCap, Dumbbell, Scissors, Store, ArrowRight, Check
@@ -54,18 +55,7 @@ export default function BusinessTypeSelector() {
 
   const loadBusinessTypes = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/business/business-types', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to load business types');
-      }
-
-      const data = await response.json();
+      const data = await api.get('/business/business-types');
       if (data.success) {
         setBusinessTypes(data.businessTypes);
       }
@@ -89,21 +79,11 @@ export default function BusinessTypeSelector() {
     setError('');
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/business/select', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          business_type: selectedType.id
-        })
+      const data = await api.post('/business/select', {
+        business_type: selectedType.id
       });
 
-      const data = await response.json();
-
-      if (response.ok && data.success) {
+      if (data.success) {
         // Update user in localStorage
         const userStr = localStorage.getItem('user');
         if (userStr) {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Zap } from 'lucide-react';
+import { fetchMonitorStats } from '../../services/transactionService';
 
 export default function MonitorDashboard() {
   const [stats, setStats] = useState({
@@ -13,11 +14,7 @@ export default function MonitorDashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/v2/monitor/stats`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const data = await res.json();
+        const data = await fetchMonitorStats();
         setStats(data);
         setLoading(false);
         console.log('📊 [Monitor] Stats updated:', data);

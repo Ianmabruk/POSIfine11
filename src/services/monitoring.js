@@ -41,11 +41,16 @@ class FrontendMonitor {
   // Get performance summary
   getPerformanceSummary() {
     const apiCalls = this.metrics.filter(m => m.type === 'api_call');
-    const avgDuration = apiCalls.reduce((sum, call) => sum + call.duration, 0) / apiCalls.length;
-    const successRate = apiCalls.filter(call => call.success).length / apiCalls.length * 100;
+    const totalCalls = apiCalls.length;
+    const avgDuration = totalCalls
+      ? apiCalls.reduce((sum, call) => sum + call.duration, 0) / totalCalls
+      : 0;
+    const successRate = totalCalls
+      ? (apiCalls.filter(call => call.success).length / totalCalls) * 100
+      : 0;
 
     return {
-      totalApiCalls: apiCalls.length,
+      totalApiCalls: totalCalls,
       avgResponseTime: avgDuration,
       successRate,
       totalErrors: this.errors.length,

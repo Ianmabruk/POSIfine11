@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
 import { Fuel, Users, BarChart3, Settings, Plus, Edit2, Trash2, AlertTriangle, TrendingUp, DollarSign } from 'lucide-react';
+import { api } from '../../services/enhancedApi';
 
 export default function PetroleumDashboard() {
   const { user } = useAuth();
@@ -36,7 +37,7 @@ export default function PetroleumDashboard() {
         fetch('/api/petroleum/tanks').then(r => r.json()),
         fetch('/api/petroleum/staff').then(r => r.json()),
         fetch('/api/petroleum/sales').then(r => r.json()),
-        fetch('/api/stats').then(r => r.json())
+        api.stats.getDashboard()
       ]);
 
       setTanks(tanksData);

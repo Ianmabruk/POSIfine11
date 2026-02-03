@@ -3,7 +3,14 @@
 
 const getBaseUrl = () => {
   // Use environment variable if available, otherwise use localhost for development
-  return import.meta.env.VITE_API_BASE || 'http://localhost:5000/api';
+  if (import.meta.env.VITE_API_BASE) {
+    return import.meta.env.VITE_API_BASE;
+  }
+  if (import.meta.env.VITE_API_URL) {
+    const normalized = import.meta.env.VITE_API_URL.replace(/\/$/, '');
+    return normalized.endsWith('/api') ? normalized : `${normalized}/api`;
+  }
+  return 'http://localhost:5000/api';
 };
 
 const BASE_API_URL = getBaseUrl();

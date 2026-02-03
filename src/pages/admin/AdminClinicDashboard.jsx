@@ -25,8 +25,8 @@ export default function AdminClinicDashboard() {
 
   const loadStaff = async () => {
     try {
-      const response = await api.get('/api/business/users');
-      setStaff(response.data.users || []);
+      const response = await api.get('/business/users');
+      setStaff(response.users || []);
       setLoading(false);
     } catch (error) {
       console.error('Failed to load staff:', error);
@@ -36,8 +36,8 @@ export default function AdminClinicDashboard() {
 
   const loadMessages = async () => {
     try {
-      const response = await api.get('/api/messages/inbox?limit=5');
-      setMessages(response.data.messages || []);
+      const response = await api.get('/messages/inbox?limit=5');
+      setMessages(response.messages || []);
     } catch (error) {
       console.error('Failed to load messages:', error);
     }
@@ -52,7 +52,7 @@ export default function AdminClinicDashboard() {
         password: formData.password,
         business_role: formData.businessRole
       };
-      await api.post('/api/business/users', payload);
+      await api.post('/business/users', payload);
       setShowAddStaff(false);
       loadStaff();
     } catch (error) {

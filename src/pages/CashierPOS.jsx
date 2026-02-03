@@ -968,41 +968,41 @@ export default function CashierPOS() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col">
       <LowStockAlert />
-      <nav className="bg-white/80 backdrop-blur-md border-b border-gray-200 px-6 py-4 sticky top-0 z-50 shadow-sm">
-        <div className="flex items-center justify-between">
+      <nav className="bg-white/80 backdrop-blur-md border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 sticky top-0 z-50 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">Cashier Dashboard</h1>
             <p className="text-xs text-gray-500 mt-0.5">Cashier Plan - KSH 900/month</p>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="text-right">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4 w-full sm:w-auto">
+            <div className="text-left sm:text-right w-full sm:w-auto">
               <p className="text-sm font-medium text-gray-900">{user?.name}</p>
               <p className="text-xs text-gray-500">{user?.email}</p>
             </div>
             {isClockedIn && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <p className="text-xs text-green-600 font-semibold">🟢 Clocked In</p>
-                <button onClick={handleClockOut} className="px-4 py-2 rounded-lg font-medium transition-all bg-red-600 hover:bg-red-700 text-white flex items-center gap-2 shadow-md">
+                <button onClick={handleClockOut} className="px-4 py-3 sm:py-2 min-h-[44px] rounded-lg font-medium transition-all bg-red-600 hover:bg-red-700 text-white flex items-center gap-2 shadow-md text-sm sm:text-base touch-manipulation">
                   <Square className="w-4 h-4" />
                   Clock Out
                 </button>
               </div>
             )}
             {!isClockedIn && (
-              <button onClick={handleClockIn} className="px-4 py-2 rounded-lg font-medium transition-all bg-green-600 hover:bg-green-700 text-white flex items-center gap-2 shadow-md">
+              <button onClick={handleClockIn} className="px-4 py-3 sm:py-2 min-h-[44px] rounded-lg font-medium transition-all bg-green-600 hover:bg-green-700 text-white flex items-center gap-2 shadow-md text-sm sm:text-base touch-manipulation">
                 <Play className="w-4 h-4" />
                 Clock In
               </button>
             )}
-            <button onClick={() => { saveSessionData(); logout(); }} className="px-4 py-2 rounded-lg font-medium transition-all bg-red-100 hover:bg-red-200 text-red-600 border border-red-300 flex items-center gap-2">
+            <button onClick={() => { saveSessionData(); logout(); }} className="px-4 py-3 sm:py-2 min-h-[44px] rounded-lg font-medium transition-all bg-red-100 hover:bg-red-200 text-red-600 border border-red-300 flex items-center gap-2 text-sm sm:text-base touch-manipulation">
               <LogOut className="w-4 h-4" />
               Logout
             </button>
-            <button onClick={handleClearData} className="px-4 py-2 rounded-lg font-medium transition-all bg-orange-100 hover:bg-orange-200 text-orange-600 border border-orange-300 flex items-center gap-2">
+            <button onClick={handleClearData} className="px-4 py-3 sm:py-2 min-h-[44px] rounded-lg font-medium transition-all bg-orange-100 hover:bg-orange-200 text-orange-600 border border-orange-300 flex items-center gap-2 text-sm sm:text-base touch-manipulation">
               <Trash2 className="w-4 h-4" />
               Clear
             </button>
-            <button onClick={() => setShowCreditRequest(true)} className="px-4 py-2 rounded-lg font-medium transition-all bg-blue-100 hover:bg-blue-200 text-blue-600 border border-blue-300 flex items-center gap-2">
+            <button onClick={() => setShowCreditRequest(true)} className="px-4 py-3 sm:py-2 min-h-[44px] rounded-lg font-medium transition-all bg-blue-100 hover:bg-blue-200 text-blue-600 border border-blue-300 flex items-center gap-2 text-sm sm:text-base touch-manipulation">
               <CreditCard className="w-4 h-4" />
               Request Credit
             </button>
@@ -1018,10 +1018,10 @@ export default function CashierPOS() {
         </div>
       </nav>
 
-      <div className="flex gap-2 px-6 py-4 bg-white border-b border-gray-200">
+      <div className="flex flex-wrap sm:flex-nowrap gap-2 px-4 sm:px-6 py-3 sm:py-4 bg-white border-b border-gray-200 overflow-x-auto">
         <button
           onClick={() => setActiveView('pos')}
-          className={`px-6 py-2 rounded-lg font-medium transition-all ${
+          className={`px-4 sm:px-6 py-3 sm:py-2 min-h-[44px] rounded-lg font-medium transition-all text-sm sm:text-base whitespace-nowrap touch-manipulation ${
             activeView === 'pos' ? 'bg-gradient-to-r from-green-600 to-teal-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
         >
@@ -1030,7 +1030,7 @@ export default function CashierPOS() {
         </button>
         <button
           onClick={() => setActiveView('monitor')}
-          className={`px-6 py-2 rounded-lg font-medium transition-all ${
+          className={`px-4 sm:px-6 py-3 sm:py-2 min-h-[44px] rounded-lg font-medium transition-all text-sm sm:text-base whitespace-nowrap touch-manipulation ${
             activeView === 'monitor' ? 'bg-gradient-to-r from-green-600 to-teal-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
         >
@@ -1039,7 +1039,7 @@ export default function CashierPOS() {
         </button>
         <button
           onClick={() => setActiveView('products')}
-          className={`px-6 py-2 rounded-lg font-medium transition-all ${
+          className={`px-4 sm:px-6 py-3 sm:py-2 min-h-[44px] rounded-lg font-medium transition-all text-sm sm:text-base whitespace-nowrap touch-manipulation ${
             activeView === 'products' ? 'bg-gradient-to-r from-green-600 to-teal-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
         >
@@ -1048,7 +1048,7 @@ export default function CashierPOS() {
         </button>
         <button
           onClick={() => setActiveView('expenses')}
-          className={`px-6 py-2 rounded-lg font-medium transition-all ${
+          className={`px-4 sm:px-6 py-3 sm:py-2 min-h-[44px] rounded-lg font-medium transition-all text-sm sm:text-base whitespace-nowrap touch-manipulation ${
             activeView === 'expenses' ? 'bg-gradient-to-r from-green-600 to-teal-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
         >
@@ -1244,7 +1244,7 @@ export default function CashierPOS() {
                       setSelectedDiscount(null);
                     }
                   }} 
-                  className="input"
+                  className="input h-12 text-base touch-manipulation"
                 >
                   <option value="">No Discount</option>
                   {discountList.filter(d => d.active).map(discount => (
@@ -1262,13 +1262,13 @@ export default function CashierPOS() {
 
               <div>
                 <label className="block text-sm font-semibold mb-2">Tax Type</label>
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" value="exclusive" checked={taxType === 'exclusive'} onChange={(e) => setTaxType(e.target.value)} />
+                    <input className="h-5 w-5" type="radio" value="exclusive" checked={taxType === 'exclusive'} onChange={(e) => setTaxType(e.target.value)} />
                     <span className="text-sm">Tax Exclusive (16% added)</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" value="inclusive" checked={taxType === 'inclusive'} onChange={(e) => setTaxType(e.target.value)} />
+                    <input className="h-5 w-5" type="radio" value="inclusive" checked={taxType === 'inclusive'} onChange={(e) => setTaxType(e.target.value)} />
                     <span className="text-sm">Tax Inclusive</span>
                   </label>
                 </div>
@@ -1276,7 +1276,7 @@ export default function CashierPOS() {
 
               <div>
                 <label className="block text-sm font-semibold mb-2">Payment Method</label>
-                <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className="input">
+                <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className="input h-12 text-base touch-manipulation">
                   <option value="cash">Cash</option>
                   <option value="mpesa">M-Pesa</option>
                   <option value="card">Card</option>
@@ -1294,7 +1294,7 @@ export default function CashierPOS() {
                   }
                 }} 
                 disabled={cart.length === 0 || checkoutLoading} 
-                className="btn-primary w-full py-4 text-lg bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                className="btn-primary w-full py-4 sm:py-3 min-h-[52px] sm:min-h-[48px] text-base sm:text-lg bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 touch-manipulation"
               >
                 {checkoutLoading ? '⏳ Processing...' : 'Checkout'}
               </button>

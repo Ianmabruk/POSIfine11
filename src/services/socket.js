@@ -11,10 +11,6 @@ const getBaseUrl = () => {
     }
   } catch (_) {}
 
-  if (typeof process !== 'undefined' && process.env) {
-    return process.env.VITE_API_BASE || process.env.REACT_APP_API_URL;
-  }
-
   return 'http://127.0.0.1:5000/api';
 };
 

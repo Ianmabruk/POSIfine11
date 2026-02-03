@@ -33,8 +33,8 @@ export default function AdminSupermarketDashboard() {
 
   const loadStaff = async () => {
     try {
-      const response = await api.get('/api/business/users');
-      setStaff(response.data.users || []);
+      const response = await api.get('/business/users');
+      setStaff(response.users || []);
       setLoading(false);
     } catch (error) {
       console.error('Failed to load staff:', error);
@@ -44,8 +44,8 @@ export default function AdminSupermarketDashboard() {
 
   const loadMessages = async () => {
     try {
-      const response = await api.get('/api/messages/inbox?limit=5');
-      setMessages(response.data.messages || []);
+      const response = await api.get('/messages/inbox?limit=5');
+      setMessages(response.messages || []);
     } catch (error) {
       console.error('Failed to load messages:', error);
     }
@@ -53,10 +53,10 @@ export default function AdminSupermarketDashboard() {
 
   const loadStats = async () => {
     try {
-      const response = await api.get('/api/v2/monitor/stats');
+      const response = await api.get('/v2/monitor/stats');
       setStats({
-        todaySales: response.data.totalSales || 0,
-        todayOrders: response.data.transactionCount || 0,
+        todaySales: response.totalSales || 0,
+        todayOrders: response.transactionCount || 0,
         lowStockItems: 0, // TODO: Integrate with inventory
         departments: 8 // Mock value
       });
@@ -74,7 +74,7 @@ export default function AdminSupermarketDashboard() {
         password: formData.password,
         business_role: formData.businessRole
       };
-      await api.post('/api/business/users', payload);
+      await api.post('/business/users', payload);
       setShowAddStaff(false);
       loadStaff();
     } catch (error) {

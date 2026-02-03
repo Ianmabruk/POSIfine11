@@ -15,6 +15,8 @@
  * @performance < 100ms for all critical operations
  */
 
+import { requestWithSWR } from './requestCache';
+
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 /**
@@ -378,22 +380,24 @@ export const clockOutTransaction = async (shiftId, onSuccess) => {
  * @performance Target: < 50ms (backend cached)
  */
 export const fetchMonitorStats = async () => {
-  const startTime = performance.now();
-
   try {
-    const result = await apiRequest('/api/v2/monitor/stats', {
-      method: 'GET'
-    });
-
-    const elapsedMs = performance.now() - startTime;
-    
-    // Warn if slow (cache miss or backend issue)
-    if (elapsedMs > 100) {
-      console.warn(`⚠️ [Monitor] Slow stats fetch: ${elapsedMs.toFixed(1)}ms`);
-    }
+    const result = await requestWithSWR(
+      'monitor_stats',
+      async () => {
+        const startTime = performance.now();
+        const response = await apiRequest('/api/v2/monitor/stats', {
+          method: 'GET'
+        });
+        const elapsedMs = performance.now() - startTime;
+        if (elapsedMs > 100) {
+          console.warn(`⚠️ [Monitor] Slow stats fetch: ${elapsedMs.toFixed(1)}ms`);
+        }
+        return response;
+      },
+      { ttlMs: 3000, swrMs: 15000 }
+    );
 
     return result;
-
   } catch (error) {
     console.error('❌ [Monitor] Failed to fetch stats:', error);
     throw error;

@@ -17,9 +17,9 @@ export default function ClinicDoctorDashboard() {
 
   const loadMessages = async () => {
     try {
-      const response = await api.get('/api/messages/inbox');
-      setMessages(response.data.messages || []);
-      setUnreadCount(response.data.unreadCount || 0);
+      const response = await api.get('/messages/inbox');
+      setMessages(response.messages || []);
+      setUnreadCount(response.unreadCount || 0);
     } catch (error) {
       console.error('Failed to load messages:', error);
     }
@@ -175,8 +175,8 @@ function SendMessageModal({ onClose }) {
 
   const loadAvailableRoles = async () => {
     try {
-      const response = await api.get('/api/messages/available-roles');
-      setAvailableRoles(response.data.roles || []);
+      const response = await api.get('/messages/available-roles');
+      setAvailableRoles(response.roles || []);
     } catch (error) {
       console.error('Failed to load roles:', error);
     }
@@ -185,7 +185,7 @@ function SendMessageModal({ onClose }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await api.post('/api/messages/send', formData);
+      await api.post('/messages/send', formData);
       alert('Message sent!');
       onClose();
     } catch (error) {
