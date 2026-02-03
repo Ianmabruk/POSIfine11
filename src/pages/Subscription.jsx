@@ -376,22 +376,6 @@ export default function Subscription() {
       <footer className="mt-16 border-t border-gray-200 pt-8">
         <div className="max-w-7xl mx-auto px-6 text-center">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <motion.img
-                src="/posifine-logo.png"
-                alt="PosiFine Logo"
-                className="w-6 h-6 object-contain"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.5 }}
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                }}
-              />
-              <span className="text-sm font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                PosiFine
-              </span>
-            </div>
             <p className="text-gray-500 text-sm">
               © 2026 Mabrixel Technologies. All rights reserved.
             </p>
