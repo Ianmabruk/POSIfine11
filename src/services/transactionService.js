@@ -17,7 +17,11 @@
 
 import { requestWithSWR } from './requestCache';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_BASE =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.VITE_API_BASE
+    ? import.meta.env.VITE_API_BASE.replace(/\/?api\/?$/, '')
+    : (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5000'));
 
 /**
  * Get authorization token (cached)

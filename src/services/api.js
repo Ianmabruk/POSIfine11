@@ -10,6 +10,9 @@ const getBaseUrl = () => {
     const normalized = import.meta.env.VITE_API_URL.replace(/\/$/, '');
     return normalized.endsWith('/api') ? normalized : `${normalized}/api`;
   }
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return `${window.location.origin}/api`;
+  }
   return 'http://localhost:5000/api';
 };
 
@@ -32,6 +35,10 @@ const requestWithRetry = async (endpoint, options = {}, retryCount = 0, maxRetri
   const csrfToken = getCsrfToken();
   
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const baseHasApi = BASE_API_URL.endsWith('/api');
+  const normalizedEndpoint = baseHasApi && cleanEndpoint.startsWith('/api/')
+    ? cleanEndpoint.replace(/^\/api/, '')
+    : cleanEndpoint;
   
   const config = {
     ...options,
@@ -44,7 +51,7 @@ const requestWithRetry = async (endpoint, options = {}, retryCount = 0, maxRetri
   };
 
   try {
-    const response = await fetch(`${BASE_API_URL}${cleanEndpoint}`, config);
+    const response = await fetch(`${BASE_API_URL}${normalizedEndpoint}`, config);
 
     if (response.status === 401) {
       if (!didRefresh) {
