@@ -285,7 +285,7 @@ export default function Landing() {
                   className="inline-block px-4 py-2 bg-gradient-to-r from-blue-100 to-pink-100 border border-blue-200 rounded-full text-sm font-medium mb-6"
                 >
                   <span className="bg-gradient-to-r from-blue-600 to-pink-600 bg-clip-text text-transparent">
-                    🚀 Ultra-Fast POS • <50ms Checkout
+                    🚀 Ultra-Fast POS • &lt;50ms Checkout
                   </span>
                 </motion.span>
 
@@ -435,7 +435,7 @@ export default function Landing() {
                   className="absolute -top-8 -right-8 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-2xl p-4 shadow-xl"
                 >
                   <div className="text-center">
-                    <div className="text-2xl font-bold">< 50ms</div>
+                    <div className="text-2xl font-bold">&lt; 50ms</div>
                     <div className="text-xs opacity-90">Checkout Speed</div>
                   </div>
                 </motion.div>
