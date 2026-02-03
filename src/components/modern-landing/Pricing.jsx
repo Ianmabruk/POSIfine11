@@ -8,7 +8,7 @@ export default function Pricing() {
   const plans = [
     {
       name: "Basic",
-      price: "KES 1,000",
+      price: "KES 1,200",
       description: "Perfect for small shops",
       features: [
         "Single User",
@@ -23,7 +23,7 @@ export default function Pricing() {
     },
     {
       name: "Ultra",
-      price: "KES 2,500",
+      price: "KES 2,400",
       description: "For growing businesses",
       features: [
         "Up to 10 Users",
@@ -39,7 +39,7 @@ export default function Pricing() {
     },
     {
       name: "Pro",
-      price: "KES 3,400",
+      price: "KES 3,600",
       description: "Ultimate business solution",
       features: [
         "Unlimited Users",
