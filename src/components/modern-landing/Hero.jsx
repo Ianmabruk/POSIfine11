@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 export default function Hero({ onOpenDemo }) {
   const navigate = useNavigate();
   const [currentBusiness, setCurrentBusiness] = useState(0);
+  const [demoClicked, setDemoClicked] = useState(false);
   const businesses = ["Clinic", "Bar", "Shop", "Hotel", "Restaurant", "Pharmacy"];
 
   useEffect(() => {
@@ -14,6 +15,12 @@ export default function Hero({ onOpenDemo }) {
     }, 2000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (!demoClicked) return;
+    const timer = setTimeout(() => setDemoClicked(false), 1200);
+    return () => clearTimeout(timer);
+  }, [demoClicked]);
 
   return (
     <section className="relative flex flex-col items-center min-h-screen px-6 md:px-12 lg:px-20 bg-gradient-to-br from-white via-[#f5f7fb] to-white overflow-hidden">
@@ -127,7 +134,11 @@ export default function Hero({ onOpenDemo }) {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={onOpenDemo}
+              animate={demoClicked ? { scale: [1, 1.08, 1], boxShadow: ["0 0 0 rgba(45, 76, 255, 0)", "0 0 40px rgba(45, 76, 255, 0.35)", "0 0 0 rgba(45, 76, 255, 0)"] } : {}}
+              onClick={() => {
+                setDemoClicked(true);
+                onOpenDemo();
+              }}
               className="px-8 py-4 bg-white border-2 border-[#2d4cff]/30 text-[#2d4cff] rounded-2xl font-semibold hover:border-[#2d4cff] hover:bg-[#f5f7fb] transition-all flex items-center justify-center gap-2 group"
             >
               <Play className="w-5 h-5 text-[#2d4cff] group-hover:scale-110 transition-transform" />

@@ -133,21 +133,47 @@ export default function AuthNew() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-[#f5f7fb] to-white flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 border border-slate-200">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-br from-[#2d4cff] via-[#3b82f6] to-[#22c55e] rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg">
-            <span className="text-3xl font-bold text-white">P</span>
+      <div className="max-w-5xl w-full grid lg:grid-cols-2 gap-6 lg:gap-10 items-stretch">
+        <div className="hidden lg:flex flex-col justify-between rounded-3xl p-10 bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#0f172a] text-white shadow-2xl">
+          <div>
+            <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center mb-6">
+              <span className="text-2xl font-bold">P</span>
+            </div>
+            <h2 className="text-3xl font-bold mb-4">Operate smarter with POSiFine</h2>
+            <p className="text-white/70 text-sm leading-relaxed">
+              Centralize your sales, stock, and staff workflows with real-time insights and secure access from any device.
+            </p>
           </div>
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">
-            {isLogin ? 'Welcome Back' : 'Get Started'}
-          </h1>
-          <p className="text-slate-600 text-sm">
-            {isLogin ? 'Sign in to your account' : 'Create your account today'}
-          </p>
+          <div className="space-y-3 text-sm">
+            {[
+              'Instant dashboards and alerts',
+              'AI-powered recommendations',
+              'Enterprise-grade security',
+              '24/7 priority support'
+            ].map((item) => (
+              <div key={item} className="flex items-center gap-3">
+                <span className="w-2 h-2 rounded-full bg-[#22c55e]" />
+                <span className="text-white/80">{item}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="bg-white rounded-3xl shadow-2xl w-full p-8 border border-slate-200">
+          {/* Logo */}
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 bg-gradient-to-br from-[#2d4cff] via-[#3b82f6] to-[#22c55e] rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg">
+              <span className="text-3xl font-bold text-white">P</span>
+            </div>
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">
+              {isLogin ? 'Welcome Back' : 'Get Started'}
+            </h1>
+            <p className="text-slate-600 text-sm">
+              {isLogin ? 'Sign in to your account' : 'Create your account today'}
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
           {needsPasswordSetup ? (
             <>
               <div className="bg-[#f5f7fb] border border-slate-200 p-4 rounded-lg">
@@ -326,6 +352,7 @@ export default function AuthNew() {
               {isLogin ? 'Sign up' : 'Sign in'}
             </button>
           </p>
+        </div>
         </div>
       </div>
     </div>

@@ -184,8 +184,10 @@ export default function Subscription() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-[#f5f7fb] to-white py-6 md:py-12 px-4 md:px-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-white via-[#f5f7fb] to-white py-6 md:py-12 px-4 md:px-6">
+      <div className="absolute -top-24 -left-20 w-72 h-72 bg-[#2d4cff]/10 blur-3xl rounded-full" />
+      <div className="absolute -bottom-24 -right-20 w-80 h-80 bg-[#22c55e]/10 blur-3xl rounded-full" />
+      <div className="max-w-7xl mx-auto relative">
         {/* Header with Logo */}
         <div className="flex items-center justify-between mb-8">
           <button 
@@ -246,8 +248,8 @@ export default function Subscription() {
                 onClick={() => setSelected(plan.id)}
                 className={`card cursor-pointer transition-all transform ${
                   selected === plan.id 
-                    ? 'ring-4 ring-[#2d4cff] shadow-2xl scale-105 bg-gradient-to-br from-[#2d4cff] via-[#3b82f6] to-[#22c55e] text-white' 
-                    : 'bg-white hover:shadow-xl hover:scale-102 border border-slate-200 hover:border-[#2d4cff]'
+                    ? 'ring-4 ring-[#2d4cff]/60 shadow-2xl scale-105 bg-gradient-to-br from-[#2d4cff] via-[#3b82f6] to-[#22c55e] text-white' 
+                    : 'bg-white/90 backdrop-blur border border-slate-200 hover:shadow-xl hover:scale-102 hover:border-[#2d4cff]'
                 } relative`}
               >
                 {plan.popular && (
@@ -303,7 +305,7 @@ export default function Subscription() {
             onClick={() => setShowDemoForm(true)}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="cursor-pointer px-8 md:px-12 py-3 md:py-4 text-base md:text-lg font-bold border-2 border-slate-200 bg-white text-slate-700 rounded-lg hover:border-[#2d4cff] transition-all"
+            className="cursor-pointer px-8 md:px-12 py-3 md:py-4 text-base md:text-lg font-bold border-2 border-slate-200 bg-white text-slate-700 rounded-2xl hover:border-[#2d4cff] transition-all"
           >
             Request Free Demo
           </motion.button>
