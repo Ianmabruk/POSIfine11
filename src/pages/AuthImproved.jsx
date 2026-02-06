@@ -1,3 +1,7 @@
+// Legacy auth screen retained only for backward compatibility.
+// Use AuthNew as the single source of truth.
+export { default } from './AuthNew';
+/*
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { auth } from '../services/api';
@@ -377,3 +381,4 @@ export default function AuthImproved() {
     </div>
   );
 }
+*/

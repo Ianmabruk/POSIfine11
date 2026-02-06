@@ -406,6 +406,11 @@ export default function CashierPOS() {
     return Number(product?.quantity || 0);
   }, [productList]);
 
+  const getLowStockThreshold = useCallback((product) => {
+    const threshold = Number(product?.reorder_level ?? product?.reorderLevel ?? 0);
+    return threshold > 0 ? threshold : 10;
+  }, []);
+
   const getOldestBatch = (productId) => {
     const productBatches = batchList
       .filter(b => b.productId === productId && b.quantity > 0)
@@ -992,7 +997,8 @@ export default function CashierPOS() {
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {productList.filter(p => p.name?.toLowerCase().includes(searchTerm.toLowerCase())).map(product => {
                 const stock = getProductStock(product.id);
-                const isLowStock = stock < 10;
+                const lowStockThreshold = getLowStockThreshold(product);
+                const isLowStock = stock > 0 && stock <= lowStockThreshold;
                 const isOutOfStock = stock <= 0;
                 
                 return (
@@ -1027,13 +1033,21 @@ export default function CashierPOS() {
                     <p className="text-xl font-bold text-green-600">KSH {product.price?.toLocaleString()}</p>
                     <div className="flex justify-between items-center mt-2">
                       <p className={`text-xs font-medium ${
-                        isOutOfStock ? 'text-red-600' : isLowStock ? 'text-yellow-600' : 'text-gray-500'
+                        isOutOfStock ? 'text-red-600' : isLowStock ? 'text-yellow-600' : 'text-green-600'
                       }`}>
                         Stock: {stock}
                       </p>
-                      {isLowStock && !isOutOfStock && (
+                      {isOutOfStock ? (
+                        <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full font-medium">
+                          Out of Stock
+                        </span>
+                      ) : isLowStock ? (
                         <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full font-medium">
                           Low Stock
+                        </span>
+                      ) : (
+                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-medium">
+                          In Stock
                         </span>
                       )}
                     </div>
@@ -1477,7 +1491,9 @@ export default function CashierPOS() {
                   {productList.map((product) => {
                     const stock = getProductStock(product.id);
                     const productBatches = batchList.filter(b => b.productId === product.id && b.quantity > 0);
-                    const isLowStock = stock < 10;
+                    const lowStockThreshold = getLowStockThreshold(product);
+                    const isLowStock = stock > 0 && stock <= lowStockThreshold;
+                    const isOutOfStock = stock <= 0;
                     
                     return (
                       <tr key={product.id} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
@@ -1496,16 +1512,24 @@ export default function CashierPOS() {
                         <td className="px-4 py-3 text-sm">
                           <div className="flex items-center gap-2">
                             <span className={`font-medium ${
-                              stock === 0 ? 'text-red-600' : isLowStock ? 'text-yellow-600' : 'text-gray-900'
+                              isOutOfStock ? 'text-red-600' : isLowStock ? 'text-yellow-600' : 'text-green-700'
                             }`}>
                               {stock}
                             </span>
-                            {isLowStock && stock > 0 && (
+                            {isLowStock && !isOutOfStock && (
                               <AlertTriangle className="w-4 h-4 text-yellow-500" />
                             )}
-                            {stock === 0 && (
+                            {isOutOfStock ? (
                               <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full font-medium">
                                 Out of Stock
+                              </span>
+                            ) : isLowStock ? (
+                              <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full font-medium">
+                                Low Stock
+                              </span>
+                            ) : (
+                              <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-medium">
+                                In Stock
                               </span>
                             )}
                           </div>

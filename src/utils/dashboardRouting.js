@@ -122,7 +122,7 @@ export function getDashboardRoute(user) {
 export function isProUser(user) {
   if (!user) return false;
   const subscription = user.subscription || user.plan;
-  return subscription === 'pro' || subscription === 'custom' || subscription === 'PRO_PETROLEUM';
+  return subscription === 'pro' || subscription === 'custom' || subscription === 'PRO_PETROLEUM' || subscription === 'pro_petroleum' || subscription === 3000 || subscription === 3400;
 }
 
 /**

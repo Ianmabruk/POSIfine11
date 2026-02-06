@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
+import { getDashboardRoute, isProUser } from '../utils/dashboardRouting';
 import {
   Building2, Hotel, Stethoscope, ShoppingCart, Utensils, Pill,
   Fuel, GraduationCap, Dumbbell, Scissors, Store, ArrowRight, Check
@@ -21,6 +22,23 @@ export default function BusinessTypeSelector() {
   const [businessTypes, setBusinessTypes] = useState([]);
   const [error, setError] = useState('');
 
+  const fallbackBusinessTypes = [
+    { id: 'bar', name: 'Bar/Restaurant', description: 'Bar and restaurant management with table service and inventory', icon: 'Utensils' },
+    { id: 'hotel', name: 'Hotel', description: 'Hotel management with room booking and guest services', icon: 'Hotel' },
+    { id: 'clinic', name: 'Clinic', description: 'Medical clinic with patient management and pharmacy', icon: 'Stethoscope' },
+    { id: 'hospital', name: 'Hospital', description: 'Full hospital management with departments and services', icon: 'Building2' },
+    { id: 'supermarket', name: 'Supermarket/Retail', description: 'Retail supermarket with product scanning and inventory', icon: 'ShoppingCart' },
+    { id: 'restaurant', name: 'Restaurant', description: 'Restaurant management with kitchen and table service', icon: 'ChefHat' },
+    { id: 'pharmacy', name: 'Pharmacy', description: 'Pharmacy with prescription management and drug inventory', icon: 'Pill' },
+    { id: 'petrol', name: 'Petrol Station', description: 'Petrol station with pump tracking and fuel inventory', icon: 'Fuel' },
+    { id: 'school', name: 'School', description: 'School management with fees, canteen, and student services', icon: 'GraduationCap' },
+    { id: 'kiosk', name: 'Kiosk/Mini Shop', description: 'Small retail kiosk with fast sales and stock tracking', icon: 'Store' },
+    { id: 'shoes', name: 'Shoe Store', description: 'Shoe retail with size variants and inventory tracking', icon: 'ShoppingCart' },
+    { id: 'gym', name: 'Gym/Fitness Center', description: 'Gym management with memberships and class scheduling', icon: 'Dumbbell' },
+    { id: 'salon', name: 'Salon/Spa', description: 'Salon and spa management with appointments and services', icon: 'Scissors' },
+    { id: 'retail', name: 'General Retail', description: 'General retail store management', icon: 'Store' }
+  ];
+
   // Icon mapping
   const iconMap = {
     'Utensils': Utensils,
@@ -39,14 +57,14 @@ export default function BusinessTypeSelector() {
 
   useEffect(() => {
     // Verify user is on Pro/Custom plan
-    if (!user || !['pro', 'custom'].includes(user.plan)) {
+    if (!user || !isProUser(user)) {
       navigate('/admin');
       return;
     }
 
     // If user already has business type, redirect to dashboard
     if (user.businessType || user.business_type) {
-      navigate('/pro-dashboard');
+      navigate(getDashboardRoute(user));
       return;
     }
 
@@ -57,11 +75,18 @@ export default function BusinessTypeSelector() {
     try {
       const data = await api.get('/business/business-types');
       if (data.success) {
-        setBusinessTypes(data.businessTypes);
+        const merged = new Map((data.businessTypes || []).map(type => [type.id, type]));
+        fallbackBusinessTypes.forEach(type => {
+          if (!merged.has(type.id)) merged.set(type.id, type);
+        });
+        setBusinessTypes(Array.from(merged.values()));
+      } else {
+        setBusinessTypes(fallbackBusinessTypes);
       }
     } catch (error) {
       console.error('Error loading business types:', error);
-      setError('Failed to load business types. Please try again.');
+      setBusinessTypes(fallbackBusinessTypes);
+      setError('Failed to load business types. Showing default options.');
     }
   };
 
@@ -97,9 +122,14 @@ export default function BusinessTypeSelector() {
         localStorage.setItem('businessType', selectedType.id);
         localStorage.setItem('selectedBusinessType', selectedType.id);
 
-        // Redirect to pro dashboard
+        // Redirect to business-specific admin dashboard
         console.log('✅ Business type selected:', selectedType.id);
-        navigate('/pro-dashboard');
+        const updatedUser = {
+          ...(user || {}),
+          businessType: selectedType.id,
+          business_type: selectedType.id
+        };
+        navigate(getDashboardRoute(updatedUser));
       } else {
         setError(data.error || 'Failed to set business type');
       }

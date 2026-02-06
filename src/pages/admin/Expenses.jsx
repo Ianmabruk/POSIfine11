@@ -61,9 +61,15 @@ export default function Expenses() {
     loadExpenses();
   };
 
-  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
-  const manualExpenses = expenses.filter(e => !e.automatic);
-  const autoExpenses = expenses.filter(e => e.automatic);
+  const isAutomaticExpense = (expense) => (
+    expense?.automatic === true
+    || expense?.source === 'auto-deduction'
+    || expense?.category === 'ingredient'
+  );
+
+  const totalExpenses = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+  const manualExpenses = expenses.filter(e => !isAutomaticExpense(e));
+  const autoExpenses = expenses.filter(isAutomaticExpense);
 
   return (
     <div className="p-6 space-y-6">
@@ -119,23 +125,26 @@ export default function Expenses() {
               </tr>
             </thead>
             <tbody>
-              {expenses.map((expense) => (
+              {expenses.map((expense) => {
+                const createdAt = expense.createdAt || expense.created_at || expense.date || expense.timestamp;
+                const isAutomatic = isAutomaticExpense(expense);
+                return (
                 <tr key={expense.id} className="border-t border-gray-100 hover:bg-gray-50">
-                  <td className="px-4 py-3 text-sm">{new Date(expense.createdAt).toLocaleDateString()}</td>
-                  <td className="px-4 py-3 text-sm">{expense.description}</td>
+                  <td className="px-4 py-3 text-sm">{createdAt ? new Date(createdAt).toLocaleDateString() : 'N/A'}</td>
+                  <td className="px-4 py-3 text-sm">{expense.description || expense.name || 'Expense'}</td>
                   <td className="px-4 py-3 text-sm">
                     <span className="badge badge-warning">{expense.category}</span>
                   </td>
                   <td className="px-4 py-3 text-sm">
-                    <span className={`badge ${expense.automatic ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>
-                      {expense.automatic ? 'Automatic' : 'Manual'}
+                    <span className={`badge ${isAutomatic ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>
+                      {isAutomatic ? 'Automatic' : 'Manual'}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-sm font-semibold text-red-600">
                     KSH {expense.amount?.toLocaleString()}
                   </td>
                 </tr>
-              ))}
+              );})}
             </tbody>
           </table>
         </div>

@@ -43,7 +43,16 @@ const AdminBarDashboard = lazy(() => import('./pages/admin/AdminBarDashboard'));
 const PetrolAdminDashboard = lazy(() => import('./pages/admin/PetrolAdminDashboard'));
 const AdminHotelDashboard = lazy(() => import('./pages/admin/AdminHotelDashboard'));
 const AdminSupermarketDashboard = lazy(() => import('./pages/admin/AdminSupermarketDashboard'));
+const AdminHospitalDashboard = lazy(() => import('./pages/admin/HospitalAdminDashboard'));
+const AdminSchoolDashboard = lazy(() => import('./pages/admin/SchoolAdminDashboard'));
+const AdminKioskDashboard = lazy(() => import('./pages/admin/KioskAdminDashboard'));
+const AdminShoeDashboard = lazy(() => import('./pages/admin/ShoeAdminDashboard'));
 const ClinicDoctorDashboard = lazy(() => import('./pages/dashboards/clinic/ClinicDoctorDashboard'));
+const ClinicReceptionDashboard = lazy(() => import('./pages/clinic/ReceptionDashboard'));
+const ClinicPharmacyDashboard = lazy(() => import('./pages/clinic/PharmacyDashboard'));
+const BarDashboard = lazy(() => import('./pages/bar/BarDashboard'));
+const HotelDashboard = lazy(() => import('./pages/hotel/HotelDashboard'));
+const SupermarketDashboard = lazy(() => import('./pages/business/SupermarketDashboard'));
 
 function ProtectedRoute({ children, adminOnly = false, ultraOnly = false, ownerOnly = false }) {
   const { user, loading } = useAuth();
@@ -146,7 +155,7 @@ function DashboardRouter() {
   if (!user || !user.active) return <Navigate to="/choose-subscription" />;
   
   // 🎯 PRO PLAN ROUTING - Business-specific dashboards
-  const isPro = user.subscription === 'pro' || user.plan === 'pro' || user.subscription === 'custom' || user.plan === 3000 || user.plan === 3400;
+  const isPro = user.subscription === 'pro' || user.plan === 'pro' || user.subscription === 'custom' || user.plan === 3000 || user.plan === 3400 || user.subscription === 'PRO_PETROLEUM' || user.plan === 'PRO_PETROLEUM' || user.subscription === 'pro_petroleum' || user.plan === 'pro_petroleum';
   const businessType = user.businessType || user.business_type;
   const businessRole = user.businessRole || user.business_role;
   
@@ -163,12 +172,12 @@ function DashboardRouter() {
     if (businessRole) {
       if (businessType === 'clinic') {
         if (businessRole === 'doctor') return <Navigate to="/dashboard/clinic/doctor" />;
-        if (businessRole === 'registrar' || businessRole === 'reception') return <Navigate to="/dashboard/clinic/reception" />;
+        if (businessRole === 'registrar' || businessRole === 'reception' || businessRole === 'receptionist') return <Navigate to="/dashboard/clinic/reception" />;
         if (businessRole === 'pharmacist' || businessRole === 'pharmacy') return <Navigate to="/dashboard/clinic/pharmacy" />;
         if (businessRole === 'cashier') return <Navigate to="/cashier/clinic" />;
       }
       if (businessType === 'bar') {
-        if (businessRole === 'bartender') return <Navigate to="/dashboard/bar/bartender" />;
+        if (businessRole === 'bartender' || businessRole === 'waiter' || businessRole === 'manager') return <Navigate to="/dashboard/bar/bartender" />;
         if (businessRole === 'cashier') return <Navigate to="/cashier/bar" />;
       }
       if (businessType === 'hotel') {
@@ -187,6 +196,11 @@ function DashboardRouter() {
     if (businessType === 'bar') return <Navigate to="/cashier/bar" />;
     if (businessType === 'hotel') return <Navigate to="/cashier/hotel" />;
     if (businessType === 'supermarket') return <Navigate to="/cashier/supermarket" />;
+    if (businessType === 'hospital') return <Navigate to="/cashier/hospital" />;
+    if (businessType === 'school') return <Navigate to="/cashier/school" />;
+    if (businessType === 'kiosk') return <Navigate to="/cashier/kiosk" />;
+    if (businessType === 'shoes') return <Navigate to="/cashier/shoes" />;
+    if (businessType === 'petrol') return <Navigate to="/cashier/petrol" />;
     return <Navigate to="/dashboard/cashier" />;
   }
   
@@ -292,6 +306,50 @@ function App() {
                     </ProPlanGuard>
                   </RouteGuard>
                 } />
+                <Route path="/admin/hospital" element={
+                  <RouteGuard>
+                    <ProPlanGuard>
+                      <BusinessTypeGuard requiredType="hospital">
+                        <AdminGuard>
+                          <AdminHospitalDashboard />
+                        </AdminGuard>
+                      </BusinessTypeGuard>
+                    </ProPlanGuard>
+                  </RouteGuard>
+                } />
+                <Route path="/admin/school" element={
+                  <RouteGuard>
+                    <ProPlanGuard>
+                      <BusinessTypeGuard requiredType="school">
+                        <AdminGuard>
+                          <AdminSchoolDashboard />
+                        </AdminGuard>
+                      </BusinessTypeGuard>
+                    </ProPlanGuard>
+                  </RouteGuard>
+                } />
+                <Route path="/admin/kiosk" element={
+                  <RouteGuard>
+                    <ProPlanGuard>
+                      <BusinessTypeGuard requiredType="kiosk">
+                        <AdminGuard>
+                          <AdminKioskDashboard />
+                        </AdminGuard>
+                      </BusinessTypeGuard>
+                    </ProPlanGuard>
+                  </RouteGuard>
+                } />
+                <Route path="/admin/shoes" element={
+                  <RouteGuard>
+                    <ProPlanGuard>
+                      <BusinessTypeGuard requiredType="shoes">
+                        <AdminGuard>
+                          <AdminShoeDashboard />
+                        </AdminGuard>
+                      </BusinessTypeGuard>
+                    </ProPlanGuard>
+                  </RouteGuard>
+                } />
                 <Route path="/admin/petrol" element={
                   <RouteGuard>
                     <PetroleumPlanGuard>
@@ -311,6 +369,83 @@ function App() {
                       <BusinessTypeGuard requiredType="clinic">
                         <RoleGuard allowedRoles={['doctor']}>
                           <ClinicDoctorDashboard />
+                        </RoleGuard>
+                      </BusinessTypeGuard>
+                    </ProPlanGuard>
+                  </RouteGuard>
+                } />
+                <Route path="/dashboard/clinic/reception" element={
+                  <RouteGuard>
+                    <ProPlanGuard>
+                      <BusinessTypeGuard requiredType="clinic">
+                        <RoleGuard allowedRoles={['registrar', 'reception', 'receptionist']}>
+                          <ClinicReceptionDashboard />
+                        </RoleGuard>
+                      </BusinessTypeGuard>
+                    </ProPlanGuard>
+                  </RouteGuard>
+                } />
+                <Route path="/dashboard/clinic/pharmacy" element={
+                  <RouteGuard>
+                    <ProPlanGuard>
+                      <BusinessTypeGuard requiredType="clinic">
+                        <RoleGuard allowedRoles={['pharmacist', 'pharmacy']}>
+                          <ClinicPharmacyDashboard />
+                        </RoleGuard>
+                      </BusinessTypeGuard>
+                    </ProPlanGuard>
+                  </RouteGuard>
+                } />
+                <Route path="/dashboard/bar/bartender" element={
+                  <RouteGuard>
+                    <ProPlanGuard>
+                      <BusinessTypeGuard requiredType="bar">
+                        <RoleGuard allowedRoles={['bartender', 'waiter', 'manager']}>
+                          <BarDashboard />
+                        </RoleGuard>
+                      </BusinessTypeGuard>
+                    </ProPlanGuard>
+                  </RouteGuard>
+                } />
+                <Route path="/dashboard/bar/waiter" element={
+                  <RouteGuard>
+                    <ProPlanGuard>
+                      <BusinessTypeGuard requiredType="bar">
+                        <RoleGuard allowedRoles={['bartender', 'waiter', 'manager']}>
+                          <BarDashboard />
+                        </RoleGuard>
+                      </BusinessTypeGuard>
+                    </ProPlanGuard>
+                  </RouteGuard>
+                } />
+                <Route path="/dashboard/hotel/reception" element={
+                  <RouteGuard>
+                    <ProPlanGuard>
+                      <BusinessTypeGuard requiredType="hotel">
+                        <RoleGuard allowedRoles={['receptionist', 'reception', 'manager']}>
+                          <HotelDashboard />
+                        </RoleGuard>
+                      </BusinessTypeGuard>
+                    </ProPlanGuard>
+                  </RouteGuard>
+                } />
+                <Route path="/dashboard/hotel/housekeeping" element={
+                  <RouteGuard>
+                    <ProPlanGuard>
+                      <BusinessTypeGuard requiredType="hotel">
+                        <RoleGuard allowedRoles={['housekeeping', 'manager']}>
+                          <HotelDashboard />
+                        </RoleGuard>
+                      </BusinessTypeGuard>
+                    </ProPlanGuard>
+                  </RouteGuard>
+                } />
+                <Route path="/dashboard/supermarket/department" element={
+                  <RouteGuard>
+                    <ProPlanGuard>
+                      <BusinessTypeGuard requiredType="supermarket">
+                        <RoleGuard allowedRoles={['department_head', 'manager']}>
+                          <SupermarketDashboard />
                         </RoleGuard>
                       </BusinessTypeGuard>
                     </ProPlanGuard>

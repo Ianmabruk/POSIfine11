@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Droplet, Fuel, LogOut, Zap } from 'lucide-react';
+import { Droplet, Fuel, Zap } from 'lucide-react';
 import { petroleumService } from '../../services/petroleumService';
+import CashierPOSLayout from '../../components/cashier/CashierPOSLayout';
 
 export default function PetrolCashierPOS() {
   const { user, logout } = useAuth();
@@ -117,38 +118,25 @@ export default function PetrolCashierPOS() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
-      <div className="bg-gradient-to-r from-slate-900 via-slate-950 to-slate-900 border-b border-cyan-500/20">
-        <div className="max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-cyan-500/20 flex items-center justify-center">
-              <Fuel className="text-cyan-400" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold">Petroleum Staff Console</h1>
-              <p className="text-slate-400 text-sm">Pump operations • Real-time tank tracking</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-6">
-            <div className="text-right">
-              <p className="text-xs text-slate-400">Today&apos;s Volume</p>
-              <p className="text-2xl font-bold text-cyan-300">{dailyTotals.liters.toLocaleString()} L</p>
-              <p className="text-xs text-slate-500">KES {dailyTotals.revenue.toLocaleString()}</p>
-            </div>
-            <button
-              onClick={() => {
-                logout();
-                navigate('/auth/login');
-              }}
-              className="flex items-center gap-2 bg-red-500/10 text-red-300 px-4 py-2 rounded-lg hover:bg-red-500/20"
-            >
-              <LogOut size={18} />
-              Logout
-            </button>
-          </div>
-        </div>
-      </div>
-
+    <CashierPOSLayout
+      title="Petroleum Staff Console"
+      subtitle="Pump operations • Real-time tank tracking"
+      icon={Fuel}
+      theme={{
+        pageBg: 'min-h-screen bg-slate-950 text-white',
+        headerBg: 'bg-gradient-to-r from-slate-900 via-slate-950 to-slate-900 border-b border-cyan-500/20',
+        iconWrap: 'w-12 h-12 rounded-2xl bg-cyan-500/20 flex items-center justify-center',
+        titleClass: 'text-2xl font-bold text-white',
+        subtitleClass: 'text-slate-400 text-sm',
+        logoutClass: 'flex items-center justify-center gap-2 bg-red-500/10 text-red-300 px-4 py-2 rounded-lg hover:bg-red-500/20'
+      }}
+      stats={{
+        label: "Today's Volume",
+        value: `${dailyTotals.liters.toLocaleString()} L`,
+        meta: `KES ${dailyTotals.revenue.toLocaleString()}`,
+        valueClass: 'text-cyan-300'
+      }}
+    >
       <div className="max-w-7xl mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
@@ -258,6 +246,6 @@ export default function PetrolCashierPOS() {
           </div>
         </div>
       </div>
-    </div>
+    </CashierPOSLayout>
   );
 }

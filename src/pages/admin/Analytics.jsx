@@ -61,8 +61,9 @@ export default function Analytics() {
     const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
 
     return sales.filter(sale => {
-      const saleDate = new Date(sale.created_at || sale.date);
-      return saleDate >= startDate;
+      const rawDate = sale.created_at || sale.createdAt || sale.date || sale.timestamp;
+      const saleDate = rawDate ? new Date(rawDate) : null;
+      return saleDate && saleDate >= startDate;
     });
   };
 
@@ -74,9 +75,12 @@ export default function Analytics() {
     filteredSales.forEach(sale => {
       if (sale.items) {
         sale.items.forEach(item => {
-          if (!productSales[item.product_id]) {
-            const product = products.find(p => p.id === item.product_id);
-            productSales[item.product_id] = {
+          const productId = item.product_id ?? item.productId ?? item.id;
+          if (!productId) return;
+
+          if (!productSales[productId]) {
+            const product = products.find(p => p.id === productId);
+            productSales[productId] = {
               name: item.name || product?.name || 'Unknown',
               quantity: 0,
               revenue: 0,
@@ -84,12 +88,12 @@ export default function Analytics() {
               count: 0
             };
           }
-          productSales[item.product_id].quantity += item.quantity || 0;
-          productSales[item.product_id].revenue += (item.price || 0) * (item.quantity || 0);
-          const product = products.find(p => p.id === item.product_id);
+          productSales[productId].quantity += item.quantity || 0;
+          productSales[productId].revenue += (item.price || 0) * (item.quantity || 0);
+          const product = products.find(p => p.id === productId);
           const cost = product?.cost || 0;
-          productSales[item.product_id].profit += ((item.price || 0) - cost) * (item.quantity || 0);
-          productSales[item.product_id].count += 1;
+          productSales[productId].profit += ((item.price || 0) - cost) * (item.quantity || 0);
+          productSales[productId].count += 1;
         });
       }
     });
@@ -103,7 +107,9 @@ export default function Analytics() {
     const dailySales = {};
 
     filteredSales.forEach(sale => {
-      const date = new Date(sale.created_at || sale.date).toLocaleDateString();
+      const rawDate = sale.created_at || sale.createdAt || sale.date || sale.timestamp;
+      if (!rawDate) return;
+      const date = new Date(rawDate).toLocaleDateString();
       if (!dailySales[date]) {
         dailySales[date] = { date, revenue: 0, count: 0 };
       }

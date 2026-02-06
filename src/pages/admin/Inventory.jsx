@@ -434,12 +434,16 @@ export default function Inventory() {
         alert('You cannot lower prices, only increase.');
         return;
       }
+
+      const parsedCost = parseFloat(editProduct.cost);
+      const safeCost = Number.isFinite(parsedCost) ? parsedCost : (originalProduct.cost || 0);
       
       // Don't send quantity - stock is managed via "Add Stock" button only
       const updateData = {
         ...editProduct,
         price: parseFloat(editProduct.price),
-        cost: parseFloat(editProduct.cost),
+        cost: safeCost,
+        cost_per_unit: Number.isFinite(parsedCost) ? parsedCost : (originalProduct.cost_per_unit || originalProduct.cost || 0),
         quantity: originalProduct.quantity,  // Preserve existing quantity
         reorder_level: editProduct.reorder_level === '' ? originalProduct.reorder_level : parseFloat(editProduct.reorder_level)
       };
@@ -465,6 +469,18 @@ export default function Inventory() {
           );
           console.log('✅ Product updated with backend response:', result);
         }
+
+        // Refresh global products to keep COGS and costs in sync
+        refreshProducts().then((updatedProducts) => {
+          if (Array.isArray(updatedProducts) && updatedProducts.length > 0) {
+            setProductList(prevList => {
+              const tempProducts = prevList.filter(p => typeof p.id === 'string' && p.id.startsWith('temp-'));
+              return [...tempProducts, ...updatedProducts];
+            });
+          }
+        }).catch((err) => {
+          console.warn('Failed to refresh products after update:', err);
+        });
         
         setShowEditModal(false);
         
@@ -611,7 +627,11 @@ export default function Inventory() {
 
   const calculateCOGS = (product) => {
     if (!product) return 0;
-    if (!product.recipe) return product.cost || 0;
+    if (!product.recipe) {
+      const costPerUnit = Number(product.cost_per_unit ?? product.costPerUnit ?? 0);
+      const baseCost = costPerUnit > 0 ? costPerUnit : Number(product.cost ?? 0);
+      return Number(baseCost || 0);
+    }
     let totalCost = 0;
     (product.recipe || []).forEach(ingredient => {
       if (!ingredient) return;

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BASE_API_URL } from '../services/api';
 import { useNavigate } from 'react-router-dom';
-import { Check, Crown, Zap, ArrowLeft, Building, Stethoscope, GlassWater, Hotel as HotelIcon, ShoppingCart } from 'lucide-react';
+import { Check, Crown, Zap, ArrowLeft, Building, Stethoscope, GlassWater, Hotel as HotelIcon, ShoppingCart, Fuel, GraduationCap, Store, Building2, Pill } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Subscription() {
@@ -75,10 +75,24 @@ export default function Subscription() {
   const businessTypes = [
     {
       id: 'clinic',
-      name: 'Clinic / Hospital',
+      name: 'Clinic',
       icon: Stethoscope,
       description: 'Patient management, appointments, prescriptions',
       roles: ['Doctor', 'Reception', 'Pharmacy', 'Admin']
+    },
+    {
+      id: 'hospital',
+      name: 'Hospital',
+      icon: Building2,
+      description: 'Departments, admissions, lab services',
+      roles: ['Doctor', 'Reception', 'Pharmacy', 'Admin']
+    },
+    {
+      id: 'pharmacy',
+      name: 'Pharmacy',
+      icon: Pill,
+      description: 'Prescription management and inventory',
+      roles: ['Pharmacist', 'Cashier', 'Admin']
     },
     {
       id: 'bar',
@@ -100,6 +114,34 @@ export default function Subscription() {
       icon: ShoppingCart,
       description: 'Advanced inventory, bulk sales, departments',
       roles: ['Cashier', 'Stock Manager', 'Department Head']
+    },
+    {
+      id: 'petrol',
+      name: 'Petrol Station',
+      icon: Fuel,
+      description: 'Pump tracking and fuel inventory',
+      roles: ['Attendant', 'Cashier', 'Manager']
+    },
+    {
+      id: 'school',
+      name: 'School',
+      icon: GraduationCap,
+      description: 'Fees, canteen, student services',
+      roles: ['Accountant', 'Canteen', 'Admin']
+    },
+    {
+      id: 'kiosk',
+      name: 'Kiosk / Mini Shop',
+      icon: Store,
+      description: 'Fast sales and stock tracking',
+      roles: ['Cashier', 'Owner']
+    },
+    {
+      id: 'shoes',
+      name: 'Shoe Store',
+      icon: ShoppingCart,
+      description: 'Size variants and inventory management',
+      roles: ['Cashier', 'Stock Clerk', 'Manager']
     }
   ];
 

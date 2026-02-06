@@ -1,3 +1,5 @@
+export { default } from './admin/AdminDashboard';
+/* Legacy dashboard (deprecated)
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { users, products, sales, expenses, stats } from '../services/api';
@@ -747,3 +749,4 @@ export default function AdminDashboard() {
     </div>
   );
 }
+*/

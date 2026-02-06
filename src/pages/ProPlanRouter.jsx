@@ -20,6 +20,10 @@ import AdminDashboard from './admin/AdminDashboard';
 // Import new business-specific dashboards
 import SupermarketDashboard from './business/SupermarketDashboard';
 import PetrolAdminDashboard from './admin/PetrolAdminDashboard';
+import HospitalAdminDashboard from './admin/HospitalAdminDashboard';
+import SchoolAdminDashboard from './admin/SchoolAdminDashboard';
+import KioskAdminDashboard from './admin/KioskAdminDashboard';
+import ShoeAdminDashboard from './admin/ShoeAdminDashboard';
 
 /**
  * ProPlanRouter - Routes Pro Plan users to business-specific dashboards
@@ -113,8 +117,11 @@ export default function ProPlanRouter() {
       case 'doctor':
         return <DoctorDashboard />;
       case 'reception':
+      case 'registrar':
+      case 'receptionist':
         return <ReceptionDashboard />;
       case 'pharmacy':
+      case 'pharmacist':
         return <PharmacyDashboard />;
       default:
         // Fallback for clinic without specific role
@@ -139,6 +146,22 @@ export default function ProPlanRouter() {
 
   if (businessType === 'petrol') {
     return <PetrolAdminDashboard />;
+  }
+
+  if (businessType === 'hospital') {
+    return <HospitalAdminDashboard />;
+  }
+
+  if (businessType === 'school') {
+    return <SchoolAdminDashboard />;
+  }
+
+  if (businessType === 'kiosk') {
+    return <KioskAdminDashboard />;
+  }
+
+  if (businessType === 'shoes') {
+    return <ShoeAdminDashboard />;
   }
 
   // For hospital, pharmacy, and other business types - use standard admin dashboard for now

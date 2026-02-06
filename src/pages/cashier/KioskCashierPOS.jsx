@@ -1,84 +1,68 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import React, { useMemo } from 'react';
+import { AlertCircle, Store, Zap } from 'lucide-react';
 import CashierPOS from '../CashierPOS';
-import { Store, LogOut, Zap, AlertCircle } from 'lucide-react';
+import CashierPOSLayout from '../../components/cashier/CashierPOSLayout';
+import { useDayStats } from '../../hooks/useDayStats';
+
+const DEFAULT_STATS = { sales: 0, itemsSold: 0, lowStockItems: 0 };
 
 export default function KioskCashierPOS() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-  const [dayStats, setDayStats] = useState({ sales: 0, itemsSold: 0, lowStockItems: 0 });
-
-  useEffect(() => {
-    const stats = JSON.parse(localStorage.getItem('dayStats') || '{"sales": 0, "itemsSold": 0, "lowStockItems": 0}');
-    setDayStats(stats);
-  }, []);
+  const { stats, error } = useDayStats(DEFAULT_STATS);
+  const formatKes = useMemo(() => new Intl.NumberFormat('en-KE'), []);
+  const categories = ['🏪 All Items', '🔌 Electronics', '🍪 Food', '🥤 Drinks', '🛒 Supplies'];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100">
-      {/* Header */}
-      <div className="bg-green-700 text-white shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Store size={32} className="text-green-200" />
-              <div>
-                <h1 className="text-2xl font-bold">Kiosk POS</h1>
-                <p className="text-green-200 text-sm">Fast & Simple Checkout</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-6">
-              <div className="text-right">
-                <p className="text-green-200 text-sm">Today's Revenue</p>
-                <p className="text-2xl font-bold text-yellow-300">{dayStats.sales.toLocaleString()} KES</p>
-                <p className="text-green-200 text-xs">{dayStats.itemsSold} items sold</p>
-              </div>
-              <button
-                onClick={() => {
-                  logout();
-                  navigate('/auth/login');
-                }}
-                className="flex items-center gap-2 bg-green-900 hover:bg-green-950 px-4 py-2 rounded-lg transition"
-              >
-                <LogOut size={20} />
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Stats */}
-      {dayStats.lowStockItems > 0 && (
-        <div className="bg-yellow-50 border-b border-yellow-200">
-          <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-2 text-yellow-800">
+    <CashierPOSLayout
+      title="Kiosk POS"
+      subtitle="Fast & Simple Checkout"
+      icon={Store}
+      theme={{
+        pageBg: 'min-h-screen bg-gradient-to-br from-green-50 to-green-100',
+        headerBg: 'bg-green-700 text-white shadow-lg',
+        iconWrap: 'w-12 h-12 rounded-xl bg-green-800/70 flex items-center justify-center text-green-100 shadow',
+        titleClass: 'text-2xl font-bold text-white',
+        subtitleClass: 'text-green-200 text-sm',
+        footerBg: 'bg-green-700 text-white py-4 text-center'
+      }}
+      stats={{
+        label: "Today's Revenue",
+        value: `${formatKes.format(stats.sales)} KES`,
+        meta: `${stats.itemsSold} items sold`,
+        valueClass: 'text-yellow-300'
+      }}
+      errorMessage={error}
+      alert={
+        stats.lowStockItems > 0 ? (
+          <div className="flex items-center gap-2 text-yellow-800">
             <AlertCircle size={20} />
-            <span className="font-semibold">{dayStats.lowStockItems} items running low on stock</span>
+            <span className="font-semibold">{stats.lowStockItems} items running low on stock</span>
           </div>
+        ) : null
+      }
+      topSections={
+        <div className="flex flex-wrap gap-3">
+          {categories.map((category, index) => (
+            <span
+              key={category}
+              className={`px-4 py-2 rounded-full text-sm font-semibold border transition ${
+                index === 0
+                  ? 'bg-green-600 text-white border-green-500'
+                  : 'bg-white text-slate-700 border-slate-200'
+              }`}
+            >
+              {category}
+            </span>
+          ))}
         </div>
-      )}
-
-      {/* Quick Categories */}
-      <div className="bg-gray-100 border-b">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex gap-4 overflow-x-auto">
-          <div className="px-4 py-2 bg-green-600 text-white rounded-lg font-semibold">🏪 All Items</div>
-          <div className="px-4 py-2 bg-white rounded-lg cursor-pointer hover:bg-gray-200 transition">🔌 Electronics</div>
-          <div className="px-4 py-2 bg-white rounded-lg cursor-pointer hover:bg-gray-200 transition">🍪 Food</div>
-          <div className="px-4 py-2 bg-white rounded-lg cursor-pointer hover:bg-gray-200 transition">🥤 Drinks</div>
-          <div className="px-4 py-2 bg-white rounded-lg cursor-pointer hover:bg-gray-200 transition">🛒 Supplies</div>
+      }
+      footer={
+        <div className="flex items-center justify-center gap-2">
+          <Zap size={18} className="text-yellow-300" />
+          <p className="text-sm">Lightning-fast checkout • Low stock alerts • Real-time updates</p>
         </div>
-      </div>
-
-      {/* Generic POS Component */}
-      <div className="bg-white">
-        <CashierPOS businessType="kiosk" />
-      </div>
-
-      {/* Kiosk Footer */}
-      <div className="bg-green-700 text-white py-4 text-center flex items-center justify-center gap-2">
-        <Zap size={18} className="text-yellow-300" />
-        <p className="text-sm">Lightning-fast checkout • Low stock alerts • Real-time updates</p>
-      </div>
-    </div>
+      }
+    >
+      <CashierPOS businessType="kiosk" />
+    </CashierPOSLayout>
   );
 }

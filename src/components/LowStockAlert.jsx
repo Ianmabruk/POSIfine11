@@ -11,7 +11,9 @@ export default function LowStockAlert() {
     const fetchWarnings = async () => {
       try {
         const result = await productsAPI.getLowStockWarnings?.();
-        if (result?.warnings) {
+        if (Array.isArray(result)) {
+          setWarnings(result);
+        } else if (result?.warnings) {
           setWarnings(result.warnings);
         }
       } catch (error) {
@@ -24,7 +26,8 @@ export default function LowStockAlert() {
     return () => clearInterval(interval);
   }, []);
 
-  const visibleWarnings = warnings.filter(w => !dismissed.includes(w.id));
+  const getWarningId = (warning) => warning.id ?? warning.productId ?? warning.product_id;
+  const visibleWarnings = warnings.filter(w => !dismissed.includes(getWarningId(w)));
 
   if (visibleWarnings.length === 0) {
     return null;
@@ -36,9 +39,16 @@ export default function LowStockAlert() {
 
   return (
     <div className="fixed top-24 right-6 max-w-md space-y-2 z-40">
-      {visibleWarnings.map(warning => (
+      {visibleWarnings.map(warning => {
+        const warningId = getWarningId(warning);
+        const name = warning.name || warning.productName || warning.product_name || 'Unknown';
+        const quantity = warning.quantity ?? warning.currentStock ?? warning.current ?? 0;
+        const unit = warning.unit || 'pcs';
+        const threshold = warning.threshold ?? warning.reorder_level ?? 0;
+
+        return (
         <div
-          key={warning.id}
+          key={warningId}
           className="bg-red-50 border-l-4 border-red-500 p-4 rounded shadow-lg animate-pulse"
         >
           <div className="flex items-start justify-between">
@@ -47,22 +57,22 @@ export default function LowStockAlert() {
               <div>
                 <h3 className="font-semibold text-red-900">⚠️ Stock Warning</h3>
                 <p className="text-sm text-red-800 mt-1">
-                  <strong>{warning.name}</strong>: {warning.quantity}{warning.unit} remaining
+                  <strong>{name}</strong>: {quantity}{unit} remaining
                 </p>
                 <p className="text-xs text-red-700 mt-0.5">
-                  Threshold: {warning.threshold}{warning.unit}
+                  Threshold: {threshold}{unit}
                 </p>
               </div>
             </div>
             <button
-              onClick={() => handleDismiss(warning.id)}
+              onClick={() => handleDismiss(warningId)}
               className="text-red-600 hover:text-red-900 flex-shrink-0"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
         </div>
-      ))}
+      );})}
     </div>
   );
 }
