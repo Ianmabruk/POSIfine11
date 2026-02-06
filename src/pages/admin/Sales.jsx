@@ -110,9 +110,13 @@ export default function Sales() {
     return true;
   });
 
-  const totalSales = filteredSales.reduce((sum, s) => sum + s.total, 0);
-  const totalCOGS = filteredSales.reduce((sum, s) => sum + (s.cogs || 0), 0);
-  const totalProfit = totalSales - totalCOGS;
+  const totalSales = filteredSales.reduce((sum, s) => sum + (s.total || 0), 0);
+  const totalCOGS = filteredSales.reduce((sum, s) => sum + (s.cogs ?? s.total_cost ?? 0), 0);
+  const totalProfit = filteredSales.reduce((sum, s) => {
+    const cogs = s.cogs ?? s.total_cost ?? 0;
+    const profit = s.profit ?? s.gross_profit ?? (s.total || 0) - cogs;
+    return sum + profit;
+  }, 0);
 
   return (
     <div className="p-6 space-y-6">

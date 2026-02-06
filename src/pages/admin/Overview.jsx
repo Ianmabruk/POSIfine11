@@ -220,6 +220,8 @@ export default function Overview() {
               <tbody>
                 {(data.recentSales || []).map((sale) => {
                   if (!sale) return null;
+                  const cogs = sale.cogs ?? sale.total_cost ?? 0;
+                  const profit = sale.profit ?? sale.gross_profit ?? (sale.total || 0) - cogs;
                   return (
                     <tr key={sale.id || Math.random()} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-3 text-sm">{sale.createdAt ? new Date(sale.createdAt).toLocaleString() : 'N/A'}</td>
@@ -231,10 +233,10 @@ export default function Overview() {
                         KSH {sale.total?.toLocaleString() || 0}
                       </td>
                       <td className="px-4 py-3 text-sm text-orange-600">
-                        KSH {sale.cogs?.toLocaleString() || 0}
+                        KSH {cogs?.toLocaleString() || 0}
                       </td>
                       <td className="px-4 py-3 text-sm font-semibold text-blue-600">
-                        KSH {sale.profit?.toLocaleString() || 0}
+                        KSH {profit?.toLocaleString() || 0}
                       </td>
                     </tr>
                   );
