@@ -8,6 +8,7 @@ import ScreenLock from './components/ScreenLock';
 import SubscriptionReminderBar from './components/SubscriptionReminderBar';
 import StockUpdateListener from './components/StockUpdateListener';
 import ErrorBoundary from './components/ErrorBoundary';
+import CookieConsent from './components/CookieConsent';
 import useInactivity from './hooks/useInactivity';
 import { BASE_API_URL } from './services/api';
 import performanceMonitor from './services/performanceMonitor';
@@ -488,6 +489,7 @@ function App() {
                   </Routes>
                 </ErrorBoundary>
               </Suspense>
+              <CookieConsent />
             </BrowserRouter>
           </ScreenLockProvider>
         </ProductsProvider>

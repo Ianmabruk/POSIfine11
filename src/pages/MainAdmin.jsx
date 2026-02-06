@@ -192,7 +192,7 @@ export default function MainAdmin() {
 
     try {
       const userData = JSON.parse(userStr);
-      if (userData.role !== 'owner') {
+      if (!['main_admin', 'owner'].includes(userData.role)) {
         navigate('/main.admin/login');
         return;
       }

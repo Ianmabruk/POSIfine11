@@ -54,6 +54,7 @@ export const AuthProvider = ({ children }) => {
   const initializeAuth = async () => {
     try {
       const token = localStorage.getItem('token');
+      const refreshToken = localStorage.getItem('refreshToken');
       const savedUser = localStorage.getItem('user');
       
       if (token) {
@@ -75,9 +76,40 @@ export const AuthProvider = ({ children }) => {
           }
         } catch (err) {
           console.warn('Auth check failed:', err);
-          // Clear invalid tokens
+          // Clear invalid tokens and try refresh flow
           localStorage.removeItem('token');
           localStorage.removeItem('user');
+          if (refreshToken) {
+            try {
+              const refreshResp = await fetch(`${BASE_API_URL}/auth/refresh`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ refreshToken })
+              });
+              if (refreshResp.ok) {
+                const refreshed = await refreshResp.json();
+                if (refreshed?.token && refreshed?.user) {
+                  const normalized = normalizeUser(refreshed.user);
+                  localStorage.setItem('token', refreshed.token);
+                  if (refreshed.refreshToken) {
+                    localStorage.setItem('refreshToken', refreshed.refreshToken);
+                  }
+                  if (refreshed.csrfToken) {
+                    localStorage.setItem('csrfToken', refreshed.csrfToken);
+                  }
+                  localStorage.setItem('user', JSON.stringify(normalized));
+                  setUser(normalized);
+                }
+              } else {
+                localStorage.removeItem('refreshToken');
+                localStorage.removeItem('csrfToken');
+              }
+            } catch (refreshErr) {
+              console.warn('Refresh failed:', refreshErr);
+              localStorage.removeItem('refreshToken');
+              localStorage.removeItem('csrfToken');
+            }
+          }
         }
       }
     } catch (error) {
