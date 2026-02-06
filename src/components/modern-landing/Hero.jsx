@@ -36,6 +36,20 @@ export default function Hero({ onOpenDemo }) {
         <span className="text-2xl font-bold text-[#2d4cff]">Posify</span>
       </motion.div>
 
+      {/* Login Button - Top Right */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="absolute top-8 right-6 md:right-12 z-50"
+      >
+        <button
+          onClick={() => navigate('/auth/login')}
+          className="px-5 py-2.5 rounded-full bg-white/80 border border-slate-200 text-slate-700 font-semibold shadow-sm hover:shadow-md hover:text-[#2d4cff] transition-all"
+        >
+          Login
+        </button>
+      </motion.div>
+
       {/* Decorative Elements */}
       <div className="absolute inset-0 opacity-30 pointer-events-none">
         <div className="absolute top-20 left-10 w-72 h-72 bg-[#2d4cff]/10 rounded-full blur-3xl animate-pulse" />
