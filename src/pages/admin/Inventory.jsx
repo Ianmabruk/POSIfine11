@@ -362,49 +362,48 @@ export default function Inventory() {
           const fallbackQuantity = oldQuantity + quantityToAdd;
           await products.updateStock(selectedProduct.id, { quantity: fallbackQuantity });
         }
-        
+
         if (result) {
           console.log('✅ BACKEND: Batch created successfully:', result);
         }
-        
-        // CRITICAL: Force immediate refresh from backend to get authoritative state
-        // This ensures DB state is reflected in UI
-        console.log('🔄 Refreshing products from backend to confirm stock update...');
-        const updatedProducts = await refreshProducts();
-        
-        // Verify the update persisted
-        const updatedProduct = updatedProducts?.find(p => p.id === selectedProduct.id);
-        if (updatedProduct) {
-          console.log(`📦 STOCK AFTER DB UPDATE: ${updatedProduct.name} = ${updatedProduct.quantity} units`);
-          console.log(`✅ DB PERSISTED: Stock increased from ${oldQuantity} to ${updatedProduct.quantity}`);
-          
-          // Update local state with authoritative backend data
-          setProductList(prev => 
-            prev.map(p => p.id === selectedProduct.id ? updatedProduct : p)
-          );
-        }
-        
-        // Dispatch stock update event for real-time sync to cashier
-        window.dispatchEvent(new CustomEvent('stock_updated', {
-          detail: { 
-            productId: selectedProduct.id,
-            quantity: updatedProduct?.quantity || (oldQuantity + quantityToAdd),
-            timestamp: Date.now()
-          }
-        }));
-        
-        // Close form and reset
+
+        // Close form and reset immediately (avoid UI lag)
         setNewStock({ quantity: '', expiryDate: '', batchNumber: '', cost: '' });
         setShowAddStock(false);
-        
-        const latestQuantity = updatedProduct?.quantity || (oldQuantity + quantityToAdd);
-        const threshold = parseFloat(updatedProduct?.reorder_level || selectedProduct.reorder_level || 0) || 0;
-        if (threshold > 0 && latestQuantity <= threshold) {
-          showNotification(`⚠️ Low stock alert: ${selectedProduct.name} is at ${latestQuantity} (threshold ${threshold})`, 'warning');
-        } else {
-          showNotification(`✅ Stock added! ${selectedProduct.name} quantity: ${oldQuantity} → ${latestQuantity}`, 'success');
-        }
-        
+
+        // Refresh in background to confirm authoritative state
+        console.log('🔄 Refreshing products from backend to confirm stock update...');
+        refreshProducts().then((updatedProducts) => {
+          const updatedProduct = updatedProducts?.find(p => p.id === selectedProduct.id);
+          if (updatedProduct) {
+            console.log(`📦 STOCK AFTER DB UPDATE: ${updatedProduct.name} = ${updatedProduct.quantity} units`);
+            console.log(`✅ DB PERSISTED: Stock increased from ${oldQuantity} to ${updatedProduct.quantity}`);
+            setProductList(prev =>
+              prev.map(p => p.id === selectedProduct.id ? updatedProduct : p)
+            );
+          }
+
+          const latestQuantity = updatedProduct?.quantity || (oldQuantity + quantityToAdd);
+          const threshold = parseFloat(updatedProduct?.reorder_level || selectedProduct.reorder_level || 0) || 0;
+
+          window.dispatchEvent(new CustomEvent('stock_updated', {
+            detail: {
+              productId: selectedProduct.id,
+              quantity: latestQuantity,
+              timestamp: Date.now()
+            }
+          }));
+
+          if (threshold > 0 && latestQuantity <= threshold) {
+            showNotification(`⚠️ Low stock alert: ${selectedProduct.name} is at ${latestQuantity} (threshold ${threshold})`, 'warning');
+          } else {
+            showNotification(`✅ Stock added! ${selectedProduct.name} quantity: ${oldQuantity} → ${latestQuantity}`, 'success');
+          }
+        }).catch((err) => {
+          console.warn('Background refresh failed:', err);
+          showNotification(`✅ Stock added! ${selectedProduct.name} quantity: ${oldQuantity} → ${oldQuantity + quantityToAdd}`, 'success');
+        });
+
       } catch (apiError) {
         console.error('❌ BACKEND ERROR:', apiError);
         // Rollback optimistic update on failure
@@ -618,8 +617,11 @@ export default function Inventory() {
       if (!ingredient) return;
 
       const raw = (productList || []).find(p => p && p.id === ingredient.productId);
-      if (raw && raw.quantity > 0) {
-        const unitCost = (raw.cost || 0) / raw.quantity;
+      if (raw) {
+        const rawCostPerUnit = raw.cost_per_unit || raw.costPerUnit;
+        const unitCost = rawCostPerUnit
+          ? Number(rawCostPerUnit)
+          : (raw.quantity > 0 ? (raw.cost || 0) / raw.quantity : (raw.cost || 0));
         totalCost += unitCost * (ingredient.quantity || 0);
       }
     });
