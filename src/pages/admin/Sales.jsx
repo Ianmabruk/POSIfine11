@@ -233,10 +233,10 @@ export default function Sales() {
                     KSH {sale.total?.toLocaleString()}
                   </td>
                   <td className="px-4 py-3 text-sm text-orange-600">
-                    KSH {sale.cogs?.toLocaleString() || 0}
+                    KSH {(sale.cogs ?? sale.total_cost ?? 0).toLocaleString()}
                   </td>
                   <td className="px-4 py-3 text-sm font-semibold text-blue-600">
-                    KSH {sale.profit?.toLocaleString() || 0}
+                    KSH {(sale.profit ?? sale.gross_profit ?? (sale.total || 0) - (sale.cogs ?? sale.total_cost ?? 0)).toLocaleString()}
                   </td>
                   <td className="px-4 py-3 text-sm">
                     <button
