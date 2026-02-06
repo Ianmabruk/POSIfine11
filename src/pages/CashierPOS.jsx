@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useProducts } from '../context/ProductsContext';
 import { useScreenLock } from '../context/ScreenLockContext';
-import { products, sales, expenses, stats, batches, subscribeProducts, unsubscribeAllProductSubscriptions, discounts, timeEntries, creditRequests } from '../services/api';
+import { products, sales, expenses, stats, batches, discounts, timeEntries, creditRequests } from '../services/api';
 import websocketService from '../services/websocketService';
 import { BASE_API_URL } from '../services/api';
 import { ShoppingCart, Trash2, LogOut, Plus, Minus, DollarSign, TrendingDown, Package, Edit2, Search, BarChart3, Camera, Upload, AlertTriangle, Clock, Play, Square, Settings, Lock, CreditCard, X } from 'lucide-react';
@@ -13,8 +13,7 @@ import LowStockAlert from '../components/LowStockAlert';
 // Import optimized transaction service
 import { 
   completeSaleTransaction, 
-  invalidateProductCache,
-  optimisticInventoryUpdate 
+  invalidateProductCache
 } from '../services/transactionService';
 
 export default function CashierPOS() {
@@ -122,62 +121,6 @@ export default function CashierPOS() {
     window.addEventListener('sale_completed', handleSaleCompleted);
     window.addEventListener('expense_added', handleExpenseAdded);
 
-    // Connect to WebSocket for real-time stock updates
-    const token = localStorage.getItem('token');
-    if (token) {
-      websocketService.connect(token, (data) => {
-        console.log('📡 WebSocket callback received:', data);
-        
-        if (data && data.allProducts) {
-          console.log(`📦 Merging ${data.allProducts.length} products from WebSocket`);
-          const filtered = data.allProducts.filter(p => p.visibleToCashier !== false && !p.expenseOnly);
-          setProductList(filtered);
-        }
-        
-        if (data && data.productId !== undefined && data.newQuantity !== undefined) {
-          console.log(`📦 Stock update for product ${data.productId}: ${data.newQuantity}${data.unit || ''}`);
-          setProductList(prev => {
-            const updated = prev.map(p => 
-              p.id === data.productId 
-                ? { ...p, quantity: data.newQuantity } 
-                : p
-            );
-            return updated;
-          });
-        }
-        
-        if (data && data.discounts) {
-          console.log('📊 Discount list updated');
-          setDiscountList(data.discounts);
-        }
-        
-        if (data && data.sale) {
-          console.log('💰 Sale detected, reloading stats');
-          loadData();
-        }
-      }).catch((error) => {
-        console.warn('⚠️ WebSocket connection failed:', error);
-      });
-    }
-
-    const unsub = subscribeProducts((msg) => {
-      try {
-        if (!msg) return;
-        console.log('📨 Product subscription message:', msg.type);
-        if (msg.type === 'initial' || msg.type === 'products_snapshot' || msg.type === 'product_created' || msg.type === 'product_updated' || msg.type === 'product_deleted') {
-          products.getAll().then(p => {
-            const filtered = p.filter(prod => prod.visibleToCashier !== false && !prod.expenseOnly);
-            console.log(`✅ Subscription update: ${filtered.length} products`);
-            setProductList(filtered);
-          }).catch((err) => {
-            console.error('Failed to fetch products from subscription:', err);
-          });
-        }
-      } catch (e) {
-        console.error('❌ Product subscription handler error', e);
-      }
-    });
-
     // REMOVED: 30-second auto-refresh - now handled by ProductsContext smart auto-refresh
     // This prevents duplicate refresh logic and respects editing state
     // ProductsContext will refresh every 30s when user is not actively editing
@@ -191,8 +134,6 @@ export default function CashierPOS() {
       window.removeEventListener('sale_completed', handleSaleCompleted);
       window.removeEventListener('expense_added', handleExpenseAdded);
       
-      try { unsub(); } catch (e) {}
-      websocketService.disconnect();
     };
   }, [user?.id]);
 
@@ -224,7 +165,6 @@ export default function CashierPOS() {
 
   // Subscribe to real-time product updates
   useEffect(() => {
-    // Connect to WebSocket for real-time stock updates
     const token = localStorage.getItem('token');
     let wsUpdateTimeout = null;
     
@@ -276,31 +216,8 @@ export default function CashierPOS() {
       });
     }
     
-    // Cleanup timeout on unmount
     return () => {
       if (wsUpdateTimeout) clearTimeout(wsUpdateTimeout);
-    };
-
-    const unsub = subscribeProducts((msg) => {
-      try {
-        if (!msg) return;
-        console.log('📨 Product subscription message:', msg.type);
-        if (msg.type === 'initial' || msg.type === 'products_snapshot' || msg.type === 'product_created' || msg.type === 'product_updated' || msg.type === 'product_deleted') {
-          products.getAll().then(p => {
-            const filtered = p.filter(prod => prod.visibleToCashier !== false && !prod.expenseOnly);
-            console.log(`✅ Subscription update: ${filtered.length} products`);
-            setProductList(filtered);
-          }).catch((err) => {
-            console.error('Failed to fetch products from subscription:', err);
-          });
-        }
-      } catch (e) {
-        console.error('❌ Product subscription handler error', e);
-      }
-    });
-
-    return () => {
-      try { unsub(); } catch (e) {}
       websocketService.disconnect();
     };
   }, []);
@@ -484,10 +401,10 @@ export default function CashierPOS() {
     }
   };
 
-  const getProductStock = (productId) => {
-    const productBatches = batchList.filter(b => b.productId === productId && b.quantity > 0);
-    return productBatches.reduce((total, batch) => total + batch.quantity, 0);
-  };
+  const getProductStock = useCallback((productId) => {
+    const product = productList.find(p => p.id === productId);
+    return Number(product?.quantity || 0);
+  }, [productList]);
 
   const getOldestBatch = (productId) => {
     const productBatches = batchList
@@ -496,35 +413,36 @@ export default function CashierPOS() {
     return productBatches[0] || null;
   };
 
-  const addToCart = (product) => {
+  const addToCart = useCallback((product) => {
     const availableStock = getProductStock(product.id);
     if (availableStock <= 0) {
       alert('Product is out of stock!');
       return;
     }
-    
-    const existing = cart.find(item => item.id === product.id);
-    const currentCartQty = existing ? existing.quantity : 0;
-    
-    if (currentCartQty >= availableStock) {
-      alert(`Only ${availableStock} units available in stock!`);
-      return;
-    }
-    
-    if (existing) {
-      setCart(cart.map(item => 
-        item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
-      ));
-    } else {
-      setCart([...cart, { ...product, quantity: 1 }]);
-    }
-  };
 
-  const updateQuantity = (id, delta) => {
-    const product = productList.find(p => p.id === id);
+    setCart(prev => {
+      const existing = prev.find(item => item.id === product.id);
+      const currentCartQty = existing ? existing.quantity : 0;
+
+      if (currentCartQty >= availableStock) {
+        alert(`Only ${availableStock} units available in stock!`);
+        return prev;
+      }
+
+      if (existing) {
+        return prev.map(item =>
+          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+        );
+      }
+
+      return [...prev, { ...product, quantity: 1 }];
+    });
+  }, [getProductStock]);
+
+  const updateQuantity = useCallback((id, delta) => {
     const availableStock = getProductStock(id);
-    
-    setCart(cart.map(item => {
+
+    setCart(prev => prev.map(item => {
       if (item.id === id) {
         const newQty = item.quantity + delta;
         if (newQty > availableStock) {
@@ -535,15 +453,15 @@ export default function CashierPOS() {
       }
       return item;
     }).filter(item => item.quantity > 0));
-  };
+  }, [getProductStock]);
 
-  const removeFromCart = (id) => {
-    setCart(cart.filter(item => item.id !== id));
-  };
+  const removeFromCart = useCallback((id) => {
+    setCart(prev => prev.filter(item => item.id !== id));
+  }, []);
 
   const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-  const handleCheckout = async () => {
+  const handleCheckout = useCallback(async () => {
     console.log('🛒 [Checkout] Starting optimized checkout flow');
     
     // Prevent double submission
@@ -637,15 +555,23 @@ export default function CashierPOS() {
         (successData) => {
           console.log(`✅ [Checkout] Sale completed in ${successData.clientElapsedMs.toFixed(1)}ms ${successData.performanceGrade}`);
           
-          // Update products with server response (most accurate)
+          // Always refetch inventory, but prefer server response for immediate UI update
+          const refreshPromise = refreshProducts().catch(() => []);
+
           if (successData.updatedProducts && successData.updatedProducts.length > 0) {
-            setProductList(successData.updatedProducts);
+            const filtered = successData.updatedProducts.filter(p => p.visibleToCashier !== false && !p.expenseOnly);
+            setProductList(filtered);
             console.log('📦 [Checkout] Products updated from server');
           } else {
-            // Fallback: apply optimistic update to current products
-            const updatedProducts = optimisticInventoryUpdate(productList, successData.stockDeductions);
-            setProductList(updatedProducts);
-            console.log('📦 [Checkout] Products updated optimistically');
+            refreshPromise.then((fresh) => {
+              const filtered = Array.isArray(fresh)
+                ? fresh.filter(p => p.visibleToCashier !== false && !p.expenseOnly)
+                : [];
+              if (filtered.length) {
+                setProductList(filtered);
+                console.log('📦 [Checkout] Products refreshed from server');
+              }
+            }).catch(() => {});
           }
           
           // Invalidate cache to force fresh data on next fetch
@@ -706,34 +632,8 @@ export default function CashierPOS() {
             setTimeout(() => alert('Low Stock Alert:\n\n' + warnings), 1000);
           }
           
-          // Trigger global product refresh
-          refreshProducts();
+          // Trigger stats refresh
           refreshStats();
-          
-          // Background: refresh products from server and reload data
-          setTimeout(async () => {
-            try {
-              const [freshProducts, freshSales, freshStats] = await Promise.all([
-                products.getAll(),
-                sales.getAll(),
-                stats.get()
-              ]);
-              
-              const filtered = freshProducts.filter(p => 
-                p.visibleToCashier !== false && !p.expenseOnly
-              );
-              setProductList(filtered);
-              setData(prev => ({
-                ...prev,
-                sales: freshSales,
-                stats: freshStats
-              }));
-              
-              console.log('🔄 [Checkout] Full refresh complete - products & sales updated');
-            } catch (err) {
-              console.warn('Background refresh failed:', err);
-            }
-          }, 200);
         },
         // onError - called on failure
         (errorData) => {
@@ -769,7 +669,22 @@ export default function CashierPOS() {
       setCheckoutLoading(false);
       setIsProcessingSale(false);
     }
-  };
+  }, [
+    cart,
+    cartItemUnits,
+    checkoutLoading,
+    currentTimeEntry?.id,
+    handleClockIn,
+    isClockedIn,
+    paymentMethod,
+    refreshProducts,
+    refreshStats,
+    selectedDiscount,
+    taxType,
+    user?.accountId,
+    user?.id,
+    user?.name
+  ]);
 
   const handleAddProduct = async (e) => {
     e.preventDefault();
@@ -821,25 +736,8 @@ export default function CashierPOS() {
         quantity: quantity,
         currentStock: selectedProduct.quantity
       });
-      
-      // 🔥 CRITICAL FIX: Optimistic update with proper state management
-      const optimisticProduct = {
-        ...selectedProduct,
-        quantity: (selectedProduct.quantity || 0) + quantity,
-        updated_at: new Date().toISOString()
-      };
-      
-      // Update local product list immediately
-      setProductList(prev => prev.map(p => 
-        p.id === selectedProduct.id ? optimisticProduct : p
-      ));
-      
-      // Update global context to prevent conflicts
-      if (refreshProducts) {
-        refreshProducts();
-      }
-      
-      // Make API call in background
+
+      // Make API call (server is source of truth)
       const result = await batches.create({
         productId: selectedProduct.id,
         quantity: quantity,
@@ -849,6 +747,23 @@ export default function CashierPOS() {
       });
       
       console.log('✅ [AddStock] Stock added successfully:', result);
+
+      const [freshProducts, freshBatches] = await Promise.all([
+        refreshProducts ? refreshProducts() : products.getAll(),
+        batches.getAll().catch(() => batchList)
+      ]);
+
+      const filteredProducts = Array.isArray(freshProducts)
+        ? freshProducts.filter(p => p.visibleToCashier !== false && !p.expenseOnly)
+        : [];
+
+      if (filteredProducts.length) {
+        setProductList(filteredProducts);
+      }
+
+      if (Array.isArray(freshBatches)) {
+        setBatchList(freshBatches);
+      }
       
       // Clear form and close modal
       setNewStock({ quantity: '', expiryDate: '', batchNumber: '', cost: '' });
@@ -856,24 +771,26 @@ export default function CashierPOS() {
       setSelectedProduct(null);
       
       // Trigger real-time sync for admin dashboard
+      const updatedProduct = filteredProducts.find(p => p.id === selectedProduct.id);
+      const updatedQuantity = updatedProduct?.quantity;
+
       window.dispatchEvent(new CustomEvent('stock_updated', {
         detail: {
           productId: selectedProduct.id,
-          newQuantity: optimisticProduct.quantity,
-          added: quantity
+          newQuantity: updatedQuantity
         }
       }));
-      
-      alert(`✅ Stock Added Successfully!\n\nProduct: ${selectedProduct.name}\nAdded: +${quantity}\nNew Total: ${optimisticProduct.quantity}`);
+
+      alert(
+        `✅ Stock Added Successfully!\n\n` +
+        `Product: ${selectedProduct.name}\n` +
+        `Added: +${quantity}` +
+        (updatedQuantity !== undefined ? `\nNew Total: ${updatedQuantity}` : '')
+      );
       
     } catch (error) {
       console.error('❌ [AddStock] Failed:', error);
-      
-      // Rollback optimistic update on error
-      setProductList(prev => prev.map(p => 
-        p.id === selectedProduct.id ? selectedProduct : p
-      ));
-      
+
       alert(`❌ Failed to add stock: ${error.message || 'Unknown error'}`);
     }
   };

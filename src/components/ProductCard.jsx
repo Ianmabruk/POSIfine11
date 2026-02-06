@@ -1,6 +1,7 @@
+import { memo } from 'react';
 import { ShoppingCart, Package, CreditCard } from 'lucide-react';
 
-export default function ProductCard({ product, onAddToCart, onRequestCredit, showDiscounts = false }) {
+function ProductCard({ product, onAddToCart, onRequestCredit, showDiscounts = false }) {
   const isComposite = Boolean(product?.isComposite || product?.is_composite);
   const availableCount = isComposite ? (product?.maxUnits ?? 0) : (product?.quantity ?? 0);
   const isAvailable = availableCount > 0;
@@ -85,3 +86,5 @@ export default function ProductCard({ product, onAddToCart, onRequestCredit, sho
     </div>
   );
 }
+
+export default memo(ProductCard);
