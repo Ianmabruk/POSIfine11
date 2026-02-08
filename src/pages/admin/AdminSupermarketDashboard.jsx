@@ -265,6 +265,26 @@ export default function AdminSupermarketDashboard() {
             )}
           </div>
         </div>
+
+        {/* AI Business Assistant */}
+        <div className="mt-8">
+          <div className="bg-gradient-to-r from-emerald-100 to-green-100 rounded-xl p-6 mb-4 border border-emerald-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">🤖 AI Business Assistant</h2>
+                <p className="text-gray-600 mt-1">Ask anything, generate insights, and draft emails</p>
+              </div>
+              <span className="px-4 py-2 bg-emerald-600 text-white rounded-full text-sm font-bold shadow-lg">
+                AI POWERED
+              </span>
+            </div>
+          </div>
+          <ProAIAssistant
+            adminMode
+            role={user?.role}
+            businessType={user?.business_type || 'supermarket'}
+          />
+        </div>
       </div>
 
       {/* Add Staff Modal */}

@@ -7,7 +7,7 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
  * AI Assistant for Pro plan users
  * Provides business-specific advice for clinics, bars, hotels, etc.
  */
-export default function ProAIAssistant({ role, businessType }) {
+export default function ProAIAssistant({ role, businessType, adminMode = false }) {
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
   const [loading, setLoading] = useState(false);
@@ -29,8 +29,10 @@ export default function ProAIAssistant({ role, businessType }) {
         throw new Error('Please login to use AI assistant');
       }
 
+      const endpoint = adminMode ? '/api/ai/ask' : '/api/ai/pro/ask';
+
       const response = await axios.post(
-        `${API_BASE}/api/ai/pro/ask`,
+        `${API_BASE}${endpoint}`,
         {
           question: question.trim(),
           context: {
@@ -74,7 +76,7 @@ export default function ProAIAssistant({ role, businessType }) {
       if (err.response?.status === 401) {
         errorMessage = 'Please login to use AI assistant';
       } else if (err.response?.status === 403) {
-        errorMessage = err.response?.data?.message || 'AI assistant requires Pro plan';
+        errorMessage = err.response?.data?.message || (adminMode ? 'Admin access required' : 'AI assistant requires Pro plan');
       } else if (err.response?.status === 500) {
         errorMessage = 'AI service temporarily unavailable. Using fallback mode.';
       } else if (err.message) {
@@ -134,7 +136,7 @@ export default function ProAIAssistant({ role, businessType }) {
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder={`Ask AI about ${businessType || 'your business'}...\nExample: "How can I increase bar sales?" or "Best clinic scheduling tips"`}
+            placeholder={`Ask AI about ${businessType || 'your business'}...\nExample: "How can I increase sales?" or "Draft an email to staff about schedule changes"`}
             rows={4}
             disabled={loading}
           />
@@ -217,6 +219,9 @@ export default function ProAIAssistant({ role, businessType }) {
               </li>
               <li onClick={() => setQuestion('How to reduce operational costs?')}>
                 How to reduce operational costs?
+              </li>
+              <li onClick={() => setQuestion('Draft an email to staff about new sales targets.')}> 
+                Draft an email to staff about new sales targets.
               </li>
             </ul>
           </div>

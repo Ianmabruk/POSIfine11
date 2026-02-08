@@ -209,11 +209,15 @@ export default function AdminBarDashboard() {
                 <p className="text-gray-600 mt-1">Get intelligent insights and recommendations for your bar</p>
               </div>
               <span className="px-4 py-2 bg-purple-600 text-white rounded-full text-sm font-bold shadow-lg">
-                PRO FEATURE
+                AI POWERED
               </span>
             </div>
           </div>
-          <ProAIAssistant />
+          <ProAIAssistant
+            adminMode
+            role={user?.role}
+            businessType={user?.business_type || 'bar'}
+          />
         </div>
       </div>
 
