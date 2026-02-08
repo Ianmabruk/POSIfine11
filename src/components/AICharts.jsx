@@ -20,6 +20,7 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 export default function AICharts({ periods = 4 }) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [warning, setWarning] = useState(null);
 
   useEffect(() => {
@@ -29,6 +30,7 @@ export default function AICharts({ periods = 4 }) {
   const fetchForecast = async () => {
     try {
       setLoading(true);
+      setError(null);
       setWarning(null);
 
       const token = localStorage.getItem('token');
@@ -61,6 +63,9 @@ export default function AICharts({ periods = 4 }) {
       }));
 
       setData(chartData);
+      if (forecastData.note) {
+        setWarning(forecastData.note);
+      }
     } catch (err) {
       console.error('Forecast fetch error:', err);
       
@@ -79,15 +84,8 @@ export default function AICharts({ periods = 4 }) {
         errorMessage = err.response.data.message;
       }
       
-      // Use fallback data instead of blocking the UI
-      const fallbackData = Array.from({ length: periods }, (_, i) => ({
-        name: `Period ${i + 1}`,
-        revenue: 10000 * (1 + i * 0.1),
-        profit: 3000 * (1 + i * 0.1)
-      }));
-
-      setData(fallbackData);
-      setWarning('AI service unavailable. Showing basic forecast.');
+      setData([]);
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -99,6 +97,30 @@ export default function AICharts({ periods = 4 }) {
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mb-4"></div>
         <p className="text-gray-600 font-medium">🤖 Generating AI forecast...</p>
         <p className="text-sm text-gray-500 mt-1">Analyzing sales patterns...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg p-6 border border-orange-200">
+        <div className="flex items-start space-x-3">
+          <div className="flex-shrink-0">
+            <svg className="w-6 h-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <div className="flex-1">
+            <h3 className="text-sm font-semibold text-orange-900 mb-1">AI Forecast Unavailable</h3>
+            <p className="text-sm text-orange-700 mb-3">{error}</p>
+            <button 
+              onClick={fetchForecast} 
+              className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition text-sm font-medium"
+            >
+              🔄 Retry
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
