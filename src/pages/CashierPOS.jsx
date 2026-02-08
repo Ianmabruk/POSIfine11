@@ -2,10 +2,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useProducts } from '../context/ProductsContext';
 import { useScreenLock } from '../context/ScreenLockContext';
-import { products, sales, expenses, stats, batches, discounts, timeEntries, creditRequests } from '../services/api';
+import { products, sales, expenses, stats, batches, discounts, timeEntries, creditRequests, reminders } from '../services/api';
 import websocketService from '../services/websocketService';
 import { BASE_API_URL } from '../services/api';
-import { ShoppingCart, Trash2, LogOut, Plus, Minus, DollarSign, TrendingDown, Package, Edit2, Search, BarChart3, Camera, Upload, AlertTriangle, Clock, Play, Square, Settings, Lock, CreditCard, X } from 'lucide-react';
+import { ShoppingCart, Trash2, LogOut, Plus, Minus, DollarSign, TrendingDown, Package, Edit2, Search, BarChart3, Camera, Upload, AlertTriangle, Clock, Play, Square, Settings, Lock, CreditCard, X, Bell, PenSquare } from 'lucide-react';
+import SignaturePad from '../components/SignaturePad';
 import DiscountSelector from '../components/DiscountSelector';
 import ProductCard from '../components/ProductCard';
 import ScreenLockPin from '../components/ScreenLockPin';
@@ -50,10 +51,15 @@ export default function CashierPOS() {
   const [isProcessingSale, setIsProcessingSale] = useState(false);  // Processing sale state
   const [lastProductUpdate, setLastProductUpdate] = useState(Date.now());  // Track updates
   const [productUpdateCount, setProductUpdateCount] = useState(0);  // Update count
+  const [reminderList, setReminderList] = useState([]);
+  const [reminderNotes, setReminderNotes] = useState({});
+  const [reminderSignatures, setReminderSignatures] = useState({});
+  const [remindersLoading, setRemindersLoading] = useState(false);
 
   useEffect(() => {
     loadData();
     refreshProducts();
+    fetchReminders();
     
     // Restore session data from localStorage
     const savedCart = localStorage.getItem(`cart_${user?.id}`);
@@ -103,6 +109,10 @@ export default function CashierPOS() {
       refreshProducts();
     };
 
+    const handleReminderBroadcast = () => {
+      fetchReminders();
+    };
+
     const handleSaleCompleted = () => {
       console.log('💹 Sale completed event received - refreshing stats');
       refreshStats();
@@ -118,6 +128,7 @@ export default function CashierPOS() {
     window.addEventListener('productsSync', handleProductsSync);
     window.addEventListener('productUpdated', handleProductUpdated);
     window.addEventListener('productCreated', handleProductUpdated);
+    window.addEventListener('reminder_created', handleReminderBroadcast);
     window.addEventListener('sale_completed', handleSaleCompleted);
     window.addEventListener('expense_added', handleExpenseAdded);
 
@@ -131,6 +142,7 @@ export default function CashierPOS() {
       window.removeEventListener('productsSync', handleProductsSync);
       window.removeEventListener('productUpdated', handleProductUpdated);
       window.removeEventListener('productCreated', handleProductUpdated);
+      window.removeEventListener('reminder_created', handleReminderBroadcast);
       window.removeEventListener('sale_completed', handleSaleCompleted);
       window.removeEventListener('expense_added', handleExpenseAdded);
       
@@ -383,6 +395,31 @@ export default function CashierPOS() {
       }));
     } catch (error) {
       console.warn('Stats refresh failed:', error);
+    }
+  };
+
+  const fetchReminders = async () => {
+    try {
+      setRemindersLoading(true);
+      const data = await reminders.getToday();
+      setReminderList(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Failed to fetch reminders:', error);
+      setReminderList([]);
+    } finally {
+      setRemindersLoading(false);
+    }
+  };
+
+  const saveReminderSignature = async (reminderId) => {
+    try {
+      const note = reminderNotes[reminderId] || '';
+      const signature = reminderSignatures[reminderId] || '';
+      await reminders.update(reminderId, { note, signature, status: 'fulfilled' });
+      await fetchReminders();
+    } catch (error) {
+      console.error('Failed to save reminder signature:', error);
+      alert('Failed to save reminder. Please try again.');
     }
   };
 
@@ -976,6 +1013,18 @@ export default function CashierPOS() {
         >
           <TrendingDown className="w-4 h-4 inline mr-2" />
           Expenses
+        </button>
+        <button
+          onClick={() => {
+            setActiveView('reminders');
+            fetchReminders();
+          }}
+          className={`px-4 sm:px-6 py-3 sm:py-2 min-h-[44px] rounded-lg font-medium transition-all text-sm sm:text-base whitespace-nowrap touch-manipulation ${
+            activeView === 'reminders' ? 'bg-gradient-to-r from-green-600 to-teal-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+        >
+          <Bell className="w-4 h-4 inline mr-2" />
+          Reminders
         </button>
       </div>
 
@@ -1634,6 +1683,77 @@ export default function CashierPOS() {
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+      )}
+
+      {activeView === 'reminders' && (
+        <div className="p-6 max-w-5xl mx-auto w-full">
+          <div className="card shadow-lg">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <Bell className="w-5 h-5 text-blue-600" />
+                <h3 className="text-lg font-semibold">Reminders</h3>
+              </div>
+              <button onClick={fetchReminders} className="btn-secondary">Refresh</button>
+            </div>
+
+            {remindersLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+              </div>
+            ) : reminderList.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                <Bell className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                <p>No reminders for you right now</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {reminderList.map((reminder) => (
+                  <div key={reminder.id} className="bg-white border border-gray-200 rounded-xl p-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h4 className="font-semibold text-gray-900">{reminder.title}</h4>
+                        <p className="text-sm text-gray-600 mt-1">{reminder.message}</p>
+                        <p className="text-xs text-gray-500 mt-2">Priority: {reminder.priority || 'normal'}</p>
+                      </div>
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${(reminder.status || 'pending') === 'pending' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                        {reminder.status || 'pending'}
+                      </span>
+                    </div>
+
+                    <div className="mt-4 bg-gray-50 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-3 text-gray-700 font-semibold">
+                        <PenSquare size={16} />
+                        Cashier Note & Signature
+                      </div>
+                      <textarea
+                        rows={2}
+                        className="w-full px-3 py-2 border rounded-lg text-sm mb-3"
+                        placeholder="Write a short note (optional)"
+                        value={reminderNotes[reminder.id] ?? reminder.cashier_note ?? ''}
+                        onChange={(e) => setReminderNotes({ ...reminderNotes, [reminder.id]: e.target.value })}
+                      />
+                      <SignaturePad
+                        value={reminderSignatures[reminder.id] ?? reminder.cashier_signature ?? ''}
+                        onChange={(value) => setReminderSignatures({ ...reminderSignatures, [reminder.id]: value })}
+                      />
+                      <div className="mt-3 flex items-center justify-between">
+                        <span className="text-xs text-gray-500">
+                          {reminder.cashier_signed_at ? `Signed: ${new Date(reminder.cashier_signed_at).toLocaleString()}` : 'Not signed yet'}
+                        </span>
+                        <button
+                          onClick={() => saveReminderSignature(reminder.id)}
+                          className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700"
+                        >
+                          Save Signature
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

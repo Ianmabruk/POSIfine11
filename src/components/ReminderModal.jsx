@@ -97,9 +97,9 @@ export default function ReminderModal({ onClose }) {
             reminders.map(reminder => (
               <div key={reminder.id} className="mb-4 p-4 border-l-4 border-red-500 bg-red-50 rounded-lg flex justify-between items-center">
                 <div>
-                  <p className="font-semibold text-gray-800">{reminder.customerName}</p>
-                  <p className="text-sm text-gray-600">Product ID: {reminder.productId}</p>
-                  <p className="text-xs text-gray-500">{reminder.frequency}</p>
+                  <p className="font-semibold text-gray-800">{reminder.title}</p>
+                  <p className="text-sm text-gray-600">{reminder.message}</p>
+                  <p className="text-xs text-gray-500 capitalize">Priority: {reminder.priority || 'normal'}</p>
                 </div>
                 <button
                   onClick={() => markFulfilled(reminder.id)}

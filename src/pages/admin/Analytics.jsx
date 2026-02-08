@@ -91,7 +91,7 @@ export default function Analytics() {
           productSales[productId].quantity += item.quantity || 0;
           productSales[productId].revenue += (item.price || 0) * (item.quantity || 0);
           const product = products.find(p => p.id === productId);
-          const cost = product?.cost || 0;
+          const cost = product?.cost_per_unit ?? product?.cost ?? 0;
           productSales[productId].profit += ((item.price || 0) - cost) * (item.quantity || 0);
           productSales[productId].count += 1;
         });
@@ -131,8 +131,9 @@ export default function Analytics() {
     const totalProfit = filteredSales.reduce((sum, sale) => {
       if (!sale.items) return sum;
       return sum + sale.items.reduce((itemSum, item) => {
-        const product = products.find(p => p.id === item.product_id);
-        const cost = product?.cost || 0;
+        const productId = item.product_id ?? item.productId ?? item.id;
+        const product = products.find(p => p.id === productId);
+        const cost = product?.cost_per_unit ?? product?.cost ?? 0;
         return itemSum + ((item.price || 0) - cost) * (item.quantity || 0);
       }, 0);
     }, 0);

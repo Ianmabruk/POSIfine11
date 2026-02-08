@@ -1,22 +1,22 @@
 import { useState, useEffect } from 'react';
 import { BASE_API_URL } from '../../services/api';
-import { Bell, Plus, Trash2, Calendar } from 'lucide-react';
+import { Bell, Plus, Trash2, Calendar, PenSquare } from 'lucide-react';
+import SignaturePad from '../../components/SignaturePad';
 
 export default function RemindersManager() {
   const [reminders, setReminders] = useState([]);
-  const [products, setProducts] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [adminNotes, setAdminNotes] = useState({});
+  const [adminSignatures, setAdminSignatures] = useState({});
   const [formData, setFormData] = useState({
-    customerName: '',
-    productId: '',
-    frequency: 'weekly',
-    days: [],
-    nextDate: ''
+    title: '',
+    message: '',
+    priority: 'normal',
+    expiresAt: ''
   });
 
   useEffect(() => {
     fetchReminders();
-    fetchProducts();
   }, []);
 
 
@@ -52,32 +52,32 @@ export default function RemindersManager() {
 
 
 
-  const fetchProducts = async () => {
+  const saveAdminSignature = async (reminderId) => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`${BASE_API_URL}/products`, {
-        headers: { Authorization: `Bearer ${token}` }
+      const note = adminNotes[reminderId] || '';
+      const signature = adminSignatures[reminderId] || '';
+
+      const response = await fetch(`${BASE_API_URL}/reminders/${reminderId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ note, signature, status: 'fulfilled' })
       });
-      
-      // Check if response is ok
-      if (!res.ok) {
-        console.error('API Error:', res.status, res.statusText);
-        setProducts([]);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        alert(`Failed to save signature: ${errorData.error || 'Unknown error'}`);
         return;
       }
-      
-      const data = await res.json();
-      
-      // Ensure data is an array
-      if (Array.isArray(data)) {
-        setProducts(data);
-      } else {
-        console.error('Expected array but got:', typeof data, data);
-        setProducts([]);
-      }
+
+      fetchReminders();
+      alert('Signature saved successfully!');
     } catch (error) {
-      console.error('Failed to fetch products:', error);
-      setProducts([]);
+      console.error('Failed to save signature:', error);
+      alert('Failed to save signature. Please try again.');
     }
   };
 
@@ -94,7 +94,12 @@ export default function RemindersManager() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          title: formData.title,
+          message: formData.message,
+          priority: formData.priority,
+          expiresAt: formData.expiresAt || undefined
+        })
       });
       
       if (!response.ok) {
@@ -108,9 +113,10 @@ export default function RemindersManager() {
       const result = await response.json();
       
       // Reset form and refresh data
-      setFormData({ customerName: '', productId: '', frequency: 'weekly', days: [], nextDate: '' });
+      setFormData({ title: '', message: '', priority: 'normal', expiresAt: '' });
       setShowForm(false);
       fetchReminders();
+      window.dispatchEvent(new CustomEvent('reminder_created'));
       
       alert('Reminder created successfully!');
     } catch (error) {
@@ -157,16 +163,6 @@ export default function RemindersManager() {
     }
   };
 
-  const toggleDay = (day) => {
-    if (formData.days.includes(day)) {
-      setFormData({ ...formData, days: formData.days.filter(d => d !== day) });
-    } else {
-      setFormData({ ...formData, days: [...formData.days, day] });
-    }
-  };
-
-  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
@@ -184,38 +180,84 @@ export default function RemindersManager() {
       </div>
 
       <div className="grid gap-4">
-        {reminders.map(reminder => {
-          const product = products.find(p => p.id === reminder.productId);
-          return (
-            <div key={reminder.id} className={`p-6 rounded-xl shadow-lg ${reminder.status === 'pending' ? 'bg-red-50 border-l-4 border-red-500' : 'bg-green-50 border-l-4 border-green-500'}`}>
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="text-xl font-bold mb-2">{reminder.customerName}</h3>
-                  <p className="text-gray-700 mb-1">Product: {product?.name || 'Unknown'}</p>
-                  <p className="text-gray-600 text-sm mb-1">Frequency: {reminder.frequency}</p>
-                  {reminder.days?.length > 0 && (
-                    <p className="text-gray-600 text-sm mb-1">Days: {reminder.days.join(', ')}</p>
+        {reminders.map(reminder => (
+          <div key={reminder.id} className={`p-6 rounded-xl shadow-lg ${(reminder.status || 'pending') === 'pending' ? 'bg-red-50 border-l-4 border-red-500' : 'bg-green-50 border-l-4 border-green-500'}`}>
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="text-xl font-bold mb-2">{reminder.title}</h3>
+                <p className="text-gray-700 mb-2">{reminder.message}</p>
+                <div className="flex items-center gap-3 text-sm text-gray-600">
+                  <span className="capitalize">Priority: {reminder.priority || 'normal'}</span>
+                  {reminder.expires_at && (
+                    <span className="flex items-center gap-1">
+                      <Calendar size={14} />
+                      Expires: {new Date(reminder.expires_at).toLocaleDateString()}
+                    </span>
                   )}
-                  <p className="text-gray-600 text-sm flex items-center gap-2">
-                    <Calendar size={16} />
-                    Next: {new Date(reminder.nextDate).toLocaleDateString()}
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <span className={`px-4 py-2 rounded-lg font-bold ${reminder.status === 'pending' ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`}>
-                    {reminder.status}
-                  </span>
-                  <button
-                    onClick={() => deleteReminder(reminder.id)}
-                    className="bg-red-500 text-white p-2 rounded-lg hover:bg-red-600 transition"
-                  >
-                    <Trash2 size={20} />
-                  </button>
                 </div>
               </div>
+              <div className="flex gap-2">
+                <span className={`px-4 py-2 rounded-lg font-bold ${(reminder.status || 'pending') === 'pending' ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`}>
+                  {reminder.status || 'pending'}
+                </span>
+                <button
+                  onClick={() => deleteReminder(reminder.id)}
+                  className="bg-red-500 text-white p-2 rounded-lg hover:bg-red-600 transition"
+                >
+                  <Trash2 size={20} />
+                </button>
+              </div>
             </div>
-          );
-        })}
+            <div className="mt-4 bg-white rounded-lg p-4 border border-gray-200">
+              <div className="flex items-center gap-2 mb-3 text-gray-800 font-semibold">
+                <PenSquare size={16} />
+                Admin Note & Signature
+              </div>
+              <textarea
+                rows={2}
+                className="w-full px-3 py-2 border rounded-lg text-sm mb-3"
+                placeholder="Add a short note (optional)"
+                value={adminNotes[reminder.id] ?? reminder.admin_note ?? ''}
+                onChange={(e) => setAdminNotes({ ...adminNotes, [reminder.id]: e.target.value })}
+              />
+              <SignaturePad
+                value={adminSignatures[reminder.id] ?? reminder.admin_signature ?? ''}
+                onChange={(value) => setAdminSignatures({ ...adminSignatures, [reminder.id]: value })}
+              />
+              <div className="mt-3 flex items-center justify-between">
+                <span className="text-xs text-gray-500">
+                  {reminder.admin_signed_at ? `Signed: ${new Date(reminder.admin_signed_at).toLocaleString()}` : 'Not signed yet'}
+                </span>
+                <button
+                  onClick={() => saveAdminSignature(reminder.id)}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700"
+                >
+                  Save Signature
+                </button>
+              </div>
+            </div>
+            {(reminder.cashier_note || reminder.cashier_signature) && (
+              <div className="mt-3 bg-white rounded-lg p-4 border border-gray-200">
+                <div className="text-sm font-semibold text-gray-800 mb-2">Cashier Note & Signature</div>
+                {reminder.cashier_note && (
+                  <p className="text-sm text-gray-700 mb-2">{reminder.cashier_note}</p>
+                )}
+                {reminder.cashier_signature && (
+                  <img
+                    src={reminder.cashier_signature}
+                    alt="Cashier Signature"
+                    className="h-20 border rounded bg-white"
+                  />
+                )}
+                {reminder.cashier_signed_at && (
+                  <div className="text-xs text-gray-500 mt-2">
+                    Signed: {new Date(reminder.cashier_signed_at).toLocaleString()}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
       </div>
 
       {showForm && (
@@ -226,71 +268,48 @@ export default function RemindersManager() {
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Customer Name</label>
+                <label className="block text-sm font-medium mb-2">Title</label>
                 <input
                   type="text"
-                  value={formData.customerName}
-                  onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   className="w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-blue-500"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Product</label>
-                <select
-                  value={formData.productId}
-                  onChange={(e) => setFormData({ ...formData, productId: parseInt(e.target.value) })}
+                <label className="block text-sm font-medium mb-2">Message</label>
+                <textarea
+                  rows={3}
+                  value={formData.message}
+                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                   className="w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-blue-500"
                   required
-                >
-                  <option value="">Select Product</option>
-                  {products.map(p => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
-                </select>
+                />
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Frequency</label>
-                <select
-                  value={formData.frequency}
-                  onChange={(e) => setFormData({ ...formData, frequency: e.target.value })}
-                  className="w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="daily">Daily</option>
-                  <option value="weekly">Weekly</option>
-                  <option value="specific">Specific Days</option>
-                </select>
-              </div>
-              {formData.frequency === 'specific' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Select Days</label>
-                  <div className="flex flex-wrap gap-2">
-                    {days.map(day => (
-                      <button
-                        key={day}
-                        type="button"
-                        onClick={() => toggleDay(day)}
-                        className={`px-4 py-2 rounded-lg font-medium transition ${
-                          formData.days.includes(day)
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                        }`}
-                      >
-                        {day}
-                      </button>
-                    ))}
-                  </div>
+                  <label className="block text-sm font-medium mb-2">Priority</label>
+                  <select
+                    value={formData.priority}
+                    onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+                    className="w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="low">Low</option>
+                    <option value="normal">Normal</option>
+                    <option value="high">High</option>
+                    <option value="urgent">Urgent</option>
+                  </select>
                 </div>
-              )}
-              <div>
-                <label className="block text-sm font-medium mb-2">Next Reminder Date</label>
-                <input
-                  type="date"
-                  value={formData.nextDate}
-                  onChange={(e) => setFormData({ ...formData, nextDate: e.target.value })}
-                  className="w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-blue-500"
-                  required
-                />
+                <div>
+                  <label className="block text-sm font-medium mb-2">Expires At</label>
+                  <input
+                    type="date"
+                    value={formData.expiresAt}
+                    onChange={(e) => setFormData({ ...formData, expiresAt: e.target.value })}
+                    className="w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
               </div>
               <div className="flex gap-3">
                 <button

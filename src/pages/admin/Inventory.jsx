@@ -101,15 +101,12 @@ export default function Inventory() {
                 return data.allProducts;
               }
               
-              // Merge: Keep existing products but update quantities from WebSocket
+              // Merge: Keep existing products but update fields from WebSocket
               const productMap = new Map(prevList.map(p => [p.id, p]));
               data.allProducts.forEach(newProduct => {
                 const existing = productMap.get(newProduct.id);
                 if (existing) {
-                  // Only update if quantity actually changed
-                  if (existing.quantity !== newProduct.quantity) {
-                    productMap.set(newProduct.id, { ...existing, quantity: newProduct.quantity });
-                  }
+                  productMap.set(newProduct.id, { ...existing, ...newProduct });
                 } else {
                   // Add new products
                   productMap.set(newProduct.id, newProduct);
@@ -198,7 +195,14 @@ export default function Inventory() {
           if (editProduct.id) {
             setTimeout(async () => {
               try {
-                await products.update(editProduct.id, { image: base64 });
+                const updated = await products.update(editProduct.id, { image: base64 });
+                if (updated?.id) {
+                  setProductList(prev => prev.map(p => p.id === updated.id ? { ...p, ...updated } : p));
+                  refreshProducts().catch(() => {});
+                  window.dispatchEvent(new CustomEvent('productUpdated', {
+                    detail: { product: updated, timestamp: Date.now(), type: 'image' }
+                  }));
+                }
                 showNotification('✅ Image saved', 'success');
               } catch (error) {
                 console.error('Failed to save image:', error);
@@ -241,10 +245,12 @@ export default function Inventory() {
   const handleAddProduct = async (e) => {
     e.preventDefault();
     try {
+      const parsedCost = parseFloat(newProduct.cost || 0);
       const productData = {
         ...newProduct,
         price: parseFloat(newProduct.price),
-        cost: parseFloat(newProduct.cost || 0),
+        cost: Number.isFinite(parsedCost) ? parsedCost : 0,
+        cost_per_unit: Number.isFinite(parsedCost) ? parsedCost : 0,
         quantity: 0, // Stock managed through batches
         visibleToCashier: !newProduct.expenseOnly && newProduct.visibleToCashier !== false,
         reorder_level: newProduct.reorder_level === '' ? undefined : parseFloat(newProduct.reorder_level)
@@ -436,14 +442,16 @@ export default function Inventory() {
       }
 
       const parsedCost = parseFloat(editProduct.cost);
-      const safeCost = Number.isFinite(parsedCost) ? parsedCost : (originalProduct.cost || 0);
+      const hasValidCost = Number.isFinite(parsedCost);
+      const fallbackCost = originalProduct.cost_per_unit ?? originalProduct.cost ?? 0;
+      const safeCost = hasValidCost ? parsedCost : fallbackCost;
       
       // Don't send quantity - stock is managed via "Add Stock" button only
       const updateData = {
         ...editProduct,
         price: parseFloat(editProduct.price),
         cost: safeCost,
-        cost_per_unit: Number.isFinite(parsedCost) ? parsedCost : (originalProduct.cost_per_unit || originalProduct.cost || 0),
+        cost_per_unit: safeCost,
         quantity: originalProduct.quantity,  // Preserve existing quantity
         reorder_level: editProduct.reorder_level === '' ? originalProduct.reorder_level : parseFloat(editProduct.reorder_level)
       };
@@ -912,7 +920,11 @@ export default function Inventory() {
                           </button>
                           <button
                             onClick={() => {
-                              setEditProduct(product);
+                              setEditProduct({
+                                ...product,
+                                cost: (product.cost_per_unit ?? product.cost ?? ''),
+                                reorder_level: product.reorder_level ?? ''
+                              });
                               setShowEditModal(true);
                             }}
                             className="p-2 hover:bg-blue-50 rounded-lg text-blue-600 transition-colors"
@@ -1043,9 +1055,12 @@ export default function Inventory() {
       {/* Add Product Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md">
-            <h3 className="text-xl font-bold mb-4">Add New Product</h3>
-            <form onSubmit={handleAddProduct} className="space-y-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-2xl shadow-2xl ring-1 ring-black/5">
+            <div className="mb-4">
+              <h3 className="text-2xl font-bold text-gray-900">Add New Product</h3>
+              <p className="text-sm text-gray-500">Create products faster with inline image preview and quick pricing.</p>
+            </div>
+            <form onSubmit={handleAddProduct} className="space-y-5">
               <input
                 type="text"
                 placeholder="Product Name"
@@ -1090,16 +1105,16 @@ export default function Inventory() {
                   onChange={(e) => setNewProduct({ ...newProduct, cost: e.target.value })}
                 />
               </div>
-              <input
-                type="number"
-                step="1"
-                min="0"
-                placeholder="Low stock alert at (e.g. 10)"
-                className="input"
-                value={newProduct.reorder_level}
-                onChange={(e) => setNewProduct({ ...newProduct, reorder_level: e.target.value })}
-              />
               <div className="grid grid-cols-2 gap-4">
+                <input
+                  type="number"
+                  step="1"
+                  min="0"
+                  placeholder="Low stock alert at (e.g. 10)"
+                  className="input"
+                  value={newProduct.reorder_level}
+                  onChange={(e) => setNewProduct({ ...newProduct, reorder_level: e.target.value })}
+                />
                 <select
                   className="input"
                   value={newProduct.category}
@@ -1109,6 +1124,8 @@ export default function Inventory() {
                   <option value="raw">Raw Material</option>
                   <option value="service">Service</option>
                 </select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
                 <select
                   className="input"
                   value={newProduct.unit}
@@ -1146,7 +1163,7 @@ export default function Inventory() {
                 <button type="button" onClick={() => {
                   setShowAddModal(false);
                   setImagePreview('');
-                  setNewProduct({ name: '', price: '', cost: '', category: 'finished', unit: 'pcs', expenseOnly: false, image: '', visibleToCashier: true });
+                  setNewProduct({ name: '', price: '', cost: '', category: 'finished', unit: 'pcs', expenseOnly: false, image: '', visibleToCashier: true, reorder_level: '' });
                 }} className="btn-secondary">Cancel</button>
               </div>
             </form>
@@ -1157,9 +1174,12 @@ export default function Inventory() {
       {/* Edit Product Modal */}
       {showEditModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md">
-            <h3 className="text-xl font-bold mb-4">Edit Product</h3>
-            <form onSubmit={handleEditProduct} className="space-y-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-2xl shadow-2xl ring-1 ring-black/5">
+            <div className="mb-4">
+              <h3 className="text-2xl font-bold text-gray-900">Edit Product</h3>
+              <p className="text-sm text-gray-500">Changes save fast and sync across cashiers.</p>
+            </div>
+            <form onSubmit={handleEditProduct} className="space-y-5">
               <input
                 type="text"
                 placeholder="Product Name"
@@ -1183,16 +1203,7 @@ export default function Inventory() {
                     type="file"
                     accept="image/*"
                     className="input flex-1"
-                    onChange={(e) => {
-                      const file = e.target.files[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onloadend = () => {
-                          setEditProduct({ ...editProduct, image: reader.result });
-                        };
-                        reader.readAsDataURL(file);
-                      }
-                    }}
+                    onChange={(e) => handleImageUpload(e, false)}
                   />
                 </div>
                 {editProduct.image && (
