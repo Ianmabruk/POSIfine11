@@ -714,9 +714,15 @@ export default function MainAdmin() {
     reportWindow.print();
   };
 
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+
   const filteredUsers = allUsers.filter(user => {
-    const matchesSearch = user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = !normalizedSearch ||
+      user.name?.toLowerCase().includes(normalizedSearch) ||
+      user.email?.toLowerCase().includes(normalizedSearch) ||
+      normalizeBusinessType(user).toLowerCase().includes(normalizedSearch) ||
+      normalizePlan(user).toLowerCase().includes(normalizedSearch) ||
+      (user.business_role || user.role || '').toLowerCase().includes(normalizedSearch);
 
     if (filter === 'all') return matchesSearch;
     if (filter === 'active') return matchesSearch && user.active && !user.locked;
@@ -732,6 +738,26 @@ export default function MainAdmin() {
     }
     return matchesSearch;
   });
+
+  const filteredBusinesses = useMemo(() => {
+    if (!normalizedSearch) return businesses;
+    return businesses.filter((biz) => {
+      const name = (biz.name || '').toLowerCase();
+      const type = (biz.businessType || '').toLowerCase();
+      const status = (biz.status || '').toLowerCase();
+      return name.includes(normalizedSearch) || type.includes(normalizedSearch) || status.includes(normalizedSearch);
+    });
+  }, [businesses, normalizedSearch]);
+
+  const filteredActivities = useMemo(() => {
+    if (!normalizedSearch) return recentActivities;
+    return recentActivities.filter((activity) => {
+      const name = (activity.user?.name || '').toLowerCase();
+      const email = (activity.user?.email || '').toLowerCase();
+      const type = (activity.type || '').toLowerCase();
+      return name.includes(normalizedSearch) || email.includes(normalizedSearch) || type.includes(normalizedSearch);
+    });
+  }, [recentActivities, normalizedSearch]);
 
   const sortedUsers = useMemo(() => {
     const usersCopy = [...filteredUsers];
@@ -808,10 +834,22 @@ export default function MainAdmin() {
       
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-lg border-b border-[#e6d5c7] px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-6">
           <div>
             <h1 className="text-3xl font-bold text-[#6b4c3b] mb-2">Main Admin Dashboard</h1>
             <p className="text-[#8b5a2b]">Monitor all users, businesses, and system health</p>
+          </div>
+          <div className="flex-1 max-w-xl">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#8b5a2b]" />
+              <input
+                type="text"
+                placeholder="Search users, businesses, activity..."
+                className="w-full pl-10 pr-4 py-3 bg-white border border-[#eadbcf] rounded-lg text-[#6b4c3b] placeholder-[#b79b82] focus:outline-none focus:ring-2 focus:ring-[#cd853f]"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
           </div>
           <button
             onClick={logout}
@@ -911,10 +949,10 @@ export default function MainAdmin() {
               </div>
             </div>
             <div className="grid md:grid-cols-2 gap-4">
-              {businesses.length === 0 && (
+              {filteredBusinesses.length === 0 && (
                 <div className="text-sm text-[#8b5a2b]">No businesses found.</div>
               )}
-              {businesses.map((biz) => (
+              {filteredBusinesses.map((biz) => (
                 <div key={biz.id} className="border border-[#eadbcf] rounded-xl p-4">
                   <div className="flex items-center justify-between">
                     <div>
@@ -1260,10 +1298,10 @@ export default function MainAdmin() {
               </h2>
             </div>
             <div className="p-4 space-y-3 max-h-96 overflow-y-auto">
-              {recentActivities.length === 0 ? (
+              {filteredActivities.length === 0 ? (
                 <p className="text-[#8b5a2b] text-center py-8">No recent activity</p>
               ) : (
-                recentActivities.map(activity => (
+                filteredActivities.map(activity => (
                   <div key={activity.id} className="bg-[#fdf7f1] rounded-lg p-3 border border-[#eadbcf]">
                     <div className="flex items-center gap-2 mb-1">
                       <div className={`w-2 h-2 rounded-full ${

@@ -33,6 +33,7 @@ export default function AdminDashboard() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showReminderModal, setShowReminderModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [appSettings, setAppSettings] = useState({});
   const [isLocked, unlock] = useInactivity(45000); // 45 seconds
 
@@ -162,6 +163,20 @@ export default function AdminDashboard() {
     return location.pathname.startsWith(path);
   };
 
+  const filteredMenuItems = menuItems.filter((item) =>
+    item.label.toLowerCase().includes(searchQuery.trim().toLowerCase())
+  );
+
+  const handleSearchKeyDown = (e) => {
+    if (e.key === 'Enter' && searchQuery.trim()) {
+      const firstMatch = filteredMenuItems[0];
+      if (firstMatch) {
+        navigate(`/admin${firstMatch.path}`);
+        setSearchQuery('');
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
@@ -173,10 +188,10 @@ export default function AdminDashboard() {
                 <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                   Admin Panel
                 </h2>
-                <p className="text-xs text-gray-500 mt-1">Ultra Package</p>
+                <p className="text-xs text-gray-500">POS Management</p>
               </div>
             )}
-            <button 
+            <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
@@ -236,11 +251,39 @@ export default function AdminDashboard() {
       <div className="flex-1 flex flex-col">
         {/* Top Navbar */}
         <header className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-6">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
                 {menuItems.find(item => isActive(item.path))?.label || 'Dashboard'}
               </h1>
+            </div>
+            <div className="flex-1 max-w-xl">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={handleSearchKeyDown}
+                  placeholder="Search pages, reports, inventory..."
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                {searchQuery && filteredMenuItems.length > 0 && (
+                  <div className="absolute z-10 mt-2 w-full bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+                    {filteredMenuItems.slice(0, 6).map((item) => (
+                      <button
+                        key={item.path}
+                        onClick={() => {
+                          navigate(`/admin${item.path}`);
+                          setSearchQuery('');
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50"
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-4">
               <div className="text-right">

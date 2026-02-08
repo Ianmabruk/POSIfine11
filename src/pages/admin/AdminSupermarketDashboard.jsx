@@ -10,6 +10,7 @@ export default function AdminSupermarketDashboard() {
   const [messages, setMessages] = useState([]);
   const [showAddStaff, setShowAddStaff] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   const [stats, setStats] = useState({
     todaySales: 0,
     todayOrders: 0,
@@ -83,6 +84,24 @@ export default function AdminSupermarketDashboard() {
     }
   };
 
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+  const filteredStaff = staff.filter((member) => {
+    if (!normalizedSearch) return true;
+    return (
+      (member.name || '').toLowerCase().includes(normalizedSearch) ||
+      (member.email || '').toLowerCase().includes(normalizedSearch) ||
+      (member.business_role || member.role || '').toLowerCase().includes(normalizedSearch)
+    );
+  });
+
+  const filteredMessages = messages.filter((msg) => {
+    if (!normalizedSearch) return true;
+    return (
+      (msg.fromUserName || '').toLowerCase().includes(normalizedSearch) ||
+      (msg.content || '').toLowerCase().includes(normalizedSearch)
+    );
+  });
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-green-50">
       {/* Header */}
@@ -108,6 +127,15 @@ export default function AdminSupermarketDashboard() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-6">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search staff, messages, roles..."
+            className="w-full md:w-1/2 px-4 py-3 bg-white border border-emerald-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
+          />
+        </div>
         {/* Business Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg p-6 text-white transform transition hover:scale-105">
@@ -177,7 +205,7 @@ export default function AdminSupermarketDashboard() {
         </div>
 
         {/* Recent Messages */}
-        {messages.length > 0 && (
+        {filteredMessages.length > 0 && (
           <div className="bg-white rounded-xl shadow-lg mb-8 p-6 border border-emerald-100">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-900 flex items-center">
@@ -187,7 +215,7 @@ export default function AdminSupermarketDashboard() {
               <a href="/messages" className="text-emerald-600 hover:text-emerald-700 font-semibold">View all →</a>
             </div>
             <div className="space-y-3">
-              {messages.map((msg) => (
+              {filteredMessages.map((msg) => (
                 <div key={msg.id} className="flex items-start p-3 bg-gray-50 rounded-lg">
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
@@ -211,7 +239,7 @@ export default function AdminSupermarketDashboard() {
           <div className="p-6">
             {loading ? (
               <p className="text-center text-gray-600">Loading staff...</p>
-            ) : staff.length === 0 ? (
+            ) : filteredStaff.length === 0 ? (
               <div className="text-center py-12">
                 <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-600 mb-4">No staff members yet</p>
@@ -235,7 +263,7 @@ export default function AdminSupermarketDashboard() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {staff.map((member) => (
+                    {filteredStaff.map((member) => (
                       <tr key={member.id}>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="font-medium text-gray-900">{member.name}</div>

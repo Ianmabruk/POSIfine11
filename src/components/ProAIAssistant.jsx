@@ -14,6 +14,25 @@ export default function ProAIAssistant({ role, businessType, adminMode = false }
   const [error, setError] = useState(null);
   const [history, setHistory] = useState([]);
 
+  const emailTemplates = [
+    {
+      label: 'Schedule Change',
+      prompt: 'Draft an email to staff about schedule changes for next week.'
+    },
+    {
+      label: 'Sales Targets',
+      prompt: 'Draft an email to staff announcing new weekly sales targets and motivation.'
+    },
+    {
+      label: 'Low Stock Alert',
+      prompt: 'Draft an email to suppliers requesting urgent restock of top-selling items.'
+    },
+    {
+      label: 'Customer Promo',
+      prompt: 'Draft a customer email promoting a weekend discount campaign.'
+    }
+  ];
+
   const askAI = async () => {
     if (!question.trim()) {
       setError('Please enter a question');
@@ -102,6 +121,10 @@ export default function ProAIAssistant({ role, businessType, adminMode = false }
     setHistory([]);
     setAnswer('');
     setError(null);
+  };
+
+  const applyTemplate = (templatePrompt) => {
+    setQuestion(templatePrompt);
   };
 
   return (
@@ -223,6 +246,20 @@ export default function ProAIAssistant({ role, businessType, adminMode = false }
               <li onClick={() => setQuestion('Draft an email to staff about new sales targets.')}> 
                 Draft an email to staff about new sales targets.
               </li>
+            </ul>
+          </div>
+        )}
+
+        {/* Email Templates */}
+        {!loading && (
+          <div className="assistant-suggestions mt-4">
+            <p>✉️ Email templates:</p>
+            <ul>
+              {emailTemplates.map((tpl) => (
+                <li key={tpl.label} onClick={() => applyTemplate(tpl.prompt)}>
+                  {tpl.label}
+                </li>
+              ))}
             </ul>
           </div>
         )}
