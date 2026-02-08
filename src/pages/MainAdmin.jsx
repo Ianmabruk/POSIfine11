@@ -13,6 +13,9 @@ export default function MainAdmin() {
   const [payments, setPayments] = useState([]);
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [aiAnswer, setAiAnswer] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState('');
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [emailData, setEmailData] = useState({ subject: '', message: '' });
@@ -802,6 +805,48 @@ export default function MainAdmin() {
     return { pending, overdue, paid, total: userPayments.length };
   };
 
+  const askAiFromSearch = async () => {
+    if (!searchTerm.trim()) return;
+    try {
+      setAiLoading(true);
+      setAiError('');
+      setAiAnswer('');
+      const token = localStorage.getItem('token') || localStorage.getItem('mainAdminToken');
+      const response = await fetch(`${BASE_API_URL}/ai/ask`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` })
+        },
+        body: JSON.stringify({
+          question: searchTerm.trim(),
+          context: {
+            stats,
+            alerts: alerts.slice(0, 5),
+            systemHealth,
+            usersCount: allUsers.length,
+            businessesCount: businesses.length,
+            topBusinesses: filteredBusinesses.slice(0, 5),
+            recentActivities: filteredActivities.slice(0, 5)
+          }
+        })
+      });
+
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload?.message || payload?.error || 'AI request failed');
+      }
+
+      const answer = payload?.data?.answer || payload?.answer;
+      if (!answer) throw new Error('No AI response received');
+      setAiAnswer(answer);
+    } catch (err) {
+      setAiError(err.message || 'AI request failed');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   if (loading && allUsers.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900 flex items-center justify-center">
@@ -850,6 +895,15 @@ export default function MainAdmin() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
+            <div className="mt-2 flex justify-end">
+              <button
+                onClick={askAiFromSearch}
+                disabled={aiLoading || !searchTerm.trim()}
+                className="px-3 py-1.5 text-xs bg-[#6b4c3b] text-white rounded-lg hover:bg-[#5a4a3b] disabled:opacity-50"
+              >
+                {aiLoading ? 'Asking AI...' : 'Search with AI'}
+              </button>
+            </div>
           </div>
           <button
             onClick={logout}
@@ -862,6 +916,11 @@ export default function MainAdmin() {
       </header>
 
       <div className="max-w-7xl mx-auto p-6 space-y-6">
+        {(aiAnswer || aiError) && (
+          <div className={`rounded-2xl border px-4 py-3 text-sm ${aiError ? 'border-red-200 bg-red-50 text-red-700' : 'border-[#eadbcf] bg-white text-[#6b4c3b]'}`}>
+            {aiError ? aiError : aiAnswer}
+          </div>
+        )}
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white rounded-2xl p-6 border border-[#eadbcf] shadow-sm">

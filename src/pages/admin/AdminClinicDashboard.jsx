@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Users, Plus, Mail, Shield, Activity, MessageSquare } from 'lucide-react';
-import api from '../../services/api';
+import api, { BASE_API_URL } from '../../services/api';
 
 export default function AdminClinicDashboard() {
   const { user } = useAuth();
@@ -10,6 +10,9 @@ export default function AdminClinicDashboard() {
   const [showAddStaff, setShowAddStaff] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [aiAnswer, setAiAnswer] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState('');
 
   // Available clinic roles
   const clinicRoles = [
@@ -80,6 +83,44 @@ export default function AdminClinicDashboard() {
     );
   });
 
+  const askAiFromSearch = async () => {
+    if (!searchTerm.trim()) return;
+    try {
+      setAiLoading(true);
+      setAiError('');
+      setAiAnswer('');
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${BASE_API_URL}/ai/ask`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` })
+        },
+        body: JSON.stringify({
+          question: searchTerm.trim(),
+          context: {
+            businessType: user?.business_type || 'clinic',
+            staffCount: staff.length,
+            recentMessages: filteredMessages.slice(0, 5)
+          }
+        })
+      });
+
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload?.message || payload?.error || 'AI request failed');
+      }
+
+      const answer = payload?.data?.answer || payload?.answer;
+      if (!answer) throw new Error('No AI response received');
+      setAiAnswer(answer);
+    } catch (err) {
+      setAiError(err.message || 'AI request failed');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50">
       {/* Header */}
@@ -113,7 +154,21 @@ export default function AdminClinicDashboard() {
             placeholder="Search staff, messages, roles..."
             className="w-full md:w-1/2 px-4 py-3 bg-white border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
           />
+          <div className="mt-2 flex justify-end md:w-1/2">
+            <button
+              onClick={askAiFromSearch}
+              disabled={aiLoading || !searchTerm.trim()}
+              className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            >
+              {aiLoading ? 'Asking AI...' : 'Search with AI'}
+            </button>
+          </div>
         </div>
+        {(aiAnswer || aiError) && (
+          <div className={`mb-6 rounded-xl border px-4 py-3 text-sm ${aiError ? 'border-red-200 bg-red-50 text-red-700' : 'border-blue-200 bg-blue-50 text-blue-900'}`}>
+            {aiError ? aiError : aiAnswer}
+          </div>
+        )}
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           {clinicRoles.map((role, idx) => {

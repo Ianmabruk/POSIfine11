@@ -34,6 +34,9 @@ export default function AdminDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [aiAnswer, setAiAnswer] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState('');
   const [appSettings, setAppSettings] = useState({});
   const [isLocked, unlock] = useInactivity(45000); // 45 seconds
 
@@ -169,11 +172,45 @@ export default function AdminDashboard() {
 
   const handleSearchKeyDown = (e) => {
     if (e.key === 'Enter' && searchQuery.trim()) {
-      const firstMatch = filteredMenuItems[0];
-      if (firstMatch) {
-        navigate(`/admin${firstMatch.path}`);
-        setSearchQuery('');
+      askAiFromSearch();
+    }
+  };
+
+  const askAiFromSearch = async () => {
+    if (!searchQuery.trim()) return;
+    try {
+      setAiLoading(true);
+      setAiError('');
+      setAiAnswer('');
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${BASE_API_URL}/ai/ask`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` })
+        },
+        body: JSON.stringify({
+          question: searchQuery.trim(),
+          context: {
+            section: menuItems.find(item => isActive(item.path))?.label || 'Dashboard',
+            user: { name: user?.name, email: user?.email },
+            note: 'Analyze current admin reports and answer based on available data.'
+          }
+        })
+      });
+
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload?.message || payload?.error || 'AI request failed');
       }
+
+      const answer = payload?.data?.answer || payload?.answer;
+      if (!answer) throw new Error('No AI response received');
+      setAiAnswer(answer);
+    } catch (err) {
+      setAiError(err.message || 'AI request failed');
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -284,6 +321,15 @@ export default function AdminDashboard() {
                   </div>
                 )}
               </div>
+              <div className="mt-2 flex justify-end">
+                <button
+                  onClick={askAiFromSearch}
+                  disabled={aiLoading || !searchQuery.trim()}
+                  className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {aiLoading ? 'Asking AI...' : 'Search with AI'}
+                </button>
+              </div>
             </div>
             <div className="flex items-center gap-4">
               <div className="text-right">
@@ -299,6 +345,13 @@ export default function AdminDashboard() {
 
         {/* Page Content */}
         <main className="flex-1 overflow-auto">
+          {(aiAnswer || aiError) && (
+            <div className="px-6 pt-4">
+              <div className={`rounded-lg border px-4 py-3 text-sm ${aiError ? 'border-red-200 bg-red-50 text-red-700' : 'border-blue-200 bg-blue-50 text-blue-900'}`}>
+                {aiError ? aiError : aiAnswer}
+              </div>
+            </div>
+          )}
           <Routes>
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/" element={<Overview />} />
