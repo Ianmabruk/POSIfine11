@@ -36,10 +36,10 @@ export default function MainAdminLanding() {
 
           <div className="flex flex-wrap gap-4">
             <button
-              onClick={() => navigate('/main.admin/login')}
+              onClick={() => navigate('/main.admin/dashboard')}
               className="px-6 py-3 rounded-xl bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white font-semibold flex items-center gap-2 shadow-lg shadow-purple-500/20"
             >
-              Access Console <ArrowRight className="w-4 h-4" />
+              Go to Dashboard <ArrowRight className="w-4 h-4" />
             </button>
             <button
               onClick={() => navigate('/auth/login')}
