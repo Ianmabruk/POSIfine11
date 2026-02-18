@@ -19,6 +19,13 @@ export default function MainAdmin() {
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [emailData, setEmailData] = useState({ subject: '', message: '' });
+  const [emailTemplates, setEmailTemplates] = useState([]);
+  const [emailTemplateId, setEmailTemplateId] = useState('');
+  const [emailTemplateVars, setEmailTemplateVars] = useState('{}');
+  const [emailTemplateError, setEmailTemplateError] = useState('');
+  const [templateForm, setTemplateForm] = useState({ id: '', name: '', subject: '', text: '', html: '' });
+  const [templatesLoading, setTemplatesLoading] = useState(false);
+  const [templatesError, setTemplatesError] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [backendAvailable, setBackendAvailable] = useState(true);
@@ -205,6 +212,7 @@ export default function MainAdmin() {
     }
     
     loadData().finally(() => setLoading(false));
+    loadTemplates();
     
     // Load recent activities
     const activities = JSON.parse(localStorage.getItem('authActivities') || '[]');
@@ -224,6 +232,19 @@ export default function MainAdmin() {
     
     return () => clearInterval(interval);
   }, [navigate]);
+
+  const loadTemplates = async () => {
+    try {
+      setTemplatesLoading(true);
+      setTemplatesError('');
+      const templates = await mainAdmin.getEmailTemplates();
+      setEmailTemplates(templates || []);
+    } catch (err) {
+      setTemplatesError(err.message || 'Failed to load templates');
+    } finally {
+      setTemplatesLoading(false);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -429,17 +450,19 @@ export default function MainAdmin() {
     }
   };
 
-  const sendEmail = async (userIds, subject, message) => {
+  const sendEmail = async (userIds, subject, message, templateId, variables) => {
     try {
       setLoading(true);
       
       // Try backend first
       try {
-        await mainAdmin.sendEmail({ userIds, subject, message });
+        await mainAdmin.sendEmail({ userIds, subject, message, templateId, variables });
         alert('Emails sent successfully!');
         setShowEmailModal(false);
         setSelectedUsers([]);
         setEmailData({ subject: '', message: '' });
+        setEmailTemplateId('');
+        setEmailTemplateVars('{}');
         return;
       } catch (backendError) {
         console.warn('Backend email operation failed, simulating email send:', backendError.message);
@@ -463,6 +486,8 @@ export default function MainAdmin() {
       setShowEmailModal(false);
       setSelectedUsers([]);
       setEmailData({ subject: '', message: '' });
+      setEmailTemplateId('');
+      setEmailTemplateVars('{}');
       
     } catch (error) {
       console.error('Failed to send email:', error);
@@ -479,7 +504,9 @@ export default function MainAdmin() {
     await sendEmail(
       [userId],
       'Payment Reminder - Subscription',
-      `Dear ${user.name},\n\nThis is a friendly reminder about your pending subscription payment for ${user.plan?.toUpperCase()} plan (KSH ${user.price}).\n\nPlease complete your payment to continue enjoying our services.\n\nThank you!`
+      `Dear ${user.name},\n\nThis is a friendly reminder about your pending subscription payment for ${user.plan?.toUpperCase()} plan (KSH ${user.price}).\n\nPlease complete your payment to continue enjoying our services.\n\nThank you!`,
+      null,
+      null
     );
   };
 
@@ -540,6 +567,67 @@ export default function MainAdmin() {
       alert(`❌ Failed to create user: ${error.message}`);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const resetTemplateForm = () => {
+    setTemplateForm({ id: '', name: '', subject: '', text: '', html: '' });
+  };
+
+  const handleTemplateEdit = (template) => {
+    setTemplateForm({
+      id: template.id,
+      name: template.name || '',
+      subject: template.subject || '',
+      text: template.text || '',
+      html: template.html || ''
+    });
+  };
+
+  const handleTemplateSave = async () => {
+    if (!templateForm.name.trim()) {
+      setTemplatesError('Template name is required');
+      return;
+    }
+    try {
+      setTemplatesLoading(true);
+      setTemplatesError('');
+      if (templateForm.id) {
+        await mainAdmin.updateEmailTemplate(templateForm.id, {
+          name: templateForm.name.trim(),
+          subject: templateForm.subject,
+          text: templateForm.text,
+          html: templateForm.html
+        });
+      } else {
+        await mainAdmin.createEmailTemplate({
+          name: templateForm.name.trim(),
+          subject: templateForm.subject,
+          text: templateForm.text,
+          html: templateForm.html
+        });
+      }
+      resetTemplateForm();
+      await loadTemplates();
+    } catch (err) {
+      setTemplatesError(err.message || 'Failed to save template');
+    } finally {
+      setTemplatesLoading(false);
+    }
+  };
+
+  const handleTemplateDelete = async (templateId) => {
+    if (!window.confirm('Delete this template? This cannot be undone.')) return;
+    try {
+      setTemplatesLoading(true);
+      setTemplatesError('');
+      await mainAdmin.deleteEmailTemplate(templateId);
+      setEmailTemplates((prev) => prev.filter((t) => t.id !== templateId));
+      if (templateForm.id === templateId) resetTemplateForm();
+    } catch (err) {
+      setTemplatesError(err.message || 'Failed to delete template');
+    } finally {
+      setTemplatesLoading(false);
     }
   };
 
@@ -615,7 +703,9 @@ export default function MainAdmin() {
     await sendEmail(
       [userId],
       'Password Reset - Temporary Access',
-      `Hello ${user?.name || ''},\n\nYour temporary password is: ${tempPassword}\n\nPlease log in and update your password immediately.\n\nRegards,\nPOS Support Team`
+      `Hello ${user?.name || ''},\n\nYour temporary password is: ${tempPassword}\n\nPlease log in and update your password immediately.\n\nRegards,\nPOS Support Team`,
+      null,
+      null
     );
     setShowResetModal(false);
     setResetData({ userId: '', tempPassword: '' });
@@ -998,6 +1088,122 @@ export default function MainAdmin() {
           </div>
         </div>
 
+        {/* Email Templates */}
+        <div className="bg-white rounded-2xl p-6 border border-[#eadbcf] shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-lg font-semibold text-[#6b4c3b]">Email Templates</h2>
+              <p className="text-sm text-[#8b5a2b]">Create reusable email templates for client outreach.</p>
+            </div>
+            <button
+              onClick={loadTemplates}
+              className="px-3 py-2 bg-white text-[#6b4c3b] rounded-lg border border-[#eadbcf] hover:bg-[#f7f0e9] flex items-center gap-2"
+            >
+              <RefreshCw className="w-4 h-4" /> Refresh
+            </button>
+          </div>
+
+          {templatesError && (
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {templatesError}
+            </div>
+          )}
+
+          <div className="grid lg:grid-cols-2 gap-6">
+            <div className="space-y-3">
+              {templatesLoading && <p className="text-sm text-[#8b5a2b]">Loading templates...</p>}
+              {!templatesLoading && emailTemplates.length === 0 && (
+                <p className="text-sm text-[#8b5a2b]">No templates yet. Create one to get started.</p>
+              )}
+              {emailTemplates.map((template) => (
+                <div key={template.id} className="border border-[#eadbcf] rounded-xl p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-[#6b4c3b]">{template.name}</p>
+                      <p className="text-xs text-[#8b5a2b]">{template.subject || 'No subject'}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleTemplateEdit(template)}
+                        className="text-xs px-3 py-1 rounded-lg border border-[#eadbcf] text-[#6b4c3b] hover:bg-[#f7f0e9]"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleTemplateDelete(template.id)}
+                        className="text-xs px-3 py-1 rounded-lg border border-red-200 text-red-600 hover:bg-red-50"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                  {(template.text || template.html) && (
+                    <p className="text-xs text-[#8b5a2b] mt-2 line-clamp-2">
+                      {(template.text || template.html).slice(0, 140)}...
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="border border-[#eadbcf] rounded-xl p-4 space-y-3">
+              <h3 className="font-semibold text-[#6b4c3b]">{templateForm.id ? 'Edit Template' : 'New Template'}</h3>
+              <div>
+                <label className="block text-xs font-medium text-[#6b4c3b] mb-1">Template Name</label>
+                <input
+                  value={templateForm.name}
+                  onChange={(e) => setTemplateForm({ ...templateForm, name: e.target.value })}
+                  className="w-full px-3 py-2 border border-[#eadbcf] rounded-lg text-sm text-[#6b4c3b]"
+                  placeholder="Onboarding Welcome"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[#6b4c3b] mb-1">Subject</label>
+                <input
+                  value={templateForm.subject}
+                  onChange={(e) => setTemplateForm({ ...templateForm, subject: e.target.value })}
+                  className="w-full px-3 py-2 border border-[#eadbcf] rounded-lg text-sm text-[#6b4c3b]"
+                  placeholder="Welcome to {{business}}"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[#6b4c3b] mb-1">Text Body</label>
+                <textarea
+                  value={templateForm.text}
+                  onChange={(e) => setTemplateForm({ ...templateForm, text: e.target.value })}
+                  className="w-full px-3 py-2 border border-[#eadbcf] rounded-lg text-sm text-[#6b4c3b] h-28"
+                  placeholder="Hi {{name}}, thanks for joining..."
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[#6b4c3b] mb-1">HTML Body (optional)</label>
+                <textarea
+                  value={templateForm.html}
+                  onChange={(e) => setTemplateForm({ ...templateForm, html: e.target.value })}
+                  className="w-full px-3 py-2 border border-[#eadbcf] rounded-lg text-sm text-[#6b4c3b] h-24"
+                  placeholder="<p>Hi {{name}}, welcome...</p>"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleTemplateSave}
+                  disabled={templatesLoading}
+                  className="flex-1 bg-[#6b4c3b] hover:bg-[#5a4a3b] text-white py-2 rounded-lg text-sm font-semibold disabled:opacity-50"
+                >
+                  {templateForm.id ? 'Update Template' : 'Create Template'}
+                </button>
+                <button
+                  onClick={resetTemplateForm}
+                  className="px-4 py-2 bg-[#f5efe6] hover:bg-[#f0e5d6] text-[#6b4c3b] rounded-lg text-sm font-semibold"
+                >
+                  Clear
+                </button>
+              </div>
+              <p className="text-xs text-[#8b5a2b]">Use placeholders like {{name}}, {{plan}}, {{business}} and provide values in the email modal.</p>
+            </div>
+          </div>
+        </div>
+
         {/* Business Monitoring + System Health */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-[#eadbcf] shadow-sm">
@@ -1244,9 +1450,16 @@ export default function MainAdmin() {
                         <td className="px-4 py-4 text-sm text-[#8b5a2b]">{user.email || '—'}</td>
                         <td className="px-4 py-4 text-sm text-[#8b5a2b]">{normalizeBusinessType(user)}</td>
                         <td className="px-4 py-4">
-                          <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#f5efe6] text-[#6b4c3b]">
-                            {normalizePlan(user).toUpperCase()}
-                          </span>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#f5efe6] text-[#6b4c3b]">
+                              {normalizePlan(user).toUpperCase()}
+                            </span>
+                            {user.billing_due && (
+                              <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700">
+                                Payment Due{typeof user.days_since_plan_start === 'number' ? ` (${user.days_since_plan_start}d)` : ''}
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="px-4 py-4 text-sm text-[#8b5a2b]">{formatDate(normalizeLastLogin(user))}</td>
                         <td className="px-4 py-4">
@@ -1397,6 +1610,30 @@ export default function MainAdmin() {
             </div>
             <div className="p-6 space-y-4">
               <div>
+                <label className="block text-sm font-medium text-[#6b4c3b] mb-2">Template (optional)</label>
+                <select
+                  value={emailTemplateId}
+                  onChange={(e) => {
+                    const nextId = e.target.value;
+                    setEmailTemplateId(nextId);
+                    setEmailTemplateError('');
+                    const template = emailTemplates.find((item) => item.id === nextId);
+                    if (template) {
+                      setEmailData({
+                        subject: template.subject || '',
+                        message: template.text || template.html || ''
+                      });
+                    }
+                  }}
+                  className="w-full px-4 py-3 bg-white border border-[#eadbcf] rounded-lg text-[#6b4c3b] focus:outline-none focus:ring-2 focus:ring-[#cd853f]"
+                >
+                  <option value="">No template</option>
+                  {emailTemplates.map((template) => (
+                    <option key={template.id} value={template.id}>{template.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-[#6b4c3b] mb-2">Subject</label>
                 <input
                   type="text"
@@ -1415,16 +1652,47 @@ export default function MainAdmin() {
                   placeholder="Email message..."
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-[#6b4c3b] mb-2">Template Variables (JSON)</label>
+                <textarea
+                  value={emailTemplateVars}
+                  onChange={(e) => setEmailTemplateVars(e.target.value)}
+                  className="w-full px-4 py-3 bg-white border border-[#eadbcf] rounded-lg text-[#6b4c3b] placeholder-[#b79b82] focus:outline-none focus:ring-2 focus:ring-[#cd853f] h-24"
+                  placeholder='{"name":"Client","plan":"Ultra"}'
+                />
+                {emailTemplateError && (
+                  <p className="text-sm text-red-600 mt-2">{emailTemplateError}</p>
+                )}
+              </div>
               <div className="flex gap-3">
                 <button
-                  onClick={() => sendEmail(selectedUsers, emailData.subject, emailData.message)}
+                  onClick={() => {
+                    if (emailTemplateId && emailTemplateVars.trim()) {
+                      try {
+                        const parsed = JSON.parse(emailTemplateVars);
+                        setEmailTemplateError('');
+                        sendEmail(selectedUsers, emailData.subject, emailData.message, emailTemplateId, parsed);
+                        return;
+                      } catch (err) {
+                        setEmailTemplateError('Template variables must be valid JSON.');
+                        return;
+                      }
+                    }
+                    setEmailTemplateError('');
+                    sendEmail(selectedUsers, emailData.subject, emailData.message, emailTemplateId || null, null);
+                  }}
                   disabled={loading}
                   className="flex-1 bg-[#6b4c3b] hover:bg-[#5a4a3b] text-white py-3 rounded-lg font-bold transition disabled:opacity-50"
                 >
                   {loading ? 'Sending...' : 'Send Email'}
                 </button>
                 <button
-                  onClick={() => setShowEmailModal(false)}
+                  onClick={() => {
+                    setShowEmailModal(false);
+                    setEmailTemplateId('');
+                    setEmailTemplateVars('{}');
+                    setEmailTemplateError('');
+                  }}
                   className="px-6 py-3 bg-[#f5efe6] hover:bg-[#f0e5d6] text-[#6b4c3b] rounded-lg font-bold transition"
                 >
                   Cancel

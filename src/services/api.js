@@ -541,6 +541,43 @@ export const mainAdmin = {
       body: JSON.stringify(payload)
     });
   },
+  getEmailTemplates: () => {
+    const token = localStorage.getItem('token') || localStorage.getItem('ownerToken') || localStorage.getItem('mainAdminToken');
+    return request('/main-admin/email-templates', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  },
+  createEmailTemplate: (payload) => {
+    const token = localStorage.getItem('token') || localStorage.getItem('ownerToken') || localStorage.getItem('mainAdminToken');
+    return request('/main-admin/email-templates', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+  },
+  updateEmailTemplate: (templateId, payload) => {
+    const token = localStorage.getItem('token') || localStorage.getItem('ownerToken') || localStorage.getItem('mainAdminToken');
+    return request(`/main-admin/email-templates/${templateId}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+  },
+  deleteEmailTemplate: (templateId) => {
+    const token = localStorage.getItem('token') || localStorage.getItem('ownerToken') || localStorage.getItem('mainAdminToken');
+    return request(`/main-admin/email-templates/${templateId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  },
   clearData: (type) => {
     const token = localStorage.getItem('token') || localStorage.getItem('ownerToken') || localStorage.getItem('mainAdminToken');
     return request('/main-admin/system/clear-data', {
@@ -592,6 +629,18 @@ export const mainAdmin = {
       }
     });
   }
+};
+
+// Admin Support Messaging API
+export const adminSupport = {
+  getMessages: () => request('/admin-support/messages'),
+  sendMessage: (payload) => request('/admin-support/messages', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  }),
+  closeMessage: (messageId) => request(`/admin-support/messages/${messageId}/close`, {
+    method: 'POST'
+  })
 };
 
 // Utility function to check if backend is available

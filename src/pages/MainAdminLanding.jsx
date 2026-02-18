@@ -1,8 +1,46 @@
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShieldCheck, Sparkles, ArrowRight } from 'lucide-react';
 
 export default function MainAdminLanding() {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = localStorage.getItem('ownerToken') || localStorage.getItem('mainAdminToken') || localStorage.getItem('token');
+    const userStr = localStorage.getItem('ownerUser') || localStorage.getItem('mainAdminUser') || localStorage.getItem('user');
+
+    if (!token || !userStr) {
+      return;
+    }
+
+    try {
+      const userData = JSON.parse(userStr);
+      if (userData?.role === 'main_admin') {
+        navigate('/main.admin/dashboard', { replace: true });
+      }
+    } catch (error) {
+      // If parsing fails, stay on landing and allow login
+    }
+  }, [navigate]);
+
+  const handleAccessConsole = () => {
+    const token = localStorage.getItem('ownerToken') || localStorage.getItem('mainAdminToken') || localStorage.getItem('token');
+    const userStr = localStorage.getItem('ownerUser') || localStorage.getItem('mainAdminUser') || localStorage.getItem('user');
+
+    if (token && userStr) {
+      try {
+        const userData = JSON.parse(userStr);
+        if (userData?.role === 'main_admin') {
+          navigate('/main.admin/dashboard');
+          return;
+        }
+      } catch (error) {
+        // fall through to login
+      }
+    }
+
+    navigate('/main.admin/login');
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0b0a0f] via-[#1a0f1f] to-[#0b0a0f] text-white flex items-center justify-center px-6 py-16">
@@ -36,7 +74,7 @@ export default function MainAdminLanding() {
 
           <div className="flex flex-wrap gap-4">
             <button
-              onClick={() => navigate('/main.admin/dashboard')}
+              onClick={handleAccessConsole}
               className="px-6 py-3 rounded-xl bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white font-semibold flex items-center gap-2 shadow-lg shadow-purple-500/20"
             >
               Go to Dashboard <ArrowRight className="w-4 h-4" />

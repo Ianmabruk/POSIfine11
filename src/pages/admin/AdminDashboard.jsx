@@ -5,7 +5,7 @@ import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-
 import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard, ShoppingBag, Package, Layers, TrendingDown, TrendingUp,
-  Users, Settings, LogOut, Menu, X, ExternalLink, Clock, Bell, DollarSign, Tag, CreditCard, Truck
+  Users, Settings, LogOut, Menu, X, ExternalLink, Clock, Bell, DollarSign, Tag, CreditCard, Truck, MessageSquare
 } from 'lucide-react';
 import Overview from './Overview';
 import Analytics from './Analytics';
@@ -21,6 +21,7 @@ import RemindersManager from './RemindersManager';
 import Discounts from './Discounts';
 import CreditRequests from './CreditRequests';
 import Vendors from './Vendors';
+import AdminSupportChat from './AdminSupportChat';
 import ReminderModal from '../../components/ReminderModal';
 import ScreenLock from '../../components/ScreenLock';
 import useInactivity from '../../hooks/useInactivity';
@@ -158,6 +159,7 @@ export default function AdminDashboard() {
     { id: 'service-fees', label: 'Service Fees', icon: DollarSign, path: '/admin/service-fees' },
     { id: 'discounts', label: 'Discounts', icon: Tag, path: '/admin/discounts' },
     { id: 'credit-requests', label: 'Credit Requests', icon: CreditCard, path: '/admin/credit-requests' },
+    { id: 'support', label: 'Support Chat', icon: MessageSquare, path: '/admin/support' },
     { id: 'settings', label: 'Settings', icon: Settings, path: '/admin/settings' }
   ];
 
@@ -366,6 +368,7 @@ export default function AdminDashboard() {
             <Route path="/credit-requests" element={<CreditRequests />} />
             <Route path="/users" element={<UserManagement />} />
             <Route path="/time" element={<TimeTracking />} />
+            <Route path="/support" element={<AdminSupportChat />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Routes>
         </main>
