@@ -186,10 +186,11 @@ export default function Inventory() {
         const base64 = e.target.result;
         setImagePreview(base64);
         if (isNewProduct) {
-          setNewProduct({ ...newProduct, image: base64 });
+          // Use functional updates to avoid clobbering newer form fields while FileReader resolves.
+          setNewProduct(prev => ({ ...prev, image: base64 }));
         } else {
           // Update image in state — it will be included when user clicks Save
-          setEditProduct({ ...editProduct, image: base64 });
+          setEditProduct(prev => ({ ...prev, image: base64 }));
         }
       };
       reader.readAsDataURL(file);
@@ -922,7 +923,10 @@ export default function Inventory() {
 
                                   const raw = (productList || []).find(p => p && p.id === ingredient.productId);
                                   if (!raw) return null;
-                                  const unitCost = (raw.cost || 0) / (raw.quantity || 1);
+                                  const rawCostPerUnit = raw.cost_per_unit || raw.costPerUnit;
+                                  const unitCost = rawCostPerUnit
+                                    ? Number(rawCostPerUnit)
+                                    : (raw.quantity > 0 ? (raw.cost || 0) / raw.quantity : (raw.cost || 0));
                                   const totalCost = unitCost * (ingredient.quantity || 0);
                                   return (
                                     <tr key={idx} className="border-t border-blue-100">
