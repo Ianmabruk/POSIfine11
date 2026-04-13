@@ -121,7 +121,7 @@ function ProtectedRoute({ children, adminOnly = false, ultraOnly = false, ownerO
     if (!ownerToken || !ownerUser) return <Navigate to="/main.admin/login" replace />;
     try {
       const userData = JSON.parse(ownerUser);
-      if (userData.role !== 'main_admin') {
+      if (!['main_admin', 'owner'].includes(userData.role)) {
         return <Navigate to="/main.admin/login" replace />;
       }
     } catch (e) {

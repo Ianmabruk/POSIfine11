@@ -127,7 +127,6 @@ export default function ScreenLockPin({ isLocked, onUnlock, userPin = '1234', us
       setError('Network error. Please try again.');
     }
   };
-  };
 
   const handlePinChange = (value) => {
     if (value.length <= 4 && /^\d*$/.test(value)) {

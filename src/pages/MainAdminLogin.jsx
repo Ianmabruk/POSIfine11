@@ -25,7 +25,7 @@ export default function MainAdminLogin() {
     if (token && userStr) {
       try {
         const userData = JSON.parse(userStr);
-        if (userData.role === 'main_admin') {
+        if (['main_admin', 'owner'].includes(userData.role)) {
           navigate('/main.admin/dashboard', { replace: true });
         }
       } catch (e) {
@@ -43,6 +43,14 @@ export default function MainAdminLogin() {
     setError('');
 
     try {
+      // Reset any stale auth state that can cause role mismatches during owner login.
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('ownerToken');
+      localStorage.removeItem('ownerUser');
+      localStorage.removeItem('mainAdminToken');
+      localStorage.removeItem('mainAdminUser');
+
       const response = await mainAdmin.login(formData);
       
       if (response.token && response.user) {
