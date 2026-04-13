@@ -1,6 +1,6 @@
 
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useProducts } from '../../context/ProductsContext';
 import { products, batches } from '../../services/api';
@@ -11,7 +11,7 @@ import { Plus, Search, Edit2, Trash2, ChevronDown, ChevronUp, AlertTriangle, Cam
 
 export default function Inventory() {
   const { user, isUltraPackage, isRealTimeProductSyncEnabled } = useAuth();
-  const { products: globalProducts, refreshProducts } = useProducts();
+  const { products: globalProducts, refreshProducts, setEditingState } = useProducts();
   const [productList, setProductList] = useState([]);
   const [batchList, setBatchList] = useState([]);
   const [hasLoadedInitially, setHasLoadedInitially] = useState(false);
@@ -29,6 +29,9 @@ export default function Inventory() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSync, setLastSync] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
+  const [isAddingProduct, setIsAddingProduct] = useState(false);
+  const [isUpdatingProduct, setIsUpdatingProduct] = useState(false);
+  const [isAddingStock, setIsAddingStock] = useState(false);
   const [newProduct, setNewProduct] = useState({
     name: '',
     price: '',
@@ -79,38 +82,34 @@ export default function Inventory() {
       loadData();
       setHasLoadedInitially(true);
     }
-    
+
     // Connect to WebSocket for real-time stock updates
     const token = localStorage.getItem('token');
+    let wsUpdateTimeout = null;
     if (token) {
-      // Debounce WebSocket updates to prevent rapid-fire glitches
-      let wsUpdateTimeout = null;
       websocketService.connect(token, (data) => {
-        // When stock update received, merge with existing products (don't replace)
+        // Keep merge surgical: preserve local edit fields while allowing real-time stock sync.
         if (data && data.allProducts && data.allProducts.length > 0) {
-          console.log('📦 WebSocket stock update received:', data.allProducts.length, 'products');
-          
-          // Clear previous timeout
           if (wsUpdateTimeout) clearTimeout(wsUpdateTimeout);
-          
-          // Debounce: wait 200ms before applying update
           wsUpdateTimeout = setTimeout(() => {
             setProductList(prevList => {
-              // If we have no products yet, use the new data
-              if (prevList.length === 0) {
-                return data.allProducts;
-              }
-              
-              // Merge: Keep existing products but update fields from WebSocket
+              if (prevList.length === 0) return data.allProducts;
+
               const productMap = new Map(prevList.map(p => [p.id, p]));
-              data.allProducts.forEach(newProduct => {
-                const existing = productMap.get(newProduct.id);
-                if (existing) {
-                  productMap.set(newProduct.id, { ...existing, ...newProduct });
-                } else {
-                  // Add new products
-                  productMap.set(newProduct.id, newProduct);
+              data.allProducts.forEach(incomingProduct => {
+                const existing = productMap.get(incomingProduct.id);
+                if (!existing) {
+                  productMap.set(incomingProduct.id, incomingProduct);
+                  return;
                 }
+
+                productMap.set(incomingProduct.id, {
+                  ...existing,
+                  quantity: incomingProduct.quantity,
+                  updated_at: incomingProduct.updated_at,
+                  reorder_level: incomingProduct.reorder_level,
+                  max_stock_level: incomingProduct.max_stock_level
+                });
               });
               return Array.from(productMap.values());
             });
@@ -153,24 +152,25 @@ export default function Inventory() {
 
     // Cleanup on unmount
     return () => {
+      if (wsUpdateTimeout) clearTimeout(wsUpdateTimeout);
       websocketService.disconnect();
+      setEditingState(false);
     };
-  }, [hasLoadedInitially]);
+  }, [hasLoadedInitially, setEditingState]);
 
-  // Sync with global products whenever they change
-  // This ensures inventory always shows the latest stock from backend
+  // Sync with global products whenever they change.
   useEffect(() => {
     if (globalProducts && globalProducts.length > 0) {
-      console.log('📦 Syncing from global context:', globalProducts.length, 'products');
-      // Update product list while preserving any local temporary states
-      setProductList(prevList => {
-        // If we have temporary products (with temp IDs), keep them
-        const tempProducts = prevList.filter(p => typeof p.id === 'string' && p.id.startsWith('temp-'));
-        // Merge with global products
-        return [...tempProducts, ...globalProducts];
-      });
+      setProductList(globalProducts);
     }
   }, [globalProducts]);
+
+  // Pause shared product auto-refresh while user is editing in this screen.
+  useEffect(() => {
+    const editing = showAddModal || showEditModal || showAddStock || showWeightPricingModal;
+    setEditingState(editing);
+    return () => setEditingState(false);
+  }, [showAddModal, showEditModal, showAddStock, showWeightPricingModal, setEditingState]);
 
   const handleImageUpload = (e, isNewProduct = true) => {
     const file = e.target.files[0];
@@ -224,189 +224,163 @@ export default function Inventory() {
 
   const handleAddProduct = async (e) => {
     e.preventDefault();
+    if (isAddingProduct) return;
+
     try {
-      const parsedCost = parseFloat(newProduct.cost || 0);
+      setIsAddingProduct(true);
+      const parsedPrice = Number(newProduct.price);
+      const parsedCost = newProduct.cost === '' ? null : Number(newProduct.cost);
+      const parsedReorder = newProduct.reorder_level === '' ? null : Number(newProduct.reorder_level);
+
+      if (!Number.isFinite(parsedPrice)) {
+        showNotification('❌ Enter a valid price', 'error');
+        return;
+      }
+      if (parsedCost !== null && !Number.isFinite(parsedCost)) {
+        showNotification('❌ Enter a valid cost', 'error');
+        return;
+      }
+      if (parsedReorder !== null && !Number.isFinite(parsedReorder)) {
+        showNotification('❌ Enter a valid low-stock level', 'error');
+        return;
+      }
+
       const productData = {
         ...newProduct,
-        price: parseFloat(newProduct.price),
-        cost: Number.isFinite(parsedCost) ? parsedCost : 0,
-        cost_per_unit: Number.isFinite(parsedCost) ? parsedCost : 0,
-        quantity: 0, // Stock managed through batches
+        price: parsedPrice,
+        quantity: 0,
         visibleToCashier: !newProduct.expenseOnly && newProduct.visibleToCashier !== false,
-        reorder_level: newProduct.reorder_level === '' ? undefined : parseFloat(newProduct.reorder_level)
+        reorder_level: parsedReorder ?? undefined
       };
-      
-      // OPTIMISTIC UPDATE: Add product to UI immediately with temporary ID
-      const tempId = `temp-${Date.now()}`;
-      const optimisticProduct = { ...productData, id: tempId, created_at: new Date().toISOString() };
-      setProductList(prev => [...prev, optimisticProduct]);
-      
-      // Reset form and close modal IMMEDIATELY
-      setNewProduct({ name: '', price: '', cost: '', category: 'finished', unit: 'pcs', expenseOnly: false, image: '', visibleToCashier: true, reorder_level: '' });
+
+      if (parsedCost !== null) {
+        productData.cost = parsedCost;
+        productData.cost_per_unit = parsedCost;
+      } else {
+        delete productData.cost;
+        delete productData.cost_per_unit;
+      }
+
+      showNotification('⚡ Adding product...', 'info');
+      const result = await products.create(productData);
+
+      // API success first, then UI state update.
+      setProductList(prev => [...prev, result]);
+      setNewProduct({
+        name: '',
+        price: '',
+        cost: '',
+        category: 'finished',
+        unit: 'pcs',
+        expenseOnly: false,
+        image: '',
+        visibleToCashier: true,
+        reorder_level: ''
+      });
       setImagePreview('');
       setShowAddModal(false);
-      
-      showNotification('⚡ Adding product...', 'info');
-      
-      try {
-        // Make API call in background
-        const result = await products.create(productData);
-        
-        // Replace temporary product with real one
-        setProductList(prev => prev.map(p => p.id === tempId ? result : p));
-        
-        showNotification(`✅ Product "${result.name}" added successfully! ${result.visibleToCashier ? 'Cashiers can now see this product.' : 'This product is hidden from cashiers.'}`, 'success');
-        
-        // Dispatch events to notify cashier dashboard
-        window.dispatchEvent(new CustomEvent('productCreated', { 
-          detail: { 
-            product: result,
-            timestamp: new Date().toISOString()
-          }
-        }));
-        
-        window.dispatchEvent(new CustomEvent('stock_updated', {
-          detail: { 
-            productId: result.id,
-            quantity: result.quantity || 0,
-            product: result,
-            timestamp: Date.now()
-          }
-        }));
-        
-        // Refresh data in background to ensure sync
-        loadData().catch(err => console.warn('Background refresh failed:', err));
-        
-      } catch (apiError) {
-        // Rollback optimistic update on failure
-        setProductList(prev => prev.filter(p => p.id !== tempId));
-        throw apiError;
+
+      showNotification(`✅ Product "${result.name}" added successfully! ${result.visibleToCashier ? 'Cashiers can now see this product.' : 'This product is hidden from cashiers.'}`, 'success');
+
+      window.dispatchEvent(new CustomEvent('productCreated', {
+        detail: {
+          product: result,
+          timestamp: new Date().toISOString()
+        }
+      }));
+
+      window.dispatchEvent(new CustomEvent('stock_updated', {
+        detail: {
+          productId: result.id,
+          quantity: result.quantity || 0,
+          product: result,
+          timestamp: Date.now()
+        }
+      }));
+
+      const freshProducts = await refreshProducts();
+      if (Array.isArray(freshProducts)) {
+        setProductList(freshProducts);
       }
-      
     } catch (error) {
       console.error('Failed to create product:', error);
       showNotification(`❌ Failed to add product: ${error.message || 'Unknown error'}`, 'error');
+    } finally {
+      setIsAddingProduct(false);
     }
   };
 
   const handleAddStock = async (e) => {
     e.preventDefault();
-    console.log('📦 handleAddStock called - Form submitted');
-    console.log('📦 newStock:', newStock);
-    console.log('📦 selectedProduct:', selectedProduct);
-    
+    if (isAddingStock || !selectedProduct) return;
+
     try {
-      const quantityToAdd = parseInt(newStock.quantity);
-      
-      if (!quantityToAdd || quantityToAdd <= 0) {
+      setIsAddingStock(true);
+      const quantityToAdd = Number(newStock.quantity);
+      if (!Number.isFinite(quantityToAdd) || quantityToAdd <= 0) {
         showNotification('⚠️ Please enter a valid quantity', 'warning');
-        console.log('⚠️ Invalid quantity:', quantityToAdd);
         return;
       }
-      
-      const currentProduct = productList.find(p => p.id === selectedProduct.id);
-      const oldQuantity = currentProduct?.quantity || 0;
-      
-      console.log(`📦 STOCK BEFORE: ${selectedProduct.name} = ${oldQuantity} units`);
-      console.log(`✅ Adding ${quantityToAdd} units to ${selectedProduct.name}`);
-      
-      // OPTIMISTIC UPDATE: Update product quantity immediately
-      if (currentProduct) {
-        const newQuantity = oldQuantity + quantityToAdd;
-        setProductList(prev => 
-          prev.map(p => p.id === selectedProduct.id ? { ...p, quantity: newQuantity } : p)
-        );
-        console.log(`📦 OPTIMISTIC UPDATE: ${oldQuantity} → ${newQuantity}`);
-      }
-      
-      // Create batch record optimistically
-      const newBatch = {
-        id: `batch-${Date.now()}`,
-        productId: selectedProduct.id,
-        quantity: quantityToAdd,
-        expiryDate: newStock.expiryDate,
-        batchNumber: newStock.batchNumber || `BATCH-${Date.now()}`,
-        cost: parseFloat(newStock.cost || selectedProduct.cost || 0)
-      };
 
-      setBatchList(prev => [...prev, newBatch]);
+      const currentProduct = productList.find(p => p.id === selectedProduct.id);
+      const oldQuantity = Number(currentProduct?.quantity || 0);
+      const parsedCost = newStock.cost === '' ? null : Number(newStock.cost);
+      if (parsedCost !== null && !Number.isFinite(parsedCost)) {
+        showNotification('⚠️ Please enter a valid stock cost', 'warning');
+        return;
+      }
+
       showNotification('⚡ Adding stock...', 'info');
 
+      let result = null;
       try {
-        // Make API call - backend will update product quantity AND create batch
-        let result = null;
-        try {
-          result = await batches.create({
-            productId: selectedProduct.id,
-            quantity: quantityToAdd,
-            expiryDate: newStock.expiryDate,
-            batchNumber: newStock.batchNumber || `BATCH-${Date.now()}`,
-            cost: parseFloat(newStock.cost || selectedProduct.cost || 0)
-          });
-        } catch (batchError) {
-          console.warn('Batches API failed, falling back to direct stock update:', batchError.message);
-          const fallbackQuantity = oldQuantity + quantityToAdd;
-          await products.updateStock(selectedProduct.id, { quantity: fallbackQuantity });
-        }
-
-        if (result) {
-          console.log('✅ BACKEND: Batch created successfully:', result);
-        }
-
-        // Close form and reset immediately (avoid UI lag)
-        setNewStock({ quantity: '', expiryDate: '', batchNumber: '', cost: '' });
-        setShowAddStock(false);
-
-        // Refresh in background to confirm authoritative state
-        console.log('🔄 Refreshing products from backend to confirm stock update...');
-        refreshProducts().then((updatedProducts) => {
-          const updatedProduct = updatedProducts?.find(p => p.id === selectedProduct.id);
-          if (updatedProduct) {
-            console.log(`📦 STOCK AFTER DB UPDATE: ${updatedProduct.name} = ${updatedProduct.quantity} units`);
-            console.log(`✅ DB PERSISTED: Stock increased from ${oldQuantity} to ${updatedProduct.quantity}`);
-            setProductList(prev =>
-              prev.map(p => p.id === selectedProduct.id ? updatedProduct : p)
-            );
-          }
-
-          const latestQuantity = updatedProduct?.quantity || (oldQuantity + quantityToAdd);
-          const threshold = parseFloat(updatedProduct?.reorder_level || selectedProduct.reorder_level || 0) || 0;
-
-          window.dispatchEvent(new CustomEvent('stock_updated', {
-            detail: {
-              productId: selectedProduct.id,
-              quantity: latestQuantity,
-              timestamp: Date.now()
-            }
-          }));
-
-          if (threshold > 0 && latestQuantity <= threshold) {
-            showNotification(`⚠️ Low stock alert: ${selectedProduct.name} is at ${latestQuantity} (threshold ${threshold})`, 'warning');
-          } else {
-            showNotification(`✅ Stock added! ${selectedProduct.name} quantity: ${oldQuantity} → ${latestQuantity}`, 'success');
-          }
-        }).catch((err) => {
-          console.warn('Background refresh failed:', err);
-          showNotification(`✅ Stock added! ${selectedProduct.name} quantity: ${oldQuantity} → ${oldQuantity + quantityToAdd}`, 'success');
+        result = await batches.create({
+          productId: selectedProduct.id,
+          quantity: quantityToAdd,
+          expiryDate: newStock.expiryDate,
+          batchNumber: newStock.batchNumber || `BATCH-${Date.now()}`,
+          cost: parsedCost ?? Number(selectedProduct.cost_per_unit || selectedProduct.cost || 0)
         });
-
-      } catch (apiError) {
-        console.error('❌ BACKEND ERROR:', apiError);
-        // Rollback optimistic update on failure
-        if (currentProduct) {
-          setProductList(prev => 
-            prev.map(p => p.id === selectedProduct.id ? currentProduct : p)
-          );
-          console.log(`🔄 ROLLBACK: Restored ${selectedProduct.name} to ${oldQuantity} units`);
-        }
-        setBatchList(prev => prev.filter(b => b.id !== newBatch.id));
-        throw apiError;
-      } finally {
-        setSelectedProduct(null);
+      } catch (batchError) {
+        console.warn('Batches API failed, falling back to direct stock update:', batchError.message);
+        await products.updateStock(selectedProduct.id, { quantity: oldQuantity + quantityToAdd });
       }
+
+      if (result) {
+        setBatchList(prev => [...prev, result]);
+      }
+
+      const updatedProducts = await refreshProducts();
+      const updatedProduct = updatedProducts?.find(p => p.id === selectedProduct.id);
+      if (updatedProduct) {
+        setProductList(prev => prev.map(p => p.id === selectedProduct.id ? updatedProduct : p));
+      }
+
+      const latestQuantity = Number(updatedProduct?.quantity ?? (oldQuantity + quantityToAdd));
+      const threshold = Number(updatedProduct?.reorder_level || selectedProduct.reorder_level || 0);
+
+      window.dispatchEvent(new CustomEvent('stock_updated', {
+        detail: {
+          productId: selectedProduct.id,
+          quantity: latestQuantity,
+          timestamp: Date.now()
+        }
+      }));
+
+      if (threshold > 0 && latestQuantity <= threshold) {
+        showNotification(`⚠️ Low stock alert: ${selectedProduct.name} is at ${latestQuantity} (threshold ${threshold})`, 'warning');
+      } else {
+        showNotification(`✅ Stock added! ${selectedProduct.name} quantity: ${oldQuantity} → ${latestQuantity}`, 'success');
+      }
+
+      setNewStock({ quantity: '', expiryDate: '', batchNumber: '', cost: '' });
+      setShowAddStock(false);
+      setSelectedProduct(null);
     } catch (error) {
       console.error('Failed to add stock:', error);
       showNotification(`❌ Failed to add stock: ${error.message || 'Unknown error'}`, 'error');
+    } finally {
+      setIsAddingStock(false);
     }
   };
 
@@ -414,103 +388,96 @@ export default function Inventory() {
 
   const handleEditProduct = async (e) => {
     e.preventDefault();
-    try {
-      const originalProduct = productList.find(p => p.id === editProduct.id);
+    if (isUpdatingProduct) return;
 
-      const parsedCost = parseFloat(editProduct.cost);
-      const hasValidCost = Number.isFinite(parsedCost) && editProduct.cost !== '';
-      // Use || so a stored 0 falls through to the next real value
+    try {
+      setIsUpdatingProduct(true);
+      const originalProduct = productList.find(p => p.id === editProduct.id);
+      if (!originalProduct) {
+        showNotification('❌ Product not found for update', 'error');
+        return;
+      }
+
+      const parsedPrice = Number(editProduct.price);
+      const parsedCost = editProduct.cost === '' ? null : Number(editProduct.cost);
+      const parsedReorder = editProduct.reorder_level === '' ? null : Number(editProduct.reorder_level);
+
+      if (!Number.isFinite(parsedPrice)) {
+        showNotification('❌ Enter a valid price', 'error');
+        return;
+      }
+      if (parsedCost !== null && !Number.isFinite(parsedCost)) {
+        showNotification('❌ Enter a valid cost', 'error');
+        return;
+      }
+      if (parsedReorder !== null && !Number.isFinite(parsedReorder)) {
+        showNotification('❌ Enter a valid low-stock level', 'error');
+        return;
+      }
+
       const originalCost = Number(originalProduct.cost_per_unit || originalProduct.cost || 0);
-      // Preserve original non-zero cost if user cleared or kept the field as 0
-      const safeCost = hasValidCost && (parsedCost > 0 || originalCost === 0) ? parsedCost : originalCost;
-      
-      // Don't send quantity - stock is managed via "Add Stock" button only
+      const safeCost = parsedCost === null ? originalCost : parsedCost;
+
+      // Keep image if user does not provide a new one.
+      const safeImage = editProduct.image === '' ? (originalProduct.image || '') : editProduct.image;
       const updateData = {
         ...editProduct,
-        price: parseFloat(editProduct.price),
+        image: safeImage,
+        price: parsedPrice,
         cost: safeCost,
         cost_per_unit: safeCost,
-        quantity: originalProduct.quantity,  // Preserve existing quantity
-        reorder_level: editProduct.reorder_level === '' ? originalProduct.reorder_level : parseFloat(editProduct.reorder_level)
+        reorder_level: parsedReorder ?? Number(originalProduct.reorder_level || 0)
       };
 
-      // OPTIMISTIC UPDATE: Update UI immediately with preserved quantity
-      const optimisticProduct = { ...originalProduct, ...updateData };
-      setProductList(prevList => 
-        prevList.map(p => p.id === editProduct.id ? optimisticProduct : p)
-      );
+      // Quantity is managed via Add Stock, not edit payload.
+      delete updateData.quantity;
 
-      // Show loading state
       setIsSyncing(true);
       showNotification('⚡ Updating product...', 'info');
-      
-      try {
-        // Make API call and wait for response
-        const result = await products.update(editProduct.id, updateData);
-        
-        // Update product list with the actual result from backend
-        if (result && result.id) {
-          setProductList(prevList => 
-            prevList.map(p => p.id === editProduct.id ? result : p)
-          );
-          console.log('✅ Product updated with backend response:', result);
-        }
 
-        // Refresh global products to keep COGS and costs in sync
-        refreshProducts().then((updatedProducts) => {
-          if (Array.isArray(updatedProducts) && updatedProducts.length > 0) {
-            setProductList(prevList => {
-              const tempProducts = prevList.filter(p => typeof p.id === 'string' && p.id.startsWith('temp-'));
-              return [...tempProducts, ...updatedProducts];
-            });
-          }
-        }).catch((err) => {
-          console.warn('Failed to refresh products after update:', err);
-        });
-        
-        setShowEditModal(false);
-        
-        // ALWAYS dispatch events to cashier dashboard - don't make it conditional
-        // Dispatch productUpdated event
-        window.dispatchEvent(new CustomEvent('productUpdated', { 
-          detail: { 
-            product: result,
-            originalProduct,
-            timestamp: new Date().toISOString(),
-            type: 'update'
-          }
-        }));
-        
-        // Also dispatch stock_updated event so cashier refreshes product list
-        window.dispatchEvent(new CustomEvent('stock_updated', {
-          detail: { 
-            productId: result.id,
-            quantity: result.quantity,
-            product: result,
-            timestamp: Date.now()
-          }
-        }));
-        
-        if (isRealTimeProductSyncEnabled()) {
-          showNotification(`✅ Product updated and synced!`, 'success');
-        } else {
-          showNotification('✅ Product updated successfully!', 'success');
-        }
-        
-        setLastSync(new Date());
-      } catch (updateError) {
-        // Rollback on API error
-        setProductList(prevList => 
-          prevList.map(p => p.id === editProduct.id ? originalProduct : p)
-        );
-        throw updateError;
-      } finally {
-        setIsSyncing(false);
+      const result = await products.update(editProduct.id, updateData);
+      if (result && result.id) {
+        setProductList(prevList => prevList.map(p => p.id === editProduct.id ? result : p));
       }
-      
+
+      const updatedProducts = await refreshProducts();
+      if (Array.isArray(updatedProducts) && updatedProducts.length > 0) {
+        setProductList(updatedProducts);
+      }
+
+      setShowEditModal(false);
+
+      window.dispatchEvent(new CustomEvent('productUpdated', {
+        detail: {
+          product: result,
+          originalProduct,
+          timestamp: new Date().toISOString(),
+          type: 'update'
+        }
+      }));
+
+      window.dispatchEvent(new CustomEvent('stock_updated', {
+        detail: {
+          productId: result.id,
+          quantity: result.quantity,
+          product: result,
+          timestamp: Date.now()
+        }
+      }));
+
+      if (isRealTimeProductSyncEnabled()) {
+        showNotification('✅ Product updated and synced!', 'success');
+      } else {
+        showNotification('✅ Product updated successfully!', 'success');
+      }
+
+      setLastSync(new Date());
     } catch (error) {
       console.error('Failed to update product:', error);
       showNotification(`❌ Update failed: ${error.message || 'Unknown error'}`, 'error');
+    } finally {
+      setIsSyncing(false);
+      setIsUpdatingProduct(false);
     }
   };
 
@@ -579,21 +546,20 @@ export default function Inventory() {
 
 
 
-  const filteredProducts = (productList || []).filter(p => {
+  const filteredProducts = useMemo(() => (productList || []).filter(p => {
     if (!p) return false;
     const matchesSearch = p.name?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filter === 'all' || 
+    const matchesFilter = filter === 'all' ||
       (filter === 'raw' && !p.recipe) ||
       (filter === 'composite' && p.recipe) ||
       (filter === 'expense' && p.expenseOnly) ||
       (filter === 'low-stock' && (p.reorder_level || 0) > 0 && (p.quantity || 0) <= (p.reorder_level || 0));
     return matchesSearch && matchesFilter;
-  });
+  }), [productList, searchTerm, filter]);
 
-
-  const rawProducts = (productList || []).filter(p => p && !p.recipe && !p.expenseOnly);
-  const compositeProducts = (productList || []).filter(p => p && p.recipe);
-  const expenseProducts = (productList || []).filter(p => p && p.expenseOnly);
+  const rawProducts = useMemo(() => (productList || []).filter(p => p && !p.recipe && !p.expenseOnly), [productList]);
+  const compositeProducts = useMemo(() => (productList || []).filter(p => p && p.recipe), [productList]);
+  const expenseProducts = useMemo(() => (productList || []).filter(p => p && p.expenseOnly), [productList]);
 
 
   const calculateMaxProducible = (product) => {
@@ -735,9 +701,13 @@ export default function Inventory() {
           </select>
         </div>
 
-        <button 
-          onClick={() => setShowAddModal(true)}
+        <button
+          onClick={() => {
+            setImagePreview('');
+            setShowAddModal(true);
+          }}
           className="btn-primary flex items-center gap-2"
+          disabled={isAddingProduct}
         >
           <Plus className="w-4 h-4" />
           Add Product
@@ -903,8 +873,10 @@ export default function Inventory() {
                           </button>
                           <button
                             onClick={() => {
+                              setImagePreview('');
                               setEditProduct({
                                 ...product,
+                                image: product.image || '',
                                 price: String(product.price ?? ''),
                                 cost: String(product.cost_per_unit || product.cost || 0),
                                 reorder_level: String(product.reorder_level ?? ''),
@@ -1025,12 +997,14 @@ export default function Inventory() {
                 onChange={(e) => setNewStock({ ...newStock, cost: e.target.value })}
               />
               <div className="flex gap-2">
-                <button type="submit" className="btn-primary flex-1">Add Stock</button>
+                <button type="submit" className="btn-primary flex-1" disabled={isAddingStock}>
+                  {isAddingStock ? 'Adding...' : 'Add Stock'}
+                </button>
                 <button type="button" onClick={() => {
                   setShowAddStock(false);
                   setSelectedProduct(null);
                   setNewStock({ quantity: '', expiryDate: '', batchNumber: '', cost: '' });
-                }} className="btn-secondary">Cancel</button>
+                }} className="btn-secondary" disabled={isAddingStock}>Cancel</button>
               </div>
             </form>
           </div>
@@ -1144,12 +1118,14 @@ export default function Inventory() {
                 )}
               </div>
               <div className="flex gap-2">
-                <button type="submit" className="btn-primary flex-1">Add Product</button>
+                <button type="submit" className="btn-primary flex-1" disabled={isAddingProduct}>
+                  {isAddingProduct ? 'Adding...' : 'Add Product'}
+                </button>
                 <button type="button" onClick={() => {
                   setShowAddModal(false);
                   setImagePreview('');
                   setNewProduct({ name: '', price: '', cost: '', category: 'finished', unit: 'pcs', expenseOnly: false, image: '', visibleToCashier: true, reorder_level: '' });
-                }} className="btn-secondary">Cancel</button>
+                }} className="btn-secondary" disabled={isAddingProduct}>Cancel</button>
               </div>
             </form>
           </div>
@@ -1281,8 +1257,10 @@ export default function Inventory() {
                 )}
               </div>
               <div className="flex gap-2">
-                <button type="submit" className="btn-primary flex-1">Update Product</button>
-                <button type="button" onClick={() => setShowEditModal(false)} className="btn-secondary">Cancel</button>
+                <button type="submit" className="btn-primary flex-1" disabled={isUpdatingProduct}>
+                  {isUpdatingProduct ? 'Updating...' : 'Update Product'}
+                </button>
+                <button type="button" onClick={() => setShowEditModal(false)} className="btn-secondary" disabled={isUpdatingProduct}>Cancel</button>
               </div>
             </form>
           </div>
