@@ -80,6 +80,14 @@ export default function MainAdmin() {
   const [alerts, setAlerts] = useState([]);
   const [salesAll, setSalesAll] = useState([]);
 
+  const safeParseJson = (raw, fallback) => {
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return fallback;
+    }
+  };
+
   const formatDate = (value) => {
     if (!value) return '—';
     try {
@@ -93,6 +101,11 @@ export default function MainAdmin() {
   const normalizeBusinessType = (user) => user?.business_type || user?.businessType || 'general';
   const normalizeActive = (user) => user?.active ?? user?.is_active ?? true;
   const normalizeLastLogin = (user) => user?.last_login || user?.lastLogin || null;
+  const getDaysUsed = (user) => {
+    const fromBackend = user?.days_used ?? user?.daysUsed ?? user?.days_since_plan_start;
+    if (typeof fromBackend === 'number' && Number.isFinite(fromBackend)) return Math.max(0, fromBackend);
+    return 0;
+  };
   const getPlanPrice = (plan) => {
     if (plan === 'pro') return 3400;
     if (plan === 'ultra') return 5000;
@@ -200,23 +213,18 @@ export default function MainAdmin() {
       return;
     }
 
-    try {
-      const userData = JSON.parse(userStr);
-      if (!['main_admin', 'owner'].includes(userData.role)) {
-        navigate('/main.admin/login');
-        return;
-      }
-    } catch (e) {
+    const userData = safeParseJson(userStr, null);
+    if (!userData || !['main_admin', 'owner'].includes(userData.role)) {
       navigate('/main.admin/login');
       return;
     }
-    
+
     loadData().finally(() => setLoading(false));
     loadTemplates();
-    
-    // Load recent activities
-    const activities = JSON.parse(localStorage.getItem('authActivities') || '[]');
-    setRecentActivities(activities.slice(0, 10)); // Show last 10 activities
+
+    // Load recent activities (safe parse)
+    const activities = safeParseJson(localStorage.getItem('authActivities') || '[]', []);
+    setRecentActivities(Array.isArray(activities) ? activities.slice(0, 10) : []);
     
     // Set up interval to refresh activities every 5 seconds
     const interval = setInterval(async () => {
@@ -340,8 +348,10 @@ export default function MainAdmin() {
     const demoUsers = [];
     
     if (storedUser) {
-      const realUser = JSON.parse(storedUser);
-      demoUsers.push({ ...realUser, id: realUser.id || 'real-user' });
+      const realUser = safeParseJson(storedUser, null);
+      if (realUser) {
+        demoUsers.push({ ...realUser, id: realUser.id || 'real-user' });
+      }
     }
     
     // Add some demo users
@@ -995,13 +1005,21 @@ export default function MainAdmin() {
               </button>
             </div>
           </div>
-          <button
-            onClick={logout}
-            className="flex items-center gap-2 bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2 rounded-lg transition-colors"
-          >
-            <LogOut className="w-4 h-4" />
-            Logout
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate('/auth/login')}
+              className="flex items-center gap-2 bg-[#f5efe6] hover:bg-[#f0e5d6] text-[#6b4c3b] px-4 py-2 rounded-lg transition-colors"
+            >
+              Auth Page
+            </button>
+            <button
+              onClick={logout}
+              className="flex items-center gap-2 bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2 rounded-lg transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+              Logout
+            </button>
+          </div>
         </div>
       </header>
 
@@ -1409,6 +1427,7 @@ export default function MainAdmin() {
                     <th className="px-4 py-4 text-left text-sm font-semibold text-[#6b4c3b]">Email</th>
                     <th className="px-4 py-4 text-left text-sm font-semibold text-[#6b4c3b]">Business Type</th>
                     <th className="px-4 py-4 text-left text-sm font-semibold text-[#6b4c3b]">Subscription Plan</th>
+                    <th className="px-4 py-4 text-left text-sm font-semibold text-[#6b4c3b]">Days Used</th>
                     <th className="px-4 py-4 text-left text-sm font-semibold text-[#6b4c3b]">Last Login</th>
                     <th className="px-4 py-4 text-left text-sm font-semibold text-[#6b4c3b]">Active Status</th>
                     <th className="px-4 py-4 text-left text-sm font-semibold text-[#6b4c3b]">Actions</th>
@@ -1417,7 +1436,7 @@ export default function MainAdmin() {
                 <tbody>
                   {sortedUsers.length === 0 && (
                     <tr>
-                      <td colSpan="8" className="px-4 py-12 text-center">
+                      <td colSpan="9" className="px-4 py-12 text-center">
                         <Users className="w-16 h-16 text-[#c9b8a6] mx-auto mb-4" />
                         <p className="text-[#8b5a2b] text-lg">No users found</p>
                         <p className="text-[#b79b82] text-sm mt-2">
@@ -1461,6 +1480,7 @@ export default function MainAdmin() {
                             )}
                           </div>
                         </td>
+                        <td className="px-4 py-4 text-sm text-[#8b5a2b]">{getDaysUsed(user)} days</td>
                         <td className="px-4 py-4 text-sm text-[#8b5a2b]">{formatDate(normalizeLastLogin(user))}</td>
                         <td className="px-4 py-4">
                           {user.locked ? (
@@ -1573,25 +1593,33 @@ export default function MainAdmin() {
               {filteredActivities.length === 0 ? (
                 <p className="text-[#8b5a2b] text-center py-8">No recent activity</p>
               ) : (
-                filteredActivities.map(activity => (
-                  <div key={activity.id} className="bg-[#fdf7f1] rounded-lg p-3 border border-[#eadbcf]">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className={`w-2 h-2 rounded-full ${
-                        activity.type === 'login' ? 'bg-green-500' : 'bg-blue-500'
-                      }`} />
-                      <span className="text-[#6b4c3b] font-medium">{activity.user.name}</span>
-                      <span className={`text-xs px-2 py-1 rounded ${
-                        activity.type === 'login' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
-                      }`}>
-                        {activity.type}
-                      </span>
+                filteredActivities.map((activity, idx) => {
+                  const activityType = activity?.type || activity?.action || 'activity';
+                  const actorName = activity?.user?.name || activity?.name || activity?.metadata?.email || 'System';
+                  const actorEmail = activity?.user?.email || activity?.email || activity?.metadata?.email || 'N/A';
+                  const activityTs = activity?.timestamp || activity?.created_at || activity?.createdAt;
+                  const key = activity?.id || `${activityType}-${activityTs || idx}`;
+
+                  return (
+                    <div key={key} className="bg-[#fdf7f1] rounded-lg p-3 border border-[#eadbcf]">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className={`w-2 h-2 rounded-full ${
+                          activityType.includes('login') ? 'bg-green-500' : 'bg-blue-500'
+                        }`} />
+                        <span className="text-[#6b4c3b] font-medium">{actorName}</span>
+                        <span className={`text-xs px-2 py-1 rounded ${
+                          activityType.includes('login') ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
+                        }`}>
+                          {activityType}
+                        </span>
+                      </div>
+                      <p className="text-[#8b5a2b] text-sm">{actorEmail}</p>
+                      <p className="text-[#b79b82] text-xs mt-1">
+                        {activityTs ? new Date(activityTs).toLocaleString() : 'Unknown time'}
+                      </p>
                     </div>
-                    <p className="text-[#8b5a2b] text-sm">{activity.user.email}</p>
-                    <p className="text-[#b79b82] text-xs mt-1">
-                      {new Date(activity.timestamp).toLocaleString()}
-                    </p>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>
