@@ -116,18 +116,16 @@ function ProtectedRoute({ children, adminOnly = false, ultraOnly = false, ownerO
   
   // Owner route protection (main.admin)
   if (ownerOnly) {
-    const ownerToken = localStorage.getItem('ownerToken');
-    const ownerUser = localStorage.getItem('ownerUser');
-    if (!ownerToken || !ownerUser) {
-      return <Navigate to="/main.admin" />;
-    }
+    const ownerToken = localStorage.getItem('ownerToken') || localStorage.getItem('mainAdminToken') || localStorage.getItem('token');
+    const ownerUser = localStorage.getItem('ownerUser') || localStorage.getItem('mainAdminUser') || localStorage.getItem('user');
+    if (!ownerToken || !ownerUser) return <Navigate to="/main.admin/login" replace />;
     try {
       const userData = JSON.parse(ownerUser);
       if (userData.role !== 'main_admin') {
-        return <Navigate to="/main.admin" />;
+        return <Navigate to="/main.admin/login" replace />;
       }
     } catch (e) {
-      return <Navigate to="/main.admin" />;
+      return <Navigate to="/main.admin/login" replace />;
     }
   } else {
     // Regular route protection

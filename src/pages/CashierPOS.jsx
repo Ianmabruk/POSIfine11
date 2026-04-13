@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useProducts } from '../context/ProductsContext';
 import { useScreenLock } from '../context/ScreenLockContext';
@@ -55,11 +55,37 @@ export default function CashierPOS() {
   const [reminderNotes, setReminderNotes] = useState({});
   const [reminderSignatures, setReminderSignatures] = useState({});
   const [remindersLoading, setRemindersLoading] = useState(false);
+  const productRefreshTimeoutRef = useRef(null);
+
+  const refreshVisibleProducts = useCallback(async () => {
+    try {
+      const freshProducts = await refreshProducts();
+      if (Array.isArray(freshProducts)) {
+        const filtered = freshProducts.filter(p => p.visibleToCashier !== false && !p.expenseOnly && !p.pendingDelete);
+        setProductList(filtered);
+      }
+    } catch (error) {
+      console.warn('Failed to refresh visible products:', error);
+    }
+  }, [refreshProducts]);
+
+  const scheduleProductRefresh = useCallback(() => {
+    if (productRefreshTimeoutRef.current) {
+      clearTimeout(productRefreshTimeoutRef.current);
+    }
+    productRefreshTimeoutRef.current = setTimeout(() => {
+      refreshVisibleProducts();
+    }, 200);
+  }, [refreshVisibleProducts]);
 
   useEffect(() => {
-    loadData();
-    refreshProducts();
-    fetchReminders();
+    Promise.all([
+      loadData(),
+      fetchReminders(),
+      checkClockStatus()
+    ]).catch((error) => {
+      console.warn('Initial cashier bootstrap completed with warnings:', error);
+    });
     
     // Restore session data from localStorage
     const savedCart = localStorage.getItem(`cart_${user?.id}`);
@@ -84,15 +110,10 @@ export default function CashierPOS() {
       } catch (e) {}
     }
     
-    // Check clock status from backend
-    checkClockStatus();
-
     // Real-time event listeners for stock updates from admin
     const handleStockUpdated = (event) => {
       console.log('📦 Stock update event received:', event.detail);
-      // Refresh both local product list and global context
-      loadData();
-      refreshProducts();
+      scheduleProductRefresh();
     };
 
     const handleProductsSync = (event) => {
@@ -105,8 +126,7 @@ export default function CashierPOS() {
 
     const handleProductUpdated = () => {
       console.log('📝 Product update event received');
-      loadData();
-      refreshProducts();
+      scheduleProductRefresh();
     };
 
     const handleReminderBroadcast = () => {
@@ -115,6 +135,7 @@ export default function CashierPOS() {
 
     const handleSaleCompleted = () => {
       console.log('💹 Sale completed event received - refreshing stats');
+      scheduleProductRefresh();
       refreshStats();
     };
 
@@ -145,9 +166,11 @@ export default function CashierPOS() {
       window.removeEventListener('reminder_created', handleReminderBroadcast);
       window.removeEventListener('sale_completed', handleSaleCompleted);
       window.removeEventListener('expense_added', handleExpenseAdded);
-      
+      if (productRefreshTimeoutRef.current) {
+        clearTimeout(productRefreshTimeoutRef.current);
+      }
     };
-  }, [user?.id]);
+  }, [user?.id, scheduleProductRefresh]);
 
   // Sync with global products from ProductsContext
   useEffect(() => {
@@ -221,7 +244,8 @@ export default function CashierPOS() {
         // When new sale created, reload data to show updated stats
         if (data && data.sale) {
           console.log('💰 Sale detected, reloading stats');
-          loadData();
+          refreshStats();
+          scheduleProductRefresh();
         }
       }).catch((error) => {
         console.warn('⚠️ WebSocket connection failed:', error);
@@ -855,8 +879,10 @@ export default function CashierPOS() {
         detail: { expense: expenseData }
       }));
       
-      await loadData(); // Reload all data immediately
-      await refreshStats();
+      await Promise.all([
+        refreshStats(),
+        refreshVisibleProducts()
+      ]);
     } catch (error) {
       console.error('Failed to add expense:', error);
       alert('Failed to add expense');
@@ -1401,6 +1427,8 @@ export default function CashierPOS() {
           </div>
         </div>
       )}
+
+      {activeView === 'products' && (
         <div className="p-6 max-w-7xl mx-auto w-full">
           <div className="card shadow-lg">
             <div className="flex justify-between items-center mb-6">

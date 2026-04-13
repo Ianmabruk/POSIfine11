@@ -18,7 +18,7 @@ const getBaseUrl = () => {
 
 const BASE_API_URL = getBaseUrl();
 
-const getToken = () => localStorage.getItem('token');
+const getToken = () => localStorage.getItem('token') || localStorage.getItem('ownerToken') || localStorage.getItem('mainAdminToken');
 const getRefreshToken = () => localStorage.getItem('refreshToken');
 const getCsrfToken = () => localStorage.getItem('csrfToken');
 

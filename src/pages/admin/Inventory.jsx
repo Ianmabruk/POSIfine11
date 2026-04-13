@@ -887,6 +887,11 @@ export default function Inventory() {
                             onClick={() => {
                               console.log('🔵 Add Stock clicked for product:', product.name, product.id);
                               setSelectedProduct(product);
+                              const defaultCost = product.cost_per_unit ?? product.cost ?? 0;
+                              setNewStock(prev => ({
+                                ...prev,
+                                cost: String(defaultCost)
+                              }));
                               setShowAddStock(true);
                               console.log('🔵 Modal state set - showAddStock: true, selectedProduct:', product.name);
                             }}
@@ -922,8 +927,10 @@ export default function Inventory() {
                             onClick={() => {
                               setEditProduct({
                                 ...product,
-                                cost: (product.cost_per_unit ?? product.cost ?? ''),
-                                reorder_level: product.reorder_level ?? ''
+                                price: String(product.price ?? ''),
+                                cost: String(product.cost_per_unit ?? product.cost ?? 0),
+                                reorder_level: String(product.reorder_level ?? ''),
+                                quantity: String(product.quantity ?? 0)
                               });
                               setShowEditModal(true);
                             }}
@@ -1216,7 +1223,7 @@ export default function Inventory() {
                   step="0.01"
                   placeholder="Price"
                   className="input"
-                  value={editProduct.price || ''}
+                  value={editProduct.price ?? ''}
                   onChange={(e) => setEditProduct({ ...editProduct, price: e.target.value })}
                   required
                 />
@@ -1225,7 +1232,7 @@ export default function Inventory() {
                   step="0.01"
                   placeholder="Cost"
                   className="input"
-                  value={editProduct.cost || ''}
+                  value={editProduct.cost ?? ''}
                   onChange={(e) => setEditProduct({ ...editProduct, cost: e.target.value })}
                   required
                 />
@@ -1236,7 +1243,7 @@ export default function Inventory() {
                 min="0"
                 placeholder="Low stock alert at (e.g. 10)"
                 className="input"
-                value={editProduct.reorder_level || ''}
+                value={editProduct.reorder_level ?? ''}
                 onChange={(e) => setEditProduct({ ...editProduct, reorder_level: e.target.value })}
               />
               <div className="grid grid-cols-2 gap-4">
@@ -1246,7 +1253,7 @@ export default function Inventory() {
                     step="0.01"
                     placeholder="Quantity"
                     className="input bg-gray-100 cursor-not-allowed"
-                    value={editProduct.quantity || ''}
+                    value={editProduct.quantity ?? ''}
                     readOnly
                     disabled
                     title="Use 'Add Stock' button to update quantity"
