@@ -25,6 +25,11 @@ import SchoolAdminDashboard from './admin/SchoolAdminDashboard';
 import KioskAdminDashboard from './admin/KioskAdminDashboard';
 import ShoeAdminDashboard from './admin/ShoeAdminDashboard';
 
+// Import new staff dashboards
+import StudentDashboard from './dashboards/StudentDashboard';
+import CanteenStaffDashboard from './cashier/CanteenStaffDashboard';
+import ShopStaffDashboard from './cashier/ShopStaffDashboard';
+
 /**
  * ProPlanRouter - Routes Pro Plan users to business-specific dashboards
  * 
@@ -153,7 +158,23 @@ export default function ProPlanRouter() {
   }
 
   if (businessType === 'school') {
-    return <SchoolAdminDashboard />;
+    // School: students get StudentDashboard, canteen/uniform/books staff get shop dashboards
+    switch (businessRole) {
+      case 'student':
+        return <StudentDashboard />;
+      case 'canteen':
+      case 'canteen_staff':
+        return <CanteenStaffDashboard />;
+      case 'uniform':
+      case 'uniform_staff':
+        return <ShopStaffDashboard businessLabel="Uniform Shop" accentColor="purple" />;
+      case 'books':
+      case 'books_staff':
+      case 'bookshop':
+        return <ShopStaffDashboard businessLabel="Bookshop" accentColor="blue" />;
+      default:
+        return <SchoolAdminDashboard />;
+    }
   }
 
   if (businessType === 'kiosk') {
@@ -166,9 +187,12 @@ export default function ProPlanRouter() {
 
   // For hospital, pharmacy, and other business types - use standard admin dashboard for now
   // These can be replaced with specialized dashboards as they're built
-  if (businessType === 'hospital' || businessType === 'pharmacy' || 
-      businessType === 'school' ||
+  if (businessType === 'hospital' || businessType === 'pharmacy' ||
       businessType === 'gym' || businessType === 'salon') {
+    // Route canteen / shop sub-roles
+    if (businessRole === 'canteen' || businessRole === 'canteen_staff') return <CanteenStaffDashboard />;
+    if (['uniform', 'uniform_staff', 'books', 'bookshop', 'shop', 'shop_staff'].includes(businessRole))
+      return <ShopStaffDashboard businessLabel={businessRole.charAt(0).toUpperCase() + businessRole.slice(1)} accentColor="orange" />;
     console.log(`[PRO PLAN ROUTER] Using standard admin dashboard for ${businessType}`);
     return <AdminDashboard />;
   }

@@ -442,9 +442,11 @@ export default function Inventory() {
       }
 
       const parsedCost = parseFloat(editProduct.cost);
-      const hasValidCost = Number.isFinite(parsedCost);
-      const fallbackCost = originalProduct.cost_per_unit ?? originalProduct.cost ?? 0;
-      const safeCost = hasValidCost ? parsedCost : fallbackCost;
+      const hasValidCost = Number.isFinite(parsedCost) && editProduct.cost !== '';
+      // Use || so a stored 0 falls through to the next real value
+      const originalCost = Number(originalProduct.cost_per_unit || originalProduct.cost || 0);
+      // Preserve original non-zero cost if user cleared or kept the field as 0
+      const safeCost = hasValidCost && (parsedCost > 0 || originalCost === 0) ? parsedCost : originalCost;
       
       // Don't send quantity - stock is managed via "Add Stock" button only
       const updateData = {
@@ -887,7 +889,7 @@ export default function Inventory() {
                             onClick={() => {
                               console.log('🔵 Add Stock clicked for product:', product.name, product.id);
                               setSelectedProduct(product);
-                              const defaultCost = product.cost_per_unit ?? product.cost ?? 0;
+                              const defaultCost = product.cost_per_unit || product.cost || 0;
                               setNewStock(prev => ({
                                 ...prev,
                                 cost: String(defaultCost)
@@ -928,7 +930,7 @@ export default function Inventory() {
                               setEditProduct({
                                 ...product,
                                 price: String(product.price ?? ''),
-                                cost: String(product.cost_per_unit ?? product.cost ?? 0),
+                                cost: String(product.cost_per_unit || product.cost || 0),
                                 reorder_level: String(product.reorder_level ?? ''),
                                 quantity: String(product.quantity ?? 0)
                               });

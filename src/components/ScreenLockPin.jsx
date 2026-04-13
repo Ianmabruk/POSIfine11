@@ -79,37 +79,54 @@ export default function ScreenLockPin({ isLocked, onUnlock, userPin = '1234', us
     }
   }, [isBlocked, blockTimeLeft]);
 
-  const handlePinSubmit = (e) => {
+  const handlePinSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (isBlocked) {
       setError(`Too many attempts. Try again in ${blockTimeLeft} seconds.`);
       return;
     }
 
-    if (pin === userPin) {
-      // Successful unlock
-      console.log('✅ Screen unlocked successfully');
-      setPin('');
-      setError('');
-      setAttempts(0);
-      onUnlock();
-    } else {
-      // Failed attempt
-      const newAttempts = attempts + 1;
-      setAttempts(newAttempts);
-      setPin('');
-      
-      if (newAttempts >= 3) {
-        // Block for 30 seconds after 3 failed attempts
-        setIsBlocked(true);
-        setBlockTimeLeft(30);
-        setError('Too many failed attempts. Blocked for 30 seconds.');
-        console.log('🚫 Screen lock blocked due to multiple failed attempts');
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASE || 'https://posifine22.onrender.com/api'}/auth/unlock-screen`,
+        {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pin })
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.token) localStorage.setItem('token', data.token);
+        setPin('');
+        setError('');
+        setAttempts(0);
+        onUnlock(data);
       } else {
-        setError(`Incorrect PIN. ${3 - newAttempts} attempts remaining.`);
+        if (response.status === 429) {
+          setIsBlocked(true);
+          setBlockTimeLeft(30);
+          setError('Too many failed attempts. Blocked for 30 seconds.');
+        } else {
+          const newAttempts = attempts + 1;
+          setAttempts(newAttempts);
+          setPin('');
+          if (newAttempts >= 3) {
+            setIsBlocked(true);
+            setBlockTimeLeft(30);
+            setError('Too many failed attempts. Blocked for 30 seconds.');
+          } else {
+            setError(`Incorrect PIN. ${3 - newAttempts} attempts remaining.`);
+          }
+        }
       }
+    } catch {
+      setError('Network error. Please try again.');
     }
+  };
   };
 
   const handlePinChange = (value) => {
