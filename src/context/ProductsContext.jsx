@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { products as productsApi } from '../services/api';
 import { useAuth } from './AuthContext';
-import { demoProducts } from '../utils/demoData';
 
 const ProductsContext = createContext();
 
@@ -15,8 +14,12 @@ export const ProductsProvider = ({ children }) => {
   const [lastUpdated, setLastUpdated] = useState(Date.now());
   const [isEditing, setIsEditing] = useState(false); // Track if user is actively editing
 
+  const getAccountKey = () => user?.account_id || user?.accountId || user?.id || 'anonymous';
+  const getProductsCacheKey = () => `products_cache_${getAccountKey()}`;
+
   const fetchProducts = useCallback(async () => {
-    if (!localStorage.getItem('token')) {
+    const token = localStorage.getItem('token');
+    if (!token) {
        setLoading(false);
        return [];
     }
@@ -31,6 +34,11 @@ export const ProductsProvider = ({ children }) => {
       const visibleProducts = productList.filter(p => {
         return !p.pendingDelete;
       });
+
+      localStorage.setItem(getProductsCacheKey(), JSON.stringify({
+        products: visibleProducts,
+        savedAt: Date.now()
+      }));
       
       setProducts(visibleProducts);
       setError(null);
@@ -53,14 +61,33 @@ export const ProductsProvider = ({ children }) => {
     } catch (err) {
       console.error('Failed to fetch products:', err);
       setError(`Failed to load products: ${err.message}`);
-      // Set empty array instead of keeping old data
-      setProducts([]);
-      return [];
+
+      // Prefer current in-memory state to avoid regressing recently edited costs/COGS.
+      if (Array.isArray(products) && products.length) {
+        return products;
+      }
+
+      try {
+        const cached = localStorage.getItem(getProductsCacheKey());
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          const cachedProducts = Array.isArray(parsed?.products) ? parsed.products : [];
+          if (cachedProducts.length) {
+            setProducts(cachedProducts);
+            return cachedProducts;
+          }
+        }
+      } catch (cacheError) {
+        console.warn('Failed to restore cached products:', cacheError);
+      }
+
+      // Keep current products when fetch fails to avoid accidental UI wipes.
+      return products;
     } finally {
       setLoading(false);
       setLastUpdated(Date.now());
     }
-  }, []); // REMOVED user dependency - prevents infinite loop
+  }, [user?.account_id, user?.accountId, user?.id, products]);
 
   // Initial fetch only
   useEffect(() => {
@@ -76,9 +103,22 @@ export const ProductsProvider = ({ children }) => {
       return;
     }
 
+    try {
+      const cached = localStorage.getItem(getProductsCacheKey());
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        const cachedProducts = Array.isArray(parsed?.products) ? parsed.products : [];
+        if (cachedProducts.length) {
+          setProducts(cachedProducts);
+        }
+      }
+    } catch (cacheError) {
+      console.warn('Failed to hydrate products cache:', cacheError);
+    }
+
     setLoading(true);
     fetchProducts();
-  }, [user?.id]);
+  }, [user?.id, user?.account_id, user?.accountId]);
 
   // SMART AUTO-REFRESH: Only when NOT editing
   // Refreshes every 30 seconds to ensure cashiers see admin updates
