@@ -102,8 +102,21 @@ export default function AdminDashboard() {
     }, 1000);
     
     loadSettings();
+
+    const handleSettingsChanged = (event) => {
+      if (event?.detail) {
+        setAppSettings((prev) => ({ ...prev, ...event.detail }));
+        return;
+      }
+      loadSettings();
+    };
+
+    window.addEventListener('settingsChanged', handleSettingsChanged);
     
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('settingsChanged', handleSettingsChanged);
+    };
   }, []);
 
   const loadSettings = async () => {
@@ -223,11 +236,16 @@ export default function AdminDashboard() {
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             {sidebarOpen && (
-              <div>
-                <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  Admin Panel
-                </h2>
-                <p className="text-xs text-gray-500">POS Management</p>
+              <div className="flex items-center gap-3">
+                {appSettings.logo ? (
+                  <img src={appSettings.logo} alt="Business logo" className="w-11 h-11 rounded-xl object-cover border border-gray-200" />
+                ) : null}
+                <div>
+                  <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    Admin Panel
+                  </h2>
+                  <p className="text-xs text-gray-500">POS Management</p>
+                </div>
               </div>
             )}
             <button
@@ -334,13 +352,24 @@ export default function AdminDashboard() {
               </div>
             </div>
             <div className="flex items-center gap-4">
+              {appSettings.logo ? (
+                <img src={appSettings.logo} alt="Business logo" className="hidden md:block w-12 h-12 rounded-2xl object-cover border border-gray-200" />
+              ) : null}
               <div className="text-right">
                 <p className="text-sm font-semibold text-gray-900">{user?.name}</p>
                 <p className="text-xs text-gray-500">{user?.email}</p>
               </div>
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white font-bold">
-                {user?.name?.charAt(0).toUpperCase()}
-              </div>
+              {user?.profile_picture || user?.profilePicture ? (
+                <img
+                  src={user?.profile_picture || user?.profilePicture}
+                  alt={user?.name}
+                  className="w-10 h-10 rounded-full object-cover border border-gray-200"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white font-bold">
+                  {user?.name?.charAt(0).toUpperCase()}
+                </div>
+              )}
             </div>
           </div>
         </header>

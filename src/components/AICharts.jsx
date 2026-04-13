@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { AlertTriangle, BrainCircuit, RefreshCw, TrendingUp } from 'lucide-react';
 import {
   LineChart,
   Line,
@@ -93,31 +94,32 @@ export default function AICharts({ periods = 4 }) {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mb-4"></div>
-        <p className="text-gray-600 font-medium">🤖 Generating AI forecast...</p>
-        <p className="text-sm text-gray-500 mt-1">Analyzing sales patterns...</p>
+      <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white/80 py-12">
+        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-900 text-white">
+          <BrainCircuit className="w-7 h-7 animate-pulse" />
+        </div>
+        <p className="text-slate-700 font-semibold">Generating forecast</p>
+        <p className="text-sm text-slate-500 mt-1">Analyzing recent sales, cost, and margin trends.</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg p-6 border border-orange-200">
+      <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-2xl p-6 border border-orange-200">
         <div className="flex items-start space-x-3">
           <div className="flex-shrink-0">
-            <svg className="w-6 h-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
+            <AlertTriangle className="w-6 h-6 text-orange-600" />
           </div>
           <div className="flex-1">
             <h3 className="text-sm font-semibold text-orange-900 mb-1">AI Forecast Unavailable</h3>
             <p className="text-sm text-orange-700 mb-3">{error}</p>
             <button 
               onClick={fetchForecast} 
-              className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition text-sm font-medium"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition text-sm font-medium"
             >
-              🔄 Retry
+              <RefreshCw className="w-4 h-4" />
+              Retry
             </button>
           </div>
         </div>
@@ -134,61 +136,71 @@ export default function AICharts({ periods = 4 }) {
   }
 
   return (
-    <div className="ai-charts-container">
-      <div className="ai-charts-header">
-        <h3>📈 AI Sales Forecast</h3>
-        <button onClick={fetchForecast} className="refresh-btn" title="Refresh forecast">
-          🔄
+    <div className="rounded-2xl border border-slate-200 bg-white/85 p-5 shadow-sm">
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h3 className="text-lg font-semibold text-slate-900">Projected Revenue vs Profit</h3>
+          <p className="text-sm text-slate-500">Forecast horizon: next {periods} periods.</p>
+        </div>
+        <button
+          onClick={fetchForecast}
+          className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+          title="Refresh forecast"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Refresh
         </button>
       </div>
 
       {warning && (
-        <div className="mb-3 text-xs text-orange-700 bg-orange-50 border border-orange-200 rounded px-3 py-2">
+        <div className="mb-3 text-xs text-orange-700 bg-orange-50 border border-orange-200 rounded-lg px-3 py-2">
           {warning}
         </div>
       )}
 
       <ResponsiveContainer width="100%" height={300}>
         <LineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="name" />
-          <YAxis />
+          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+          <XAxis dataKey="name" stroke="#64748b" />
+          <YAxis stroke="#64748b" />
           <Tooltip
             formatter={(value) => `$${value.toFixed(2)}`}
             labelStyle={{ color: '#333' }}
+            contentStyle={{ borderRadius: '16px', borderColor: '#cbd5e1' }}
           />
           <Legend />
           <Line
             type="monotone"
             dataKey="revenue"
-            stroke="#2196F3"
-            strokeWidth={2}
+            stroke="#0f766e"
+            strokeWidth={3}
             name="Revenue"
             activeDot={{ r: 6 }}
           />
           <Line
             type="monotone"
             dataKey="profit"
-            stroke="#4CAF50"
-            strokeWidth={2}
+            stroke="#2563eb"
+            strokeWidth={3}
             name="Profit"
             activeDot={{ r: 6 }}
           />
         </LineChart>
       </ResponsiveContainer>
 
-      <div className="ai-charts-summary">
-        <div className="summary-card">
-          <span className="summary-label">Projected Revenue</span>
-          <span className="summary-value revenue">
+      <div className="mt-5 grid gap-4 md:grid-cols-2">
+        <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3">
+          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">Projected Revenue</span>
+          <div className="mt-2 flex items-center gap-2 text-2xl font-bold text-emerald-800">
+            <TrendingUp className="w-5 h-5" />
             ${data[data.length - 1]?.revenue.toFixed(2)}
-          </span>
+          </div>
         </div>
-        <div className="summary-card">
-          <span className="summary-label">Projected Profit</span>
-          <span className="summary-value profit">
+        <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3">
+          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">Projected Profit</span>
+          <div className="mt-2 text-2xl font-bold text-blue-800">
             ${data[data.length - 1]?.profit.toFixed(2)}
-          </span>
+          </div>
         </div>
       </div>
     </div>

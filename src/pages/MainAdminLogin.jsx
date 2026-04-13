@@ -146,6 +146,15 @@ export default function MainAdminLogin() {
           <p className="text-white/60 text-xs text-center">
             Credentials are managed securely via environment configuration.
           </p>
+          <div className="mt-3 text-center">
+            <button
+              type="button"
+              onClick={() => navigate('/auth/login')}
+              className="text-xs text-blue-200 hover:text-white underline"
+            >
+              Open Auth Page
+            </button>
+          </div>
         </div>
       </div>
       <style>{`

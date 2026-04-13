@@ -20,6 +20,7 @@ export default function UserManagement() {
     name: '',
     email: '',
     password: '',
+    profilePicture: '',
     businessType: '',
     businessRole: 'cashier',
     permissions: {
@@ -49,6 +50,13 @@ export default function UserManagement() {
     loadUsers();
   }, []);
 
+  const fileToBase64 = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
   // Cleanup interval on unmount
   useEffect(() => {
     return () => {
@@ -62,8 +70,12 @@ export default function UserManagement() {
     try {
       setLoading(true);
       const data = await usersApi.getAll();
-      // Ensure we always have an array
-      setUsers(Array.isArray(data) ? data : []);
+      const normalizedUsers = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.users)
+          ? data.users
+          : [];
+      setUsers(normalizedUsers);
     } catch (error) {
       console.error('Error loading users:', error);
       // Don't show error to user, just log it
@@ -104,6 +116,8 @@ export default function UserManagement() {
         email: newUser.email.trim().toLowerCase(),
         password: newUser.password.trim(),
         pin: cashierPIN,
+        cashier_pin: cashierPIN,
+        profilePicture: newUser.profilePicture || undefined,
         // Add business type and role for Pro plan users
         ...(isProPlan && newUser.businessType && {
           businessType: newUser.businessType,
@@ -120,6 +134,7 @@ export default function UserManagement() {
         ...userData, 
         role: 'cashier',
         is_active: true,
+        active: true,
         created_at: new Date().toISOString()
       };
       setUsers(prev => [...prev, optimisticUser]);
@@ -129,6 +144,7 @@ export default function UserManagement() {
         name: '',
         email: '',
         password: '',
+        profilePicture: '',
         businessType: '',
         businessRole: 'cashier',
         permissions: { viewSales: true, viewInventory: true, viewExpenses: false, manageProducts: false }
@@ -142,7 +158,7 @@ export default function UserManagement() {
         console.log('User creation result:', result);
         
         // Replace temporary user with real one
-        setUsers(prev => prev.map(u => u.id === tempId ? result : u));
+        setUsers(prev => prev.map(u => u.id === tempId ? (result?.user || result) : u));
         
         // Show success message with login credentials including PIN
         const loginInstructions = `✅ Cashier added successfully!\n\n📧 Email: ${userData.email}\n🔑 Password: ${userData.password}\n🔢 PIN: ${cashierPIN}\n\n💡 LOGIN OPTIONS:\n1. Email + Password: Use email and password above\n2. PIN Login: Use email + ${cashierPIN}\n\nPlease share these credentials securely with the new cashier.`;
@@ -447,7 +463,7 @@ export default function UserManagement() {
         </div>
         <div className="card bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
           <p className="text-sm text-purple-700 mb-1">Active Users</p>
-          <p className="text-3xl font-bold text-purple-900">{users.filter(u => u.active).length}</p>
+          <p className="text-3xl font-bold text-purple-900">{users.filter(u => (u.active ?? u.is_active)).length}</p>
         </div>
       </div>
 
@@ -486,7 +502,7 @@ export default function UserManagement() {
                     {user.role === 'cashier' ? (
                       <div className="flex items-center gap-2">
                         <span className="font-mono text-lg font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                          {user.pin || user.cashierPIN || '----'}
+                          {user.pin || user.cashier_pin || user.cashierPIN || '----'}
                         </span>
                         <button
                           onClick={() => handleResetPIN(user)}
@@ -505,11 +521,11 @@ export default function UserManagement() {
                   <td className="px-4 py-3 text-sm">
                     <div className="flex items-center gap-2">
                       <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${
-                        user.active 
+                        (user.active ?? user.is_active) 
                           ? 'bg-green-100 text-green-700' 
                           : 'bg-gray-100 text-gray-700'
                       }`}>
-                        {user.active ? (
+                        {(user.active ?? user.is_active) ? (
                           <>
                             <UserCheck className="w-3 h-3" />
                             Active
@@ -668,9 +684,58 @@ export default function UserManagement() {
                 minLength={6}
                 disabled={loading}
               />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Profile Image</label>
+                <div className="flex items-center gap-3">
+                  {newUser.profilePicture ? (
+                    <img src={newUser.profilePicture} alt="Preview" className="w-14 h-14 rounded-full object-cover border border-gray-200" />
+                  ) : (
+                    <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 text-lg font-semibold">
+                      {newUser.name?.charAt(0)?.toUpperCase() || 'U'}
+                    </div>
+                  )}
+                  <label className="px-3 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer">
+                    Upload Image
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        try {
+                          const base64 = await fileToBase64(file);
+                          setNewUser({ ...newUser, profilePicture: base64 });
+                        } catch (error) {
+                          console.error('Failed to read profile image:', error);
+                          alert('Failed to load profile image');
+                        }
+                      }}
+                      disabled={loading}
+                    />
+                  </label>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">This image will show on the cashier dashboard and lock screen.</p>
+              </div>
               <p className="text-xs text-gray-500">
                 💡 The cashier will use this email and password to log in to the system
               </p>
+                                <td className="px-4 py-3 text-sm font-medium">
+                                  <div className="flex items-center gap-3">
+                                    {user.profile_picture || user.profilePicture ? (
+                                      <img
+                                        src={user.profile_picture || user.profilePicture}
+                                        alt={user.name}
+                                        className="w-10 h-10 rounded-full object-cover border border-gray-200"
+                                      />
+                                    ) : (
+                                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center text-white text-sm font-semibold">
+                                        {user.name?.charAt(0)?.toUpperCase() || 'U'}
+                                      </div>
+                                    )}
+                                    <span>{user.name}</span>
+                                  </div>
+                                </td>
               
               {/* Business Type Selection for Pro Plan */}
               {isProPlan && (

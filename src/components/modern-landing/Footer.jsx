@@ -7,19 +7,20 @@ export default function Footer() {
   const footerLinks = {
     Product: [
       { name: "Features", href: "#features" },
+      { name: "Advantages", href: "#advantages" },
       { name: "Pricing", href: "#pricing" },
-      { name: "Security", href: "#" },
-      { name: "Roadmap", href: "#" }
+      { name: "Security", href: "#security" },
+      { name: "Roadmap", href: "#roadmap" }
     ],
     Company: [
-      { name: "About Us", href: "#" },
+      { name: "About Us", href: "#company" },
       { name: "Careers", href: "#" },
-      { name: "Blog", href: "#" },
+      { name: "Blog", href: "#blogs" },
       { name: "Press Kit", href: "#" }
     ],
     Support: [
       { name: "Help Center", href: "#" },
-      { name: "Contact", href: "#" },
+      { name: "Contact", href: "#contact-info" },
       { name: "API Docs", href: "#" },
       { name: "Status", href: "#" }
     ],
@@ -62,10 +63,10 @@ export default function Footer() {
               </p>
               
               {/* Contact Info */}
-              <div className="space-y-3">
+              <div id="contact-info" className="space-y-3">
                 <div className="flex items-center gap-3 text-white/70 hover:text-white transition-colors">
                   <Mail className="w-5 h-5" />
-                  <span className="text-sm">ian.ambruk@mabrixeltechnologies</span>
+                  <span className="text-sm">ianmabruk3@gmail.com</span>
                 </div>
                 <div className="flex items-center gap-3 text-white/70 hover:text-white transition-colors">
                   <Phone className="w-5 h-5" />

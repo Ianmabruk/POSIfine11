@@ -94,6 +94,17 @@ function ProtectedRoute({ children, adminOnly = false, ultraOnly = false, ownerO
     }
   }, [user, ownerOnly]);
 
+  useEffect(() => {
+    const handleSettingsChanged = (event) => {
+      if (event?.detail) {
+        setSettings((prev) => ({ ...prev, ...event.detail }));
+      }
+    };
+
+    window.addEventListener('settingsChanged', handleSettingsChanged);
+    return () => window.removeEventListener('settingsChanged', handleSettingsChanged);
+  }, []);
+
   // Listen for screen lock from admin
   useEffect(() => {
     const handleAdminLock = (event) => {
@@ -140,7 +151,13 @@ function ProtectedRoute({ children, adminOnly = false, ultraOnly = false, ownerO
     <>
       <SubscriptionReminderBar />
       <StockUpdateListener />
-      {isLocked && <ScreenLock onUnlock={unlock} userType={userType} />}
+      {isLocked && (
+        <ScreenLock
+          onUnlock={unlock}
+          userType={userType}
+          logo={settings.logo || settings.business_logo || user?.business_logo}
+        />
+      )}
       {showReminders && <ReminderModal onClose={() => setShowReminders(false)} />}
       {children}
     </>

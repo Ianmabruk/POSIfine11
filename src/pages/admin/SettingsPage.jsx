@@ -44,6 +44,11 @@ export default function SettingsPage() {
       const updatedSettings = { ...appSettings, ...newSettings };
       await settingsApi.update(updatedSettings);
       setAppSettings(updatedSettings);
+      if (updatedSettings.logo) {
+        setLogoPreview(updatedSettings.logo);
+        localStorage.setItem('appLogo', updatedSettings.logo);
+      }
+      window.dispatchEvent(new CustomEvent('settingsChanged', { detail: updatedSettings }));
       return true;
     } catch (error) {
       console.error('Failed to save settings:', error);
@@ -93,8 +98,11 @@ export default function SettingsPage() {
         const base64 = reader.result;
         setLogoPreview(base64);
         try {
-          await settingsApi.update({ ...appSettings, logo: base64 });
-          setAppSettings({ ...appSettings, logo: base64 });
+          const nextSettings = { ...appSettings, logo: base64 };
+          await settingsApi.update(nextSettings);
+          setAppSettings(nextSettings);
+          localStorage.setItem('appLogo', base64);
+          window.dispatchEvent(new CustomEvent('settingsChanged', { detail: nextSettings }));
         } catch (error) {
           console.error('Failed to save logo:', error);
         }
@@ -111,7 +119,7 @@ export default function SettingsPage() {
         const base64 = reader.result;
         setProfilePicture(base64);
         try {
-          await updateUser({ ...user, profilePicture: base64 });
+          await updateUser({ ...user, profilePicture: base64, profile_picture: base64 });
         } catch (error) {
           console.error('Failed to save profile picture:', error);
         }

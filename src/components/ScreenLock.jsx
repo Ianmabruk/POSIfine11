@@ -1,38 +1,33 @@
 import { useState, useEffect } from 'react';
-import { Lock, Shield, Eye, EyeOff } from 'lucide-react';
+import { Lock } from 'lucide-react';
 import { settings } from '../services/api';
 
-export default function ScreenLock({ onUnlock, userType = 'user' }) {
-  const [password, setPassword] = useState('');
+export default function ScreenLock({ onUnlock, userType = 'user', logo = '' }) {
   const [pin, setPin] = useState('');
-  const [unlockMethod, setUnlockMethod] = useState('password');
-  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [screenLockPassword, setScreenLockPassword] = useState('2005');
+  const [resolvedLogo, setResolvedLogo] = useState(logo || '');
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   useEffect(() => {
-    // Load screen lock password from settings
     const loadSettings = async () => {
       try {
         const settingsData = await settings.get();
-        if (settingsData?.screenLockPassword) {
-          setScreenLockPassword(settingsData.screenLockPassword);
+        if (!logo && settingsData?.logo) {
+          setResolvedLogo(settingsData.logo);
         }
       } catch (error) {
-        console.warn('Failed to load settings, using default password:', error);
-        // Keep default password if settings fail to load
+        console.warn('Failed to load screen lock branding:', error);
       }
     };
     loadSettings();
-  }, []);
+  }, [logo]);
 
   useEffect(() => {
-    const input = document.getElementById(unlockMethod === 'password' ? 'unlock-password' : 'unlock-pin');
+    const input = document.getElementById('unlock-pin');
     if (input) input.focus();
-  }, [unlockMethod]);
+  }, []);
 
   const handleUnlock = async (e) => {
     e.preventDefault();
@@ -76,7 +71,6 @@ export default function ScreenLock({ onUnlock, userType = 'user' }) {
       }
 
       setPin('');
-      setPassword('');
       onUnlock(data);
       
     } catch (error) {
@@ -101,6 +95,13 @@ export default function ScreenLock({ onUnlock, userType = 'user' }) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="text-center mb-8">
+          {resolvedLogo || user?.business_logo ? (
+            <img
+              src={resolvedLogo || user?.business_logo}
+              alt="Business logo"
+              className="w-20 h-20 rounded-3xl mx-auto mb-4 object-cover border border-gray-200 shadow-sm"
+            />
+          ) : null}
           <div className={`w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center ${
             userType === 'main_admin' 
               ? 'bg-gradient-to-br from-red-600 to-orange-600'
@@ -109,11 +110,20 @@ export default function ScreenLock({ onUnlock, userType = 'user' }) {
             <Lock className="w-8 h-8 text-white" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Screen Locked</h2>
-          <p className="text-gray-600">
-            {userType === 'main_admin' ? 'Main Admin' : user.name || 'User'}
-          </p>
+          <div className="flex flex-col items-center gap-2">
+            {user?.profile_picture || user?.profilePicture ? (
+              <img
+                src={user?.profile_picture || user?.profilePicture}
+                alt={user.name || 'User'}
+                className="w-14 h-14 rounded-full object-cover border border-gray-200"
+              />
+            ) : null}
+            <p className="text-gray-600">
+              {userType === 'main_admin' ? 'Main Admin' : user.name || 'User'}
+            </p>
+          </div>
           <p className="text-sm text-gray-500 mt-1">
-            Enter your {unlockMethod} to continue
+            Enter your PIN to continue
           </p>
         </div>
 

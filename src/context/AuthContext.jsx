@@ -15,15 +15,64 @@ export const AuthProvider = ({ children }) => {
     if (!rawUser) return rawUser;
     const active = rawUser.active ?? rawUser.is_active ?? rawUser.account_active ?? true;
     const plan = rawUser.plan ?? rawUser.subscription ?? rawUser.account_plan;
+    const profilePicture = rawUser.profilePicture ?? rawUser.profile_picture ?? null;
+    const businessLogo = rawUser.business_logo ?? rawUser.businessLogo ?? null;
     return {
       ...rawUser,
       active,
-      plan
+      plan,
+      profilePicture,
+      profile_picture: profilePicture,
+      business_logo: businessLogo,
+      businessLogo
     };
+  };
+
+  const loadAppSettings = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setAppSettings({});
+      return;
+    }
+
+    try {
+      const response = await fetch(`${BASE_API_URL}/settings`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!response.ok) {
+        throw new Error('Failed to load settings');
+      }
+      const data = await response.json();
+      setAppSettings(data || {});
+      if (data?.logo) {
+        localStorage.setItem('appLogo', data.logo);
+      }
+    } catch (error) {
+      console.warn('Failed to load app settings', error);
+    }
   };
 
   useEffect(() => {
     initializeAuth();
+  }, []);
+
+  useEffect(() => {
+    const handleSettingsChanged = (event) => {
+      if (event?.detail) {
+        setAppSettings((prev) => {
+          const next = { ...prev, ...event.detail };
+          if (next.logo) {
+            localStorage.setItem('appLogo', next.logo);
+          }
+          return next;
+        });
+        return;
+      }
+      loadAppSettings();
+    };
+
+    window.addEventListener('settingsChanged', handleSettingsChanged);
+    return () => window.removeEventListener('settingsChanged', handleSettingsChanged);
   }, []);
 
   useEffect(() => {
@@ -70,6 +119,7 @@ export const AuthProvider = ({ children }) => {
             const normalized = normalizeUser(data);
             setUser(normalized);
             localStorage.setItem('user', JSON.stringify(normalized));
+            await loadAppSettings();
           } else {
             // Token invalid or server returned error — clear token and optionally fallback
             throw new Error('Invalid token');
@@ -99,6 +149,7 @@ export const AuthProvider = ({ children }) => {
                   }
                   localStorage.setItem('user', JSON.stringify(normalized));
                   setUser(normalized);
+                  await loadAppSettings();
                 }
               } else {
                 localStorage.removeItem('refreshToken');
@@ -137,6 +188,7 @@ export const AuthProvider = ({ children }) => {
         }
         localStorage.setItem('user', JSON.stringify(normalized));
         setUser(normalized);
+        await loadAppSettings();
         return payload;
       }
 
@@ -153,6 +205,7 @@ export const AuthProvider = ({ children }) => {
         }
         localStorage.setItem('user', JSON.stringify(normalized));
         setUser(normalized);
+        await loadAppSettings();
         return response;
       }
       throw new Error('Invalid response from server');
@@ -176,6 +229,7 @@ export const AuthProvider = ({ children }) => {
         }
         localStorage.setItem('user', JSON.stringify(normalized));
         setUser(normalized);
+        await loadAppSettings();
         return response;
       }
       throw new Error('Invalid response from server');
@@ -198,7 +252,11 @@ export const AuthProvider = ({ children }) => {
       // Try to persist to backend if we have an id
       if (updated && updated.id) {
         try {
-          await users.update(updated.id, updated);
+          const result = await users.update(updated.id, updated);
+          const persistedUser = normalizeUser(result?.user || result || updated);
+          localStorage.setItem('user', JSON.stringify(persistedUser));
+          setUser(persistedUser);
+          window.dispatchEvent(new Event('localStorageUpdated'));
         } catch (err) {
           // Non-fatal: backend update failed but local state is consistent
           console.warn('Failed to persist updated user to backend', err);
@@ -229,7 +287,9 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('user');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('csrfToken');
+      localStorage.removeItem('appLogo');
       setUser(null);
+      setAppSettings({});
       window.location.href = '/auth/login';
     }
   };

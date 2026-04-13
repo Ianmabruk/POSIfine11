@@ -57,6 +57,49 @@ export default function CashierPOS() {
   const [remindersLoading, setRemindersLoading] = useState(false);
   const productRefreshTimeoutRef = useRef(null);
 
+  const getAccountKey = () => user?.account_id || user?.accountId || user?.id || 'anonymous';
+  const getCashierSnapshotKey = () => `cashier_snapshot_${getAccountKey()}`;
+
+  const persistCashierSnapshot = useCallback((payload) => {
+    try {
+      localStorage.setItem(getCashierSnapshotKey(), JSON.stringify({
+        ...payload,
+        savedAt: Date.now()
+      }));
+    } catch (error) {
+      console.warn('Failed to persist cashier snapshot:', error);
+    }
+  }, [user?.account_id, user?.accountId, user?.id]);
+
+  const hydrateCashierSnapshot = useCallback(() => {
+    try {
+      const raw = localStorage.getItem(getCashierSnapshotKey());
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+
+      const cachedProducts = Array.isArray(parsed?.productList) ? parsed.productList : [];
+      const cachedSales = Array.isArray(parsed?.sales) ? parsed.sales : [];
+      const cachedExpenses = Array.isArray(parsed?.expenses) ? parsed.expenses : [];
+      const cachedBatches = Array.isArray(parsed?.batchList) ? parsed.batchList : [];
+      const cachedDiscounts = Array.isArray(parsed?.discountList) ? parsed.discountList : [];
+      const cachedStats = parsed?.stats || {};
+
+      if (cachedProducts.length) setProductList(cachedProducts);
+      if (cachedBatches.length) setBatchList(cachedBatches);
+      if (cachedDiscounts.length) setDiscountList(cachedDiscounts);
+
+      if (cachedSales.length || cachedExpenses.length || Object.keys(cachedStats).length) {
+        setData({
+          sales: cachedSales,
+          expenses: cachedExpenses,
+          stats: cachedStats
+        });
+      }
+    } catch (error) {
+      console.warn('Failed to restore cashier snapshot:', error);
+    }
+  }, [user?.account_id, user?.accountId, user?.id]);
+
   const refreshVisibleProducts = useCallback(async () => {
     try {
       const freshProducts = await refreshProducts();
@@ -79,6 +122,8 @@ export default function CashierPOS() {
   }, [refreshVisibleProducts]);
 
   useEffect(() => {
+    hydrateCashierSnapshot();
+
     Promise.all([
       loadData(),
       fetchReminders(),
@@ -170,7 +215,7 @@ export default function CashierPOS() {
         clearTimeout(productRefreshTimeoutRef.current);
       }
     };
-  }, [user?.id, scheduleProductRefresh]);
+  }, [user?.id, scheduleProductRefresh, hydrateCashierSnapshot]);
 
   // Sync with global products from ProductsContext
   useEffect(() => {
@@ -392,6 +437,15 @@ export default function CashierPOS() {
       setData({ sales: s, expenses: e, stats: st });
       setBatchList(b);
       setDiscountList(d || []);
+
+      persistCashierSnapshot({
+        productList: filteredProducts,
+        sales: s,
+        expenses: e,
+        stats: st || {},
+        batchList: b,
+        discountList: d || []
+      });
       
       console.log('✅ Data loaded:', {
         products: filteredProducts.length,
@@ -403,6 +457,7 @@ export default function CashierPOS() {
     } catch (error) {
       console.error('❌ Failed to load data:', error);
       const errorMsg = error.response?.data?.error || error.message || 'Failed to connect to server';
+      hydrateCashierSnapshot();
       // Show error only on initial load, not on background refreshes
       if (!productList.length) {
         alert('⚠️ Failed to load data\n\n' + errorMsg + '\n\nSome features may not work correctly.');
@@ -413,10 +468,28 @@ export default function CashierPOS() {
   const refreshStats = async () => {
     try {
       const st = await stats.get({ cashierId: user?.id });
-      setData(prev => ({
+      setData(prev => {
+        const merged = {
+          ...(st || {}),
+          totalCOGS: st?.totalCOGS ?? st?.cogs ?? 0,
+          grossProfit: st?.grossProfit ?? ((st?.totalSales || 0) - (st?.totalCOGS || st?.cogs || 0)),
+          netProfit: st?.netProfit ?? st?.profit ?? ((st?.totalSales || 0) - (st?.totalExpenses || 0))
+        };
+
+        persistCashierSnapshot({
+          productList,
+          sales: prev.sales || [],
+          expenses: prev.expenses || [],
+          stats: merged,
+          batchList,
+          discountList
+        });
+
+        return {
         ...prev,
-        stats: st || {}
-      }));
+          stats: merged
+        };
+      });
     } catch (error) {
       console.warn('Stats refresh failed:', error);
     }
@@ -938,7 +1011,18 @@ export default function CashierPOS() {
         }
         
         // Clear local state
-        setData({ sales: [], expenses: [], stats: { totalSales: 0, totalExpenses: 0, profit: 0 } });
+        setData({
+          sales: [],
+          expenses: [],
+          stats: {
+            totalSales: 0,
+            totalExpenses: 0,
+            totalCOGS: 0,
+            grossProfit: 0,
+            netProfit: 0,
+            profit: 0
+          }
+        });
         setCart([]);
         
         alert('Data cleared successfully!');
@@ -1311,12 +1395,36 @@ export default function CashierPOS() {
 
       {activeView === 'monitor' && (
         <div className="p-6 max-w-7xl mx-auto w-full">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6 mb-8">
             <div className="card bg-gradient-to-br from-green-500 to-emerald-600 text-white border-0 shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-green-100 mb-1">Total Sales</p>
                   <p className="text-3xl font-bold">KSH {data.stats.totalSales?.toLocaleString() || 0}</p>
+                </div>
+                <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center">
+                  <DollarSign className="w-8 h-8" />
+                </div>
+              </div>
+            </div>
+
+            <div className="card bg-gradient-to-br from-amber-500 to-orange-600 text-white border-0 shadow-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-amber-100 mb-1">COGS</p>
+                  <p className="text-3xl font-bold">KSH {data.stats.totalCOGS?.toLocaleString() || 0}</p>
+                </div>
+                <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center">
+                  <Package className="w-8 h-8" />
+                </div>
+              </div>
+            </div>
+
+            <div className="card bg-gradient-to-br from-cyan-500 to-blue-600 text-white border-0 shadow-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-cyan-100 mb-1">Gross Profit</p>
+                  <p className="text-3xl font-bold">KSH {data.stats.grossProfit?.toLocaleString() || 0}</p>
                 </div>
                 <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center">
                   <DollarSign className="w-8 h-8" />
@@ -1340,7 +1448,7 @@ export default function CashierPOS() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-blue-100 mb-1">Net Profit</p>
-                  <p className="text-3xl font-bold">KSH {data.stats.profit?.toLocaleString() || 0}</p>
+                  <p className="text-3xl font-bold">KSH {(data.stats.netProfit ?? data.stats.profit ?? 0).toLocaleString()}</p>
                 </div>
                 <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center">
                   <DollarSign className="w-8 h-8" />
@@ -1880,6 +1988,7 @@ export default function CashierPOS() {
         onUnlock={unlock}
         userPin={user?.pin || '1234'}
         userName={user?.name}
+        businessLogo={user?.business_logo || user?.businessLogo || localStorage.getItem('appLogo') || ''}
       />
     </div>
   );

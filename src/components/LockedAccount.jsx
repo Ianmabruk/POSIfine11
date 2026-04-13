@@ -20,7 +20,7 @@ export default function LockedAccount() {
         <div className="space-y-3">
           <div className="flex items-center justify-center gap-2 text-gray-600">
             <Mail className="w-4 h-4" />
-            <span className="text-sm">Contact: support@universal.com</span>
+            <span className="text-sm">Contact: ianmabruk3@gmail.com</span>
           </div>
           <div className="flex items-center justify-center gap-2 text-gray-600">
             <Phone className="w-4 h-4" />
