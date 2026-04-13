@@ -638,7 +638,7 @@ export default function Inventory() {
   const calculateCOGS = (product) => {
     if (!product) return 0;
     if (!product.recipe) {
-      const costPerUnit = Number(product.cost_per_unit ?? product.costPerUnit ?? 0);
+      const costPerUnit = Number(product.cost_per_unit || product.costPerUnit || 0);
       const baseCost = costPerUnit > 0 ? costPerUnit : Number(product.cost ?? 0);
       return Number(baseCost || 0);
     }

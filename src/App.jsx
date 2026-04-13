@@ -38,7 +38,6 @@ const PetrolCashierPOS = lazy(() => import('./pages/cashier/PetrolCashierPOS'));
 const ShoesCashierPOS = lazy(() => import('./pages/cashier/ShoesCashierPOS'));
 const MainAdmin = lazy(() => import('./pages/MainAdmin'));
 const MainAdminLogin = lazy(() => import('./pages/MainAdminLogin'));
-const MainAdminLanding = lazy(() => import('./pages/MainAdminLanding'));
 const AdminClinicDashboard = lazy(() => import('./pages/admin/AdminClinicDashboard'));
 const AdminBarDashboard = lazy(() => import('./pages/admin/AdminBarDashboard'));
 const PetrolAdminDashboard = lazy(() => import('./pages/admin/PetrolAdminDashboard'));
@@ -250,7 +249,7 @@ function App() {
                 <Route path="/build-pos" element={<BuildPOS />} />
                 
                 {/* Owner Main Admin Routes (strict /main.admin) */}
-                <Route path="/main.admin" element={<MainAdminLanding />} />
+                <Route path="/main.admin" element={<Navigate to="/main.admin/login" replace />} />
                 <Route path="/main.admin/login" element={<MainAdminLogin />} />
                 <Route path="/main.admin/dashboard" element={<ProtectedRoute ownerOnly><MainAdmin /></ProtectedRoute>} />
                 
