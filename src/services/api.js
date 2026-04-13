@@ -60,7 +60,10 @@ const requestWithRetry = async (endpoint, options = {}, retryCount = 0, maxRetri
           try {
             const refreshResp = await fetch(`${BASE_API_URL}/auth/refresh`, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: {
+                'Content-Type': 'application/json',
+                ...(csrfToken && { 'X-CSRF-Token': csrfToken })
+              },
               body: JSON.stringify({ refreshToken })
             });
             if (refreshResp.ok) {

@@ -188,28 +188,8 @@ export default function Inventory() {
         if (isNewProduct) {
           setNewProduct({ ...newProduct, image: base64 });
         } else {
-          // FAST UPDATE: Show image immediately in edit product
+          // Update image in state — it will be included when user clicks Save
           setEditProduct({ ...editProduct, image: base64 });
-          
-          // Auto-save image after upload (debounced, happens in background)
-          if (editProduct.id) {
-            setTimeout(async () => {
-              try {
-                const updated = await products.update(editProduct.id, { image: base64 });
-                if (updated?.id) {
-                  setProductList(prev => prev.map(p => p.id === updated.id ? { ...p, ...updated } : p));
-                  refreshProducts().catch(() => {});
-                  window.dispatchEvent(new CustomEvent('productUpdated', {
-                    detail: { product: updated, timestamp: Date.now(), type: 'image' }
-                  }));
-                }
-                showNotification('✅ Image saved', 'success');
-              } catch (error) {
-                console.error('Failed to save image:', error);
-                // Silently fail - user can retry
-              }
-            }, 500); // Small delay to avoid multiple rapid uploads
-          }
         }
       };
       reader.readAsDataURL(file);
@@ -436,10 +416,6 @@ export default function Inventory() {
     e.preventDefault();
     try {
       const originalProduct = productList.find(p => p.id === editProduct.id);
-      if (parseFloat(editProduct.price) < originalProduct.price) {
-        alert('You cannot lower prices, only increase.');
-        return;
-      }
 
       const parsedCost = parseFloat(editProduct.cost);
       const hasValidCost = Number.isFinite(parsedCost) && editProduct.cost !== '';
