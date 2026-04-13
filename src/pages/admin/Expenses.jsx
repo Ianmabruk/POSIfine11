@@ -64,8 +64,20 @@ export default function Expenses() {
   const isAutomaticExpense = (expense) => (
     expense?.automatic === true
     || expense?.source === 'auto-deduction'
+    || expense?.source === 'auto-sale'
     || expense?.category === 'ingredient'
+    || expense?.category === 'cogs'
   );
+
+  const expenseTypeBadge = (expense) => {
+    if (expense?.category === 'cogs' || expense?.source === 'auto-sale') {
+      return { label: 'COGS', cls: 'bg-orange-100 text-orange-800' };
+    }
+    if (expense?.category === 'ingredient' || expense?.source === 'auto-deduction') {
+      return { label: 'Ingredient', cls: 'bg-purple-100 text-purple-800' };
+    }
+    return { label: 'Manual', cls: 'bg-blue-100 text-blue-800' };
+  };
 
   const totalExpenses = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
   const manualExpenses = expenses.filter(e => !isAutomaticExpense(e));
@@ -136,9 +148,7 @@ export default function Expenses() {
                     <span className="badge badge-warning">{expense.category}</span>
                   </td>
                   <td className="px-4 py-3 text-sm">
-                    <span className={`badge ${isAutomatic ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>
-                      {isAutomatic ? 'Automatic' : 'Manual'}
-                    </span>
+                    {(() => { const t = expenseTypeBadge(expense); return <span className={`badge ${t.cls}`}>{t.label}</span>; })()}
                   </td>
                   <td className="px-4 py-3 text-sm font-semibold text-red-600">
                     KSH {expense.amount?.toLocaleString()}

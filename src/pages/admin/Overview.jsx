@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { stats, sales as salesApi } from '../../services/api';
-import { DollarSign, TrendingUp, TrendingDown, ShoppingBag, Package, AlertCircle } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, ShoppingBag, Package, AlertCircle, BrainCircuit, Sparkles } from 'lucide-react';
 import AICharts from '../../components/AICharts';
 
 
@@ -14,6 +14,14 @@ export default function Overview() {
 
   useEffect(() => {
     loadData();
+    const intervalId = window.setInterval(loadData, 15000);
+    const handleFocus = () => loadData();
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
   const loadData = async () => {
@@ -29,12 +37,12 @@ export default function Overview() {
         totalSales: statsData?.totalSales || 0,
         totalExpenses: statsData?.totalExpenses || 0,
         profit: statsData?.profit || 0,
-        grossProfit: statsData?.grossProfit || 0,
-        netProfit: statsData?.netProfit || 0,
+        grossProfit: statsData?.grossProfit || ((statsData?.totalSales || 0) - (statsData?.totalCOGS || 0)),
+        netProfit: statsData?.netProfit ?? statsData?.profit ?? 0,
         totalCOGS: statsData?.totalCOGS || 0,
         dailySales: statsData?.dailySales || 0,
         weeklySales: statsData?.weeklySales || 0,
-        productCount: statsData?.productCount || 0
+        productCount: statsData?.productCount ?? statsData?.productsCount ?? 0
       };
       
       // Ensure sales data is always an array
@@ -247,15 +255,25 @@ export default function Overview() {
         )}
       </div>
       {/* AI Sales Forecast Section */}
-      <div className="bg-white rounded-lg shadow p-6 mt-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-800">🤖 AI Sales Forecast</h2>
-            <p className="text-sm text-gray-600 mt-1">Predictive analytics for upcoming periods</p>
+      <div className="rounded-3xl border border-slate-200 bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.14),_transparent_35%),linear-gradient(135deg,#ffffff,#f8fafc_60%,#eef6ff)] p-6 mt-6 shadow-sm">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-4">
+          <div className="flex items-start gap-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 text-white shadow-lg shadow-sky-300/50">
+              <BrainCircuit className="w-7 h-7 drop-shadow" />
+            </div>
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold tracking-[0.18em] text-sky-700">
+                <Sparkles className="w-3.5 h-3.5" />
+                FORECAST STUDIO
+              </div>
+              <h2 className="text-2xl font-semibold text-slate-900 mt-3">AI Sales Forecast</h2>
+              <p className="text-sm text-slate-600 mt-1">Revenue and profit outlook for the next trading periods, refreshed from live sales data.</p>
+            </div>
           </div>
-          <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold">
-            AI POWERED
-          </span>
+          <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-600">
+            <p className="font-semibold text-slate-900">Forecast input</p>
+            <p>Recent sales, cost of goods, and margin trend.</p>
+          </div>
         </div>
         <AICharts periods={4} />
       </div>    </div>
