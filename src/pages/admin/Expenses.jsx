@@ -6,7 +6,14 @@ import { Plus, TrendingDown } from 'lucide-react';
 export default function Expenses() {
   const [expenses, setExpenses] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [newExpense, setNewExpense] = useState({ description: '', amount: '', category: 'general' });
+  const [newExpense, setNewExpense] = useState({
+    description: '',
+    amount: '',
+    quantity: '',
+    unit: 'liters',
+    category: 'general',
+    trackStock: false
+  });
   const [notification, setNotification] = useState(null);
 
   useEffect(() => {
@@ -48,9 +55,25 @@ export default function Expenses() {
 
   const handleAddExpense = async (e) => {
     e.preventDefault();
-    const expenseData = { ...newExpense, amount: parseFloat(newExpense.amount) };
+    const amount = parseFloat(newExpense.amount);
+    const quantity = parseFloat(newExpense.quantity || '0');
+    const isIngredientStock = newExpense.trackStock || newExpense.category === 'ingredient';
+
+    if (isIngredientStock && quantity <= 0) {
+      alert('For stock-tracked ingredients, quantity must be greater than zero.');
+      return;
+    }
+
+    const expenseData = {
+      ...newExpense,
+      amount,
+      quantity: isIngredientStock ? quantity : 1,
+      track_stock: isIngredientStock,
+      category: isIngredientStock ? 'ingredient' : newExpense.category
+    };
+
     await expensesApi.create(expenseData);
-    setNewExpense({ description: '', amount: '', category: 'general' });
+    setNewExpense({ description: '', amount: '', quantity: '', unit: 'liters', category: 'general', trackStock: false });
     setShowAddModal(false);
     
     // Dispatch expense_added event for real-time updates
@@ -185,15 +208,57 @@ export default function Expenses() {
               <select
                 className="input"
                 value={newExpense.category}
-                onChange={(e) => setNewExpense({ ...newExpense, category: e.target.value })}
+                onChange={(e) => {
+                  const category = e.target.value;
+                  setNewExpense({
+                    ...newExpense,
+                    category,
+                    trackStock: category === 'ingredient' ? true : newExpense.trackStock
+                  });
+                }}
               >
                 <option value="general">General</option>
+                <option value="ingredient">Ingredient Stock</option>
                 <option value="utilities">Utilities</option>
                 <option value="rent">Rent</option>
                 <option value="salaries">Salaries</option>
                 <option value="supplies">Supplies</option>
                 <option value="other">Other</option>
               </select>
+
+              <label className="flex items-center gap-2 text-sm text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={newExpense.trackStock}
+                  onChange={(e) => setNewExpense({ ...newExpense, trackStock: e.target.checked })}
+                />
+                Track as ingredient stock (used in recipe deductions)
+              </label>
+
+              {(newExpense.trackStock || newExpense.category === 'ingredient') && (
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="number"
+                    step="0.001"
+                    placeholder="Quantity (e.g. 2)"
+                    className="input"
+                    value={newExpense.quantity}
+                    onChange={(e) => setNewExpense({ ...newExpense, quantity: e.target.value })}
+                    required
+                  />
+                  <select
+                    className="input"
+                    value={newExpense.unit}
+                    onChange={(e) => setNewExpense({ ...newExpense, unit: e.target.value })}
+                  >
+                    <option value="liters">Liters</option>
+                    <option value="kg">Kilograms</option>
+                    <option value="grams">Grams</option>
+                    <option value="ml">Milliliters</option>
+                    <option value="pcs">Pieces</option>
+                  </select>
+                </div>
+              )}
               <div className="flex gap-2">
                 <button type="submit" className="btn-primary flex-1">Add Expense</button>
                 <button type="button" onClick={() => setShowAddModal(false)} className="btn-secondary">Cancel</button>

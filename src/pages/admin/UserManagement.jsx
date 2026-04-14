@@ -115,6 +115,7 @@ export default function UserManagement() {
         name: newUser.name.trim(),
         email: newUser.email.trim().toLowerCase(),
         password: newUser.password.trim(),
+        role: 'cashier',
         pin: cashierPIN,
         cashier_pin: cashierPIN,
         profilePicture: newUser.profilePicture || undefined,

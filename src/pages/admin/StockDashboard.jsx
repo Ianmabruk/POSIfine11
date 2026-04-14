@@ -46,11 +46,27 @@ export default function StockDashboard() {
     setLoading(true);
     setDeductionsLoading(true);
     try {
-      const [productData, deductionData] = await Promise.all([
+      const [productData, rawMaterialData, deductionData] = await Promise.all([
         productsApi.getAll(),
+        api.get('/raw-materials').catch(() => []),
         fetchDeductions()
       ]);
-      setProducts(Array.isArray(productData) ? productData : []);
+
+      const normalizedProducts = Array.isArray(productData) ? productData : [];
+      const normalizedRawMaterials = Array.isArray(rawMaterialData)
+        ? rawMaterialData.map((m) => ({
+            id: `raw-${m.id}`,
+            raw_material_id: m.id,
+            item_type: 'raw_material',
+            name: m.name,
+            quantity: m.quantity,
+            unit: m.unit,
+            reorder_level: m.reorder_level || 0,
+            category: 'ingredients'
+          }))
+        : [];
+
+      setProducts([...normalizedProducts, ...normalizedRawMaterials]);
       setDeductions(Array.isArray(deductionData) ? deductionData : []);
       setLastRefreshed(new Date().toLocaleTimeString());
     } catch (err) {
@@ -82,15 +98,37 @@ export default function StockDashboard() {
     }
   };
 
+  const getProductEntityKey = (p) => (
+    p.item_type === 'raw_material' || p.raw_material_id
+      ? `raw-${p.raw_material_id || p.id}`
+      : `product-${p.id}`
+  );
+
   // Ingredients are products that appear in any composite product's recipe
   const compositeProducts = products.filter(hasRecipe);
 
-  // Collect all ingredient product IDs
+  // Collect all ingredient entity keys referenced in recipes.
   const ingredientIds = new Set();
   compositeProducts.forEach(cp => {
     (cp.recipe || []).forEach(ing => {
-      const id = ing.productId || ing.product_id || ing.id;
-      if (id) ingredientIds.add(Number(id));
+      const productId = ing.productId || ing.product_id || ing.id;
+      const rawMaterialId = ing.raw_material_id || ing.rawMaterialId || ing.materialId;
+      const ingredientName = String(ing.name || '').trim().toLowerCase();
+
+      if (rawMaterialId) {
+        ingredientIds.add(`raw-${rawMaterialId}`);
+      } else if (productId) {
+        ingredientIds.add(`product-${productId}`);
+      } else if (ingredientName) {
+        const matchedRaw = products.find(
+          (p) => (p.item_type === 'raw_material' || p.raw_material_id) && String(p.name || '').trim().toLowerCase() === ingredientName
+        );
+        const matchedProduct = products.find(
+          (p) => !p.raw_material_id && String(p.name || '').trim().toLowerCase() === ingredientName
+        );
+        if (matchedRaw) ingredientIds.add(getProductEntityKey(matchedRaw));
+        if (matchedProduct) ingredientIds.add(getProductEntityKey(matchedProduct));
+      }
     });
   });
 
@@ -101,7 +139,7 @@ export default function StockDashboard() {
       (p.name || '').toLowerCase().includes(searchTerm.toLowerCase());
 
     if (categoryFilter === 'ingredients') {
-      return matchSearch && ingredientIds.has(Number(p.id));
+      return matchSearch && ingredientIds.has(getProductEntityKey(p));
     }
     if (categoryFilter === 'composite') {
       return matchSearch && hasRecipe(p);
@@ -124,15 +162,21 @@ export default function StockDashboard() {
     return new Date(d.created_at).toDateString() === new Date().toDateString();
   }).length;
 
-  // Deductions grouped per product for the deductions table
+  const getDeductionEntityKey = (d) => (
+    d.item_type === 'raw_material'
+      ? `raw-${d.raw_material_id}`
+      : `product-${d.product_id}`
+  );
+
+  // Deductions grouped per entity for the deductions table
   const deductionsByProduct = {};
   deductions.forEach(d => {
-    const id = d.product_id;
-    if (!deductionsByProduct[id]) {
-      deductionsByProduct[id] = { name: d.product_name, unit: d.unit, records: [], totalDeducted: 0 };
+    const key = getDeductionEntityKey(d);
+    if (!deductionsByProduct[key]) {
+      deductionsByProduct[key] = { name: d.product_name, unit: d.unit, records: [], totalDeducted: 0 };
     }
-    deductionsByProduct[id].records.push(d);
-    deductionsByProduct[id].totalDeducted += Number(d.quantity_deducted || 0);
+    deductionsByProduct[key].records.push(d);
+    deductionsByProduct[key].totalDeducted += Number(d.quantity_deducted || 0);
   });
 
   const getStockStatusColor = (product) => {
@@ -154,7 +198,7 @@ export default function StockDashboard() {
   // Product deductions summary
   const productDeductionTotals = {};
   deductions.forEach(d => {
-    const id = Number(d.product_id);
+    const id = getDeductionEntityKey(d);
     productDeductionTotals[id] = (productDeductionTotals[id] || 0) + Number(d.quantity_deducted || 0);
   });
 
@@ -289,15 +333,16 @@ export default function StockDashboard() {
               </thead>
               <tbody>
                 {filteredProducts.map(product => {
-                  const isIngredient = ingredientIds.has(Number(product.id));
-                  const totalDeducted = productDeductionTotals[Number(product.id)] || 0;
-                  const isExpanded = expandedProduct === product.id;
+                  const entityKey = getProductEntityKey(product);
+                  const isIngredient = ingredientIds.has(entityKey);
+                  const totalDeducted = productDeductionTotals[entityKey] || 0;
+                  const isExpanded = expandedProduct === entityKey;
                   const productDeductionHistory = deductions.filter(
-                    d => Number(d.product_id) === Number(product.id)
+                    d => getDeductionEntityKey(d) === entityKey
                   ).slice(0, 10);
 
                   return (
-                    <Fragment key={product.id}>
+                    <Fragment key={entityKey}>
                       <tr
                         className={`border-t border-gray-100 hover:bg-gray-50 transition-colors ${
                           isExpanded ? 'bg-blue-50' : ''
@@ -350,7 +395,7 @@ export default function StockDashboard() {
                         </td>
                         <td className="px-4 py-3 text-center">
                           <button
-                            onClick={() => setExpandedProduct(isExpanded ? null : product.id)}
+                            onClick={() => setExpandedProduct(isExpanded ? null : entityKey)}
                             className="p-1 rounded hover:bg-gray-200 text-gray-500"
                             title="View deduction history"
                           >
@@ -513,8 +558,16 @@ export default function StockDashboard() {
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {(cp.recipe || []).map((ing, idx) => {
                       const ingId = ing.productId || ing.product_id || ing.id;
-                      const ingredientProduct = products.find(p => Number(p.id) === Number(ingId));
-                      const name = ingredientProduct?.name || ing.name || `ID:${ingId}`;
+                      const rawMaterialId = ing.raw_material_id || ing.rawMaterialId || ing.materialId;
+                      const ingName = String(ing.name || '').trim().toLowerCase();
+
+                      const ingredientProduct = products.find((p) => {
+                        if (rawMaterialId) return Number(p.raw_material_id) === Number(rawMaterialId);
+                        if (ingId) return p.raw_material_id ? false : Number(p.id) === Number(ingId);
+                        return ingName && String(p.name || '').trim().toLowerCase() === ingName;
+                      });
+
+                      const name = ingredientProduct?.name || ing.name || `ID:${rawMaterialId || ingId || idx}`;
                       const unit = ing.unit || ingredientProduct?.unit || 'pcs';
                       const currentStock = ingredientProduct ? Number(ingredientProduct.quantity || 0) : null;
                       const stock_ok = currentStock === null || currentStock >= Number(ing.quantity || 0);
