@@ -485,6 +485,9 @@ export default function AdminDashboard() {
                   </thead>
                   <tbody>
                     {filteredProducts.map((product) => (
+                      (() => {
+                        const isComposite = Array.isArray(product.recipe) && product.recipe.length > 0;
+                        return (
                       <tr key={product.id} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
                         <td className="px-4 py-3 text-sm font-medium">{product.name}</td>
                         <td className="px-4 py-3 text-sm font-semibold text-blue-600">KSH {product.price?.toLocaleString()}</td>
@@ -494,8 +497,8 @@ export default function AdminDashboard() {
                           </span>
                         </td>
                         <td className="px-4 py-3 text-sm">
-                          <span className={`badge ${product.recipe ? 'badge-success' : 'badge-warning'}`}>
-                            {product.recipe ? 'Composite' : 'Raw'}
+                          <span className={`badge ${isComposite ? 'badge-success' : 'badge-warning'}`}>
+                            {isComposite ? 'Composite' : 'Raw'}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-sm">
@@ -514,6 +517,8 @@ export default function AdminDashboard() {
                           </div>
                         </td>
                       </tr>
+                        );
+                      })()
                     ))}
                   </tbody>
                 </table>

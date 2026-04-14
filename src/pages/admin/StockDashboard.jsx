@@ -6,6 +6,8 @@ import {
   ChevronDown, ChevronUp, Filter, BarChart3
 } from 'lucide-react';
 
+const hasRecipe = (product) => Array.isArray(product?.recipe) && product.recipe.length > 0;
+
 const PAYMENT_COLORS = {
   cash: 'bg-green-100 text-green-800',
   card: 'bg-blue-100 text-blue-800',
@@ -81,9 +83,7 @@ export default function StockDashboard() {
   };
 
   // Ingredients are products that appear in any composite product's recipe
-  const compositeProducts = products.filter(p =>
-    p.is_composite || p.isComposite || String(p.category || '').toLowerCase() === 'composite'
-  );
+  const compositeProducts = products.filter(hasRecipe);
 
   // Collect all ingredient product IDs
   const ingredientIds = new Set();
@@ -104,7 +104,7 @@ export default function StockDashboard() {
       return matchSearch && ingredientIds.has(Number(p.id));
     }
     if (categoryFilter === 'composite') {
-      return matchSearch && (p.is_composite || p.isComposite || String(p.category || '').toLowerCase() === 'composite');
+      return matchSearch && hasRecipe(p);
     }
     if (categoryFilter !== 'all') {
       return matchSearch && String(p.category || '').toLowerCase() === categoryFilter;
@@ -317,7 +317,7 @@ export default function StockDashboard() {
                               {isIngredient && (
                                 <span className="text-xs text-orange-600">🥕 Used as ingredient</span>
                               )}
-                              {(product.is_composite || product.isComposite || String(product.category || '').toLowerCase() === 'composite') && (
+                              {hasRecipe(product) && (
                                 <span className="text-xs text-purple-600">🍳 Composite product</span>
                               )}
                             </div>
@@ -374,6 +374,7 @@ export default function StockDashboard() {
                                     <th className="px-3 py-2 text-right text-gray-500">Before</th>
                                     <th className="px-3 py-2 text-right text-red-500">Deducted</th>
                                     <th className="px-3 py-2 text-right text-gray-500">After</th>
+                                    <th className="px-3 py-2 text-left text-gray-500">Deducted For</th>
                                     <th className="px-3 py-2 text-center text-gray-500">Payment</th>
                                     <th className="px-3 py-2 text-left text-gray-500">Cashier</th>
                                   </tr>
@@ -392,6 +393,9 @@ export default function StockDashboard() {
                                       </td>
                                       <td className="px-3 py-2 text-right font-semibold">
                                         {Number(d.quantity_after || 0).toFixed(3)} {d.unit}
+                                      </td>
+                                      <td className="px-3 py-2 text-gray-600 text-xs">
+                                        {d.deduction_reason || d.parent_product || 'Direct sale'}
                                       </td>
                                       <td className="px-3 py-2 text-center">
                                         {paymentBadge(d.payment_method)}
@@ -442,6 +446,7 @@ export default function StockDashboard() {
                   <th className="px-4 py-3 text-right">Before</th>
                   <th className="px-4 py-3 text-right">Deducted</th>
                   <th className="px-4 py-3 text-right">After</th>
+                  <th className="px-4 py-3 text-left">Deducted For</th>
                   <th className="px-4 py-3 text-center">Payment</th>
                   <th className="px-4 py-3 text-left">Cashier</th>
                   <th className="px-4 py-3 text-left">Date & Time</th>
@@ -459,6 +464,9 @@ export default function StockDashboard() {
                     </td>
                     <td className="px-4 py-3 text-right font-semibold text-green-700">
                       {Number(d.quantity_after || 0).toFixed(3)} {d.unit}
+                    </td>
+                    <td className="px-4 py-3 text-gray-600 text-xs">
+                      {d.deduction_reason || d.parent_product || 'Direct sale'}
                     </td>
                     <td className="px-4 py-3 text-center">
                       {paymentBadge(d.payment_method)}

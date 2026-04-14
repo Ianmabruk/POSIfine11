@@ -6,6 +6,9 @@ import { useProducts } from '../../context/ProductsContext';
 import { products, batches } from '../../services/api';
 import websocketService from '../../services/websocketService';
 import { Plus, Search, Edit2, Trash2, ChevronDown, ChevronUp, AlertTriangle, Camera, Package } from 'lucide-react';
+
+const hasRecipe = (product) => Array.isArray(product?.recipe) && product.recipe.length > 0;
+
 export default function Inventory() {
   const { user, isUltraPackage, isRealTimeProductSyncEnabled } = useAuth();
   const { products: globalProducts, refreshProducts, upsertProducts, removeProduct, setEditingState } = useProducts();
@@ -622,20 +625,20 @@ export default function Inventory() {
     if (!p) return false;
     const matchesSearch = p.name?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filter === 'all' ||
-      (filter === 'raw' && !p.recipe) ||
-      (filter === 'composite' && p.recipe) ||
+      (filter === 'raw' && !hasRecipe(p)) ||
+      (filter === 'composite' && hasRecipe(p)) ||
       (filter === 'expense' && p.expenseOnly) ||
       (filter === 'low-stock' && (p.reorder_level || 0) > 0 && (p.quantity || 0) <= (p.reorder_level || 0));
     return matchesSearch && matchesFilter;
   }), [productList, searchTerm, filter]);
 
-  const rawProducts = useMemo(() => (productList || []).filter(p => p && !p.recipe && !p.expenseOnly), [productList]);
-  const compositeProducts = useMemo(() => (productList || []).filter(p => p && p.recipe), [productList]);
+  const rawProducts = useMemo(() => (productList || []).filter(p => p && !hasRecipe(p) && !p.expenseOnly), [productList]);
+  const compositeProducts = useMemo(() => (productList || []).filter(p => p && hasRecipe(p)), [productList]);
   const expenseProducts = useMemo(() => (productList || []).filter(p => p && p.expenseOnly), [productList]);
 
 
   const calculateMaxProducible = (product) => {
-    if (!product || !product.recipe) return 0;
+    if (!product || !hasRecipe(product)) return 0;
     let max = Infinity;
     (product.recipe || []).forEach(ingredient => {
       if (!ingredient) return;
@@ -651,7 +654,7 @@ export default function Inventory() {
 
   const calculateCOGS = (product) => {
     if (!product) return 0;
-    if (!product.recipe) {
+    if (!hasRecipe(product)) {
       // Use cost_per_unit (always synced with cost on the backend).
       return Number(product.cost_per_unit || product.costPerUnit || product.cost || 0);
     }
@@ -851,7 +854,7 @@ export default function Inventory() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          {product.recipe && (
+                          {hasRecipe(product) && (
                             <button
                               onClick={() => setExpandedRow(isExpanded ? null : product.id)}
                               className="p-1 hover:bg-gray-200 rounded"
@@ -860,7 +863,7 @@ export default function Inventory() {
                             </button>
                           )}
                           <span className="font-medium">{product.name}</span>
-                          {(product.reorder_level || 0) > 0 && (product.quantity || 0) <= (product.reorder_level || 0) && !product.recipe && (
+                          {(product.reorder_level || 0) > 0 && (product.quantity || 0) <= (product.reorder_level || 0) && !hasRecipe(product) && (
                             <AlertTriangle className="w-4 h-4 text-orange-500" />
                           )}
                         </div>
@@ -868,10 +871,10 @@ export default function Inventory() {
                       <td className="px-4 py-3">
                         <span className={`badge ${
                           product.expenseOnly ? 'badge-warning' :
-                          product.recipe ? 'badge-success' : 
+                          hasRecipe(product) ? 'badge-success' : 
                           'bg-blue-100 text-blue-800'
                         }`}>
-                          {product.expenseOnly ? 'Expense' : product.recipe ? 'Composite' : 'Raw'}
+                          {product.expenseOnly ? 'Expense' : hasRecipe(product) ? 'Composite' : 'Raw'}
                         </span>
                       </td>
                       <td className="px-4 py-3 font-semibold text-green-600">
@@ -921,7 +924,7 @@ export default function Inventory() {
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        {product.recipe ? (
+                        {hasRecipe(product) ? (
                           <span className="font-semibold text-blue-600">{maxUnits} units</span>
                         ) : (
                           <span className="text-gray-400">-</span>
@@ -970,7 +973,7 @@ export default function Inventory() {
                     
 
                     {/* Expanded Row - Recipe Breakdown */}
-                    {isExpanded && product.recipe && (
+                    {isExpanded && hasRecipe(product) && (
                       <tr className="bg-blue-50">
                         <td colSpan="9" className="px-4 py-4">
                           <div className="ml-8">

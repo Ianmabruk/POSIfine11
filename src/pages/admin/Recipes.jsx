@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { products as productsApi } from '../../services/api';
 import { Plus, Trash2, Save } from 'lucide-react';
 
+const hasRecipe = (product) => Array.isArray(product?.recipe) && product.recipe.length > 0;
+
 export default function Recipes() {
   const [products, setProducts] = useState([]);
   const [rawProducts, setRawProducts] = useState([]);
@@ -21,7 +23,7 @@ export default function Recipes() {
   const loadProducts = async () => {
     const data = await productsApi.getAll();
     setProducts(data);
-    setRawProducts(data.filter(p => !p.recipe));
+    setRawProducts(data.filter(p => !hasRecipe(p)));
   };
 
   const addIngredient = () => {
@@ -122,7 +124,7 @@ export default function Recipes() {
     }
   };
 
-  const compositeProducts = products.filter(p => p.recipe);
+  const compositeProducts = products.filter(hasRecipe);
 
   return (
     <div className="p-6 space-y-6">
