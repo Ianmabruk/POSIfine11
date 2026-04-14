@@ -1,15 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useProducts } from '../context/ProductsContext';
-import { useScreenLock } from '../context/ScreenLockContext';
 import { products, sales, expenses, stats, batches, discounts, timeEntries, creditRequests, reminders } from '../services/api';
 import websocketService from '../services/websocketService';
 import { BASE_API_URL } from '../services/api';
-import { ShoppingCart, Trash2, LogOut, Plus, Minus, DollarSign, TrendingDown, Package, Edit2, Search, BarChart3, Camera, Upload, AlertTriangle, Clock, Play, Square, Settings, Lock, CreditCard, X, Bell, PenSquare } from 'lucide-react';
+import { ShoppingCart, Trash2, LogOut, Plus, Minus, DollarSign, TrendingDown, Package, Edit2, Search, Camera, Upload, AlertTriangle, Clock, Play, Square, CreditCard, X, Bell, PenSquare } from 'lucide-react';
 import SignaturePad from '../components/SignaturePad';
 import DiscountSelector from '../components/DiscountSelector';
 import ProductCard from '../components/ProductCard';
-import ScreenLockPin from '../components/ScreenLockPin';
 import LowStockAlert from '../components/LowStockAlert';
 // Import optimized transaction service
 import { 
@@ -20,7 +18,6 @@ import {
 export default function CashierPOS() {
   const { user, logout } = useAuth();
   const { products: globalProducts, refreshProducts } = useProducts();
-  const { isLocked, lock, unlock } = useScreenLock();
   const [productList, setProductList] = useState([]);
   const [batchList, setBatchList] = useState([]);
   const [cart, setCart] = useState([]);
@@ -69,6 +66,7 @@ export default function CashierPOS() {
 
   const getAccountKey = () => user?.account_id || user?.accountId || user?.id || 'anonymous';
   const getCashierSnapshotKey = () => `cashier_snapshot_${getAccountKey()}`;
+  const getClockStorageKey = () => `clockIn_${user?.id}_${new Date().toDateString()}`;
 
   const persistCashierSnapshot = useCallback((payload) => {
     try {
@@ -320,6 +318,19 @@ export default function CashierPOS() {
     }
   }, [cart, paymentMethod, taxType, selectedDiscount, user?.id]);
 
+  useEffect(() => {
+    if (!user?.id) return;
+
+    persistCashierSnapshot({
+      productList,
+      sales: data.sales || [],
+      expenses: data.expenses || [],
+      stats: data.stats || {},
+      batchList,
+      discountList
+    });
+  }, [user?.id, productList, data, batchList, discountList, persistCashierSnapshot]);
+
   // Save session data to localStorage
   const saveSessionData = () => {
     localStorage.setItem(`cart_${user?.id}`, JSON.stringify(cart));
@@ -333,7 +344,7 @@ export default function CashierPOS() {
   // Clock in function
   const handleClockIn = async () => {
     if (isClockedIn) {
-      alert('ℹ️ You are already clocked in!');
+      showToast('warning', 'You are already clocked in.');
       return;
     }
     
@@ -350,16 +361,16 @@ export default function CashierPOS() {
         setIsClockedIn(true);
         const clockInTime = new Date(result.clockInTime || result.clock_in_time || new Date());
         setClockedInTime(clockInTime);
-        localStorage.setItem(`clockIn_${user?.id}_${new Date().toDateString()}`, clockInTime.toISOString());
+        localStorage.setItem(getClockStorageKey(), clockInTime.toISOString());
         console.log('✅ Clocked in successfully at', clockInTime.toLocaleTimeString());
-        alert('✅ Clocked in successfully!\n\nTime: ' + clockInTime.toLocaleTimeString());
+        showToast('success', `Clocked in at ${clockInTime.toLocaleTimeString()}`);
       } else {
         throw new Error('Invalid response from server');
       }
     } catch (error) {
       console.error('❌ Clock in failed:', error);
       const errorMsg = error.response?.data?.error || error.message || 'Failed to connect to server';
-      alert('❌ Clock in failed\n\n' + errorMsg + '\n\nPlease check your connection and try again.');
+      showToast('error', `Clock in failed: ${errorMsg}`);
     } finally {
       setIsProcessingSale(false);
     }
@@ -368,7 +379,7 @@ export default function CashierPOS() {
   // Clock out function
   const handleClockOut = async () => {
     if (!isClockedIn) {
-      alert('ℹ️ You are not clocked in!');
+      showToast('warning', 'You are not clocked in.');
       return;
     }
     
@@ -386,7 +397,7 @@ export default function CashierPOS() {
       setCurrentTimeEntry(result);
       setIsClockedIn(false);
       setClockedInTime(null);
-      localStorage.removeItem(`clockIn_${user?.id}_${new Date().toDateString()}`);
+      localStorage.removeItem(getClockStorageKey());
       
       const durationStr = result.duration 
         ? `${Math.floor(result.duration / 60)}h ${result.duration % 60}m` 
@@ -395,11 +406,11 @@ export default function CashierPOS() {
         : 'calculated';
       
       console.log('✅ Clocked out successfully. Duration:', durationStr);
-      alert('✅ Clocked out successfully!\n\nDuration: ' + durationStr);
+      showToast('success', `Clocked out successfully. Duration: ${durationStr}`);
     } catch (error) {
       console.error('❌ Clock out failed:', error);
       const errorMsg = error.response?.data?.error || error.message || 'Failed to connect to server';
-      alert('❌ Clock out failed\n\n' + errorMsg + '\n\nPlease check your connection and try again.');
+      showToast('error', `Clock out failed: ${errorMsg}`);
     } finally {
       setIsProcessingSale(false);
     }
@@ -418,13 +429,19 @@ export default function CashierPOS() {
         setIsClockedIn(false);
         setClockedInTime(null);
         setCurrentTimeEntry(null);
+        localStorage.removeItem(getClockStorageKey());
         console.log('User is not clocked in');
       }
     } catch (error) {
       console.warn('Failed to check clock status:', error);
-      // Fallback: assume not clocked in
-      setIsClockedIn(false);
-      setClockedInTime(null);
+      const savedClockIn = localStorage.getItem(getClockStorageKey());
+      if (savedClockIn) {
+        setIsClockedIn(true);
+        setClockedInTime(new Date(savedClockIn));
+      } else {
+        setIsClockedIn(false);
+        setClockedInTime(null);
+      }
     }
   };
 
@@ -747,8 +764,7 @@ export default function CashierPOS() {
             sales: [newSale, ...prev.sales]
           }));
           
-          // 🔥 CRITICAL: Dispatch sale_completed event for Monitor Dashboard
-          console.log('📢 [Checkout] Dispatching sale_completed event for Monitor');
+          console.log('📢 [Checkout] Dispatching sale_completed event for cashier sync');
           window.dispatchEvent(new CustomEvent('sale_completed', {
             detail: {
               sale: newSale,
@@ -1115,15 +1131,6 @@ export default function CashierPOS() {
           POS
         </button>
         <button
-          onClick={() => setActiveView('monitor')}
-          className={`px-4 sm:px-6 py-3 sm:py-2 min-h-[44px] rounded-lg font-medium transition-all text-sm sm:text-base whitespace-nowrap touch-manipulation ${
-            activeView === 'monitor' ? 'bg-gradient-to-r from-green-600 to-teal-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-          }`}
-        >
-          <BarChart3 className="w-4 h-4 inline mr-2" />
-          Monitor
-        </button>
-        <button
           onClick={() => setActiveView('products')}
           className={`px-4 sm:px-6 py-3 sm:py-2 min-h-[44px] rounded-lg font-medium transition-all text-sm sm:text-base whitespace-nowrap touch-manipulation ${
             activeView === 'products' ? 'bg-gradient-to-r from-green-600 to-teal-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -1405,149 +1412,6 @@ export default function CashierPOS() {
               >
                 {checkoutLoading ? '⏳ Processing...' : 'Checkout'}
               </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {activeView === 'monitor' && (
-        <div className="p-6 max-w-7xl mx-auto w-full">
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6 mb-8">
-            <div className="card bg-gradient-to-br from-green-500 to-emerald-600 text-white border-0 shadow-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-green-100 mb-1">Total Sales</p>
-                  <p className="text-3xl font-bold">KSH {data.stats.totalSales?.toLocaleString() || 0}</p>
-                </div>
-                <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center">
-                  <DollarSign className="w-8 h-8" />
-                </div>
-              </div>
-            </div>
-
-            <div className="card bg-gradient-to-br from-amber-500 to-orange-600 text-white border-0 shadow-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-amber-100 mb-1">COGS</p>
-                  <p className="text-3xl font-bold">KSH {data.stats.totalCOGS?.toLocaleString() || 0}</p>
-                </div>
-                <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center">
-                  <Package className="w-8 h-8" />
-                </div>
-              </div>
-            </div>
-
-            <div className="card bg-gradient-to-br from-cyan-500 to-blue-600 text-white border-0 shadow-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-cyan-100 mb-1">Gross Profit</p>
-                  <p className="text-3xl font-bold">KSH {data.stats.grossProfit?.toLocaleString() || 0}</p>
-                </div>
-                <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center">
-                  <DollarSign className="w-8 h-8" />
-                </div>
-              </div>
-            </div>
-            
-            <div className="card bg-gradient-to-br from-red-500 to-pink-600 text-white border-0 shadow-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-red-100 mb-1">Expenses</p>
-                  <p className="text-3xl font-bold">KSH {data.stats.totalExpenses?.toLocaleString() || 0}</p>
-                </div>
-                <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center">
-                  <TrendingDown className="w-8 h-8" />
-                </div>
-              </div>
-            </div>
-            
-            <div className="card bg-gradient-to-br from-blue-500 to-indigo-600 text-white border-0 shadow-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-blue-100 mb-1">Net Profit</p>
-                  <p className="text-3xl font-bold">KSH {(data.stats.netProfit ?? data.stats.profit ?? 0).toLocaleString()}</p>
-                </div>
-                <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center">
-                  <DollarSign className="w-8 h-8" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="card shadow-lg">
-            <h3 className="text-lg font-semibold mb-4">Recent Sales</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Date & Time</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Items</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Payment</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Stock Deducted</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.sales && data.sales.slice(-15).reverse().map((sale, i) => {
-                    const deductionsSummary = sale.stockDeductions?.products
-                      ?.slice(0, 2)
-                      .map(p => `${p.name}: -${p.deducted}${p.unit}`)
-                      .join(', ') + (sale.stockDeductions?.products?.length > 2 ? '...' : '') || 'None';
-                    
-                    return (
-                      <tr key={i} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
-                        <td className="px-4 py-3 text-sm font-medium">{new Date(sale.createdAt).toLocaleString()}</td>
-                        <td className="px-4 py-3 text-sm">{sale.items?.length || 0} items</td>
-                        <td className="px-4 py-3 text-sm">
-                          <span className="badge badge-success">{sale.paymentMethod || 'cash'}</span>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-orange-600 font-semibold">{deductionsSummary}</td>
-                        <td className="px-4 py-3 text-sm font-semibold text-green-600">KSH {sale.total?.toLocaleString()}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div className="card shadow-lg mt-6">
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <Package className="w-5 h-5 text-orange-600" />
-              Stock Deductions Log
-            </h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-orange-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Sale ID</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Product</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Before</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Deducted</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">After</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Unit</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Time</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.sales && data.sales.slice(-20).reverse().map((sale) => 
-                    sale.stockDeductions?.products?.map((deduction, idx) => (
-                      <tr key={`${sale.id}-${idx}`} className="border-t border-orange-100 hover:bg-orange-50 transition-colors">
-                        <td className="px-4 py-3 font-medium text-blue-600">#{sale.id}</td>
-                        <td className="px-4 py-3">{deduction.name}</td>
-                        <td className="px-4 py-3 text-gray-600">{deduction.before}</td>
-                        <td className="px-4 py-3 font-semibold text-red-600">-{deduction.deducted}</td>
-                        <td className="px-4 py-3 font-semibold text-green-600">{deduction.after}</td>
-                        <td className="px-4 py-3 text-gray-600">{deduction.unit}</td>
-                        <td className="px-4 py-3 text-xs text-gray-500">{new Date(sale.createdAt).toLocaleTimeString()}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-              {(!data.sales || data.sales.length === 0 || !data.sales.some(s => s.stockDeductions?.products?.length > 0)) && (
-                <div className="p-4 text-center text-gray-500">No stock deductions yet</div>
-              )}
             </div>
           </div>
         </div>
@@ -1998,15 +1862,6 @@ export default function CashierPOS() {
           </div>
         </div>
       )}
-
-      {/* Screen Lock PIN Component */}
-      <ScreenLockPin 
-        isLocked={isLocked} 
-        onUnlock={unlock}
-        userPin={user?.pin || '1234'}
-        userName={user?.name}
-        businessLogo={user?.business_logo || user?.businessLogo || localStorage.getItem('appLogo') || ''}
-      />
     </div>
   );
 }

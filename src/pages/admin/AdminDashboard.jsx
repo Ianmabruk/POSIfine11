@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { BASE_API_URL } from '../../services/api';
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -7,26 +7,25 @@ import {
   LayoutDashboard, ShoppingBag, Package, Layers, TrendingDown, TrendingUp,
   Users, Settings, LogOut, Menu, X, ExternalLink, Clock, Bell, DollarSign, Tag, CreditCard, Truck, MessageSquare, BarChart3
 } from 'lucide-react';
-import Overview from './Overview';
-import Analytics from './Analytics';
-import Inventory from './Inventory';
-import Recipes from './Recipes';
-import Sales from './Sales';
-import Expenses from './Expenses';
-import UserManagement from './UserManagement';
-import TimeTracking from './TimeTracking';
-import SettingsPage from './SettingsPage';
-import ServiceFees from './ServiceFees';
-import RemindersManager from './RemindersManager';
-import Discounts from './Discounts';
-import CreditRequests from './CreditRequests';
-import Vendors from './Vendors';
-import AdminSupportChat from './AdminSupportChat';
-import StockDashboard from './StockDashboard';
 import ReminderModal from '../../components/ReminderModal';
-import ScreenLock from '../../components/ScreenLock';
-import useInactivity from '../../hooks/useInactivity';
 import { settings as settingsApi } from '../../services/api';
+
+const Overview = lazy(() => import('./Overview'));
+const Analytics = lazy(() => import('./Analytics'));
+const Inventory = lazy(() => import('./Inventory'));
+const Recipes = lazy(() => import('./Recipes'));
+const Sales = lazy(() => import('./Sales'));
+const Expenses = lazy(() => import('./Expenses'));
+const UserManagement = lazy(() => import('./UserManagement'));
+const TimeTracking = lazy(() => import('./TimeTracking'));
+const SettingsPage = lazy(() => import('./SettingsPage'));
+const ServiceFees = lazy(() => import('./ServiceFees'));
+const RemindersManager = lazy(() => import('./RemindersManager'));
+const Discounts = lazy(() => import('./Discounts'));
+const CreditRequests = lazy(() => import('./CreditRequests'));
+const Vendors = lazy(() => import('./Vendors'));
+const AdminSupportChat = lazy(() => import('./AdminSupportChat'));
+const StockDashboard = lazy(() => import('./StockDashboard'));
 
 
 export default function AdminDashboard() {
@@ -46,7 +45,6 @@ export default function AdminDashboard() {
       return cached ? { logo: cached } : {};
     } catch { return {}; }
   });
-  const [isLocked, unlock] = useInactivity(45000); // 45 seconds
 
   // Sync from AuthContext appSettings whenever it changes
   useEffect(() => {
@@ -345,7 +343,7 @@ export default function AdminDashboard() {
                       <button
                         key={item.path}
                         onClick={() => {
-                          navigate(`/admin${item.path}`);
+                          navigate(item.path);
                           setSearchQuery('');
                         }}
                         className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50"
@@ -398,35 +396,34 @@ export default function AdminDashboard() {
               </div>
             </div>
           )}
-          <Routes>
-            <Route path="/analytics" element={<Analytics />} />
-            <Route path="/" element={<Overview />} />
-            <Route path="/sales" element={<Sales />} />
-            <Route path="/inventory" element={<Inventory />} />
-            <Route path="/stock" element={<StockDashboard />} />
-            <Route path="/recipes" element={<Recipes />} />
-            <Route path="/expenses" element={<Expenses />} />
-            <Route path="/vendors" element={<Vendors />} />
-            <Route path="/reminders" element={<RemindersManager />} />
-            <Route path="/service-fees" element={<ServiceFees />} />
-            <Route path="/discounts" element={<Discounts />} />
-            <Route path="/credit-requests" element={<CreditRequests />} />
-            <Route path="/users" element={<UserManagement />} />
-            <Route path="/time" element={<TimeTracking />} />
-            <Route path="/support" element={<AdminSupportChat />} />
-            <Route path="/settings" element={<SettingsPage />} />
-          </Routes>
+          <Suspense fallback={
+            <div className="p-6 text-sm text-gray-500">Loading dashboard section...</div>
+          }>
+            <Routes>
+              <Route path="/analytics" element={<Analytics />} />
+              <Route path="/" element={<Overview />} />
+              <Route path="/sales" element={<Sales />} />
+              <Route path="/inventory" element={<Inventory />} />
+              <Route path="/stock" element={<StockDashboard />} />
+              <Route path="/recipes" element={<Recipes />} />
+              <Route path="/expenses" element={<Expenses />} />
+              <Route path="/vendors" element={<Vendors />} />
+              <Route path="/reminders" element={<RemindersManager />} />
+              <Route path="/service-fees" element={<ServiceFees />} />
+              <Route path="/discounts" element={<Discounts />} />
+              <Route path="/credit-requests" element={<CreditRequests />} />
+              <Route path="/users" element={<UserManagement />} />
+              <Route path="/time" element={<TimeTracking />} />
+              <Route path="/support" element={<AdminSupportChat />} />
+              <Route path="/settings" element={<SettingsPage />} />
+            </Routes>
+          </Suspense>
         </main>
       </div>
 
       {/* Reminder Modal */}
       {showReminderModal && (
         <ReminderModal onClose={() => setShowReminderModal(false)} />
-      )}
-
-      {/* Screen Lock */}
-      {isLocked && (
-        <ScreenLock onUnlock={unlock} logo={appSettings.logo} />
       )}
     </div>
   );

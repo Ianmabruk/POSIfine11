@@ -37,6 +37,7 @@ export const AuthProvider = ({ children }) => {
 
     try {
       const response = await fetch(`${BASE_API_URL}/settings`, {
+        credentials: 'include',
         headers: { Authorization: `Bearer ${token}` }
       });
       if (!response.ok) {
@@ -112,6 +113,7 @@ export const AuthProvider = ({ children }) => {
         // from public pages (like the landing page) during initialization.
         try {
           const resp = await fetch(`${BASE_API_URL}/auth/me`, {
+            credentials: 'include',
             headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
           });
           if (resp.ok) {
@@ -128,6 +130,7 @@ export const AuthProvider = ({ children }) => {
               try {
                 const refreshResp = await fetch(`${BASE_API_URL}/auth/refresh`, {
                   method: 'POST',
+                  credentials: 'include',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ refreshToken })
                 });
@@ -192,6 +195,7 @@ export const AuthProvider = ({ children }) => {
             try {
               const refreshResp = await fetch(`${BASE_API_URL}/auth/refresh`, {
                 method: 'POST',
+                credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ refreshToken })
               });
@@ -343,6 +347,7 @@ export const AuthProvider = ({ children }) => {
       if (refreshToken) {
         await fetch(`${BASE_API_URL}/auth/logout`, {
           method: 'POST',
+          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ refreshToken })
         });

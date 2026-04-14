@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Fragment } from 'react';
 import { products as productsApi } from '../../services/api';
 import api from '../../services/api';
 import {
@@ -29,6 +29,17 @@ export default function StockDashboard() {
   const [expandedProduct, setExpandedProduct] = useState(null);
   const [lastRefreshed, setLastRefreshed] = useState(null);
 
+  const fetchDeductions = useCallback(async (productId = null) => {
+    const endpoint = productId
+      ? `/stock-deductions?product_id=${productId}&limit=500`
+      : `/stock-deductions?limit=500`;
+    try {
+      return await api.get(endpoint);
+    } catch {
+      return [];
+    }
+  }, []);
+
   const loadData = useCallback(async () => {
     setLoading(true);
     setDeductionsLoading(true);
@@ -46,18 +57,7 @@ export default function StockDashboard() {
       setLoading(false);
       setDeductionsLoading(false);
     }
-  }, []);
-
-  const fetchDeductions = async (productId = null) => {
-    const endpoint = productId
-      ? `/stock-deductions?product_id=${productId}&limit=500`
-      : `/stock-deductions?limit=500`;
-    try {
-      return await api.get(endpoint);
-    } catch {
-      return [];
-    }
-  };
+  }, [fetchDeductions]);
 
   useEffect(() => {
     loadData();
@@ -297,9 +297,8 @@ export default function StockDashboard() {
                   ).slice(0, 10);
 
                   return (
-                    <>
+                    <Fragment key={product.id}>
                       <tr
-                        key={product.id}
                         className={`border-t border-gray-100 hover:bg-gray-50 transition-colors ${
                           isExpanded ? 'bg-blue-50' : ''
                         }`}
@@ -360,7 +359,7 @@ export default function StockDashboard() {
                         </td>
                       </tr>
                       {isExpanded && (
-                        <tr key={`${product.id}-history`} className="bg-blue-50">
+                        <tr className="bg-blue-50">
                           <td colSpan={7} className="px-6 py-4">
                             <h4 className="text-xs font-semibold text-gray-600 mb-2 uppercase">
                               Deduction History for {product.name}
@@ -406,7 +405,7 @@ export default function StockDashboard() {
                           </td>
                         </tr>
                       )}
-                    </>
+                    </Fragment>
                   );
                 })}
               </tbody>

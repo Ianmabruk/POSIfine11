@@ -1,17 +1,14 @@
 
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, Fragment } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useProducts } from '../../context/ProductsContext';
 import { products, batches } from '../../services/api';
 import websocketService from '../../services/websocketService';
 import { Plus, Search, Edit2, Trash2, ChevronDown, ChevronUp, AlertTriangle, Camera, Package } from 'lucide-react';
-
-
-
 export default function Inventory() {
   const { user, isUltraPackage, isRealTimeProductSyncEnabled } = useAuth();
-  const { products: globalProducts, refreshProducts, setEditingState } = useProducts();
+  const { products: globalProducts, refreshProducts, upsertProducts, removeProduct, setEditingState } = useProducts();
   const [productList, setProductList] = useState([]);
   const [batchList, setBatchList] = useState([]);
   const [hasLoadedInitially, setHasLoadedInitially] = useState(false);
@@ -62,13 +59,35 @@ export default function Inventory() {
     reorder_level: ''
   });
 
+  const mergeProductsById = useCallback((existingProducts = [], incomingProducts = []) => {
+    const merged = new Map((existingProducts || []).map(product => [product.id, product]));
+
+    (incomingProducts || []).forEach((incomingProduct) => {
+      if (!incomingProduct?.id) return;
+      const previous = merged.get(incomingProduct.id) || {};
+      merged.set(incomingProduct.id, { ...previous, ...incomingProduct });
+    });
+
+    return Array.from(merged.values());
+  }, []);
+
+  const inventorySnapshotKey = useMemo(() => {
+    const accountKey = user?.account_id || user?.accountId || user?.id || 'anonymous';
+    return `inventory_snapshot_${accountKey}`;
+  }, [user?.account_id, user?.accountId, user?.id]);
+
   // Load data function
   const loadData = async () => {
     try {
       console.log('📦 Loading inventory data...');
-      await refreshProducts();
-      const batchData = await batches.getAll();
-      setBatchList(batchData);
+      const [freshProducts, batchData] = await Promise.all([
+        refreshProducts(),
+        batches.getAll()
+      ]);
+      if (Array.isArray(freshProducts)) {
+        setProductList(freshProducts);
+      }
+      setBatchList(Array.isArray(batchData) ? batchData : []);
       console.log('✅ Inventory data loaded');
     } catch (error) {
       console.error('❌ Failed to load data:', error);
@@ -79,6 +98,21 @@ export default function Inventory() {
   useEffect(() => {
     // Initial load only
     if (!hasLoadedInitially) {
+      try {
+        const cachedSnapshot = localStorage.getItem(inventorySnapshotKey);
+        if (cachedSnapshot) {
+          const parsedSnapshot = JSON.parse(cachedSnapshot);
+          if (Array.isArray(parsedSnapshot?.products) && parsedSnapshot.products.length > 0) {
+            setProductList(parsedSnapshot.products);
+          }
+          if (Array.isArray(parsedSnapshot?.batches) && parsedSnapshot.batches.length > 0) {
+            setBatchList(parsedSnapshot.batches);
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to restore inventory snapshot:', error);
+      }
+
       loadData();
       setHasLoadedInitially(true);
     }
@@ -124,7 +158,8 @@ export default function Inventory() {
         console.log('🔄 Sale completed - updating inventory display:', saleData);
         if (saleData.updatedProducts && saleData.updatedProducts.length > 0) {
           console.log(`✅ Updating ${saleData.updatedProducts.length} products from sale`);
-          setProductList(saleData.updatedProducts);
+          setProductList(prevList => mergeProductsById(prevList, saleData.updatedProducts));
+          upsertProducts(saleData.updatedProducts);
           showNotification(`✅ Stock updated! Sale #${saleData.saleId} deducted inventory`, 'success');
         }
         if (saleData.lowStockWarnings && saleData.lowStockWarnings.length > 0) {
@@ -156,14 +191,26 @@ export default function Inventory() {
       websocketService.disconnect();
       setEditingState(false);
     };
-  }, [hasLoadedInitially, setEditingState]);
+  }, [hasLoadedInitially, inventorySnapshotKey, mergeProductsById, setEditingState, upsertProducts]);
 
   // Sync with global products whenever they change.
   useEffect(() => {
     if (globalProducts && globalProducts.length > 0) {
-      setProductList(globalProducts);
+      setProductList(prevList => mergeProductsById(prevList, globalProducts));
     }
-  }, [globalProducts]);
+  }, [globalProducts, mergeProductsById]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(inventorySnapshotKey, JSON.stringify({
+        products: productList,
+        batches: batchList,
+        savedAt: Date.now()
+      }));
+    } catch (error) {
+      console.warn('Failed to persist inventory snapshot:', error);
+    }
+  }, [inventorySnapshotKey, productList, batchList]);
 
   // Pause shared product auto-refresh while user is editing in this screen.
   useEffect(() => {
@@ -197,13 +244,37 @@ export default function Inventory() {
     }
   };
 
+  const productById = useMemo(() => {
+    const byId = new Map();
+    (productList || []).forEach((product) => {
+      if (product?.id != null) {
+        byId.set(Number(product.id), product);
+      }
+    });
+    return byId;
+  }, [productList]);
+
+  const batchesByProductId = useMemo(() => {
+    const byId = new Map();
+    (batchList || []).forEach((batch) => {
+      const productId = Number(batch?.productId ?? batch?.product_id);
+      if (!Number.isFinite(productId)) return;
+      const existing = byId.get(productId) || [];
+      if (Number(batch?.quantity || 0) > 0) {
+        existing.push(batch);
+        byId.set(productId, existing);
+      }
+    });
+    return byId;
+  }, [batchList]);
+
   const getProductStock = (productId) => {
-    const productBatches = batchList.filter(b => b.productId === productId && b.quantity > 0);
-    return productBatches.reduce((total, batch) => total + batch.quantity, 0);
+    const productBatches = batchesByProductId.get(Number(productId)) || [];
+    return productBatches.reduce((total, batch) => total + Number(batch.quantity || 0), 0);
   };
 
   const getProductBatches = (productId) => {
-    return batchList.filter(b => b.productId === productId && b.quantity > 0);
+    return batchesByProductId.get(Number(productId)) || [];
   };
 
   const showNotification = (message, type = 'success') => {
@@ -266,7 +337,8 @@ export default function Inventory() {
       const result = await products.create(productData);
 
       // API success first, then UI state update.
-      setProductList(prev => [...prev, result]);
+      setProductList(prev => mergeProductsById(prev, [result]));
+      upsertProducts(result);
       setNewProduct({
         name: '',
         price: '',
@@ -299,10 +371,6 @@ export default function Inventory() {
         }
       }));
 
-      const freshProducts = await refreshProducts();
-      if (Array.isArray(freshProducts)) {
-        setProductList(freshProducts);
-      }
     } catch (error) {
       console.error('Failed to create product:', error);
       showNotification(`❌ Failed to add product: ${error.message || 'Unknown error'}`, 'error');
@@ -333,29 +401,29 @@ export default function Inventory() {
 
       showNotification('⚡ Adding stock...', 'info');
 
-      let result = null;
-      try {
-        result = await batches.create({
-          productId: selectedProduct.id,
-          quantity: quantityToAdd,
-          expiryDate: newStock.expiryDate,
-          batchNumber: newStock.batchNumber || `BATCH-${Date.now()}`,
-          cost: parsedCost ?? Number(selectedProduct.cost_per_unit || selectedProduct.cost || 0)
-        });
-      } catch (batchError) {
-        console.warn('Batches API failed, falling back to direct stock update:', batchError.message);
-        await products.updateStock(selectedProduct.id, { quantity: oldQuantity + quantityToAdd });
+      const result = await batches.create({
+        productId: selectedProduct.id,
+        quantity: quantityToAdd,
+        expiryDate: newStock.expiryDate,
+        batchNumber: newStock.batchNumber || `BATCH-${Date.now()}`,
+        cost: parsedCost ?? Number(selectedProduct.cost_per_unit || selectedProduct.cost || 0)
+      });
+
+      const createdBatch = result?.batch || result;
+      const updatedProduct = result?.product || {
+        ...currentProduct,
+        quantity: oldQuantity + quantityToAdd,
+        cost: parsedCost ?? Number(currentProduct?.cost_per_unit || currentProduct?.cost || 0),
+        cost_per_unit: parsedCost ?? Number(currentProduct?.cost_per_unit || currentProduct?.cost || 0),
+        updated_at: new Date().toISOString()
+      };
+
+      if (createdBatch?.id || createdBatch?.productId || createdBatch?.product_id) {
+        setBatchList(prev => [...prev, createdBatch]);
       }
 
-      if (result) {
-        setBatchList(prev => [...prev, result]);
-      }
-
-      const updatedProducts = await refreshProducts();
-      const updatedProduct = updatedProducts?.find(p => p.id === selectedProduct.id);
-      if (updatedProduct) {
-        setProductList(prev => prev.map(p => p.id === selectedProduct.id ? updatedProduct : p));
-      }
+      setProductList(prev => mergeProductsById(prev, [updatedProduct]));
+      upsertProducts(updatedProduct);
 
       const latestQuantity = Number(updatedProduct?.quantity ?? (oldQuantity + quantityToAdd));
       const threshold = Number(updatedProduct?.reorder_level || selectedProduct.reorder_level || 0);
@@ -447,12 +515,8 @@ export default function Inventory() {
 
       const result = await products.update(editProduct.id, updateData);
       if (result && result.id) {
-        setProductList(prevList => prevList.map(p => p.id === editProduct.id ? result : p));
-      }
-
-      const updatedProducts = await refreshProducts();
-      if (Array.isArray(updatedProducts) && updatedProducts.length > 0) {
-        setProductList(updatedProducts);
+        setProductList(prevList => mergeProductsById(prevList, [result]));
+        upsertProducts(result);
       }
 
       setShowEditModal(false);
@@ -505,6 +569,7 @@ export default function Inventory() {
 
       // Update local state immediately for better UX
       setProductList(prevProducts => prevProducts.filter(p => p.id !== id));
+      removeProduct(id);
       
       // Trigger real-time sync notification if enabled
       if (isRealTimeProductSyncEnabled() && productToDelete) {
@@ -530,9 +595,6 @@ export default function Inventory() {
         const successMessage = result?.message || 'Product deleted successfully!';
         alert(successMessage);
       }
-      
-      // Refresh products to ensure sync with backend
-      await refreshProducts();
       
     } catch (error) {
       console.error('Failed to delete product:', error);
@@ -578,7 +640,7 @@ export default function Inventory() {
     (product.recipe || []).forEach(ingredient => {
       if (!ingredient) return;
 
-      const raw = (productList || []).find(p => p && p.id === ingredient.productId);
+      const raw = productById.get(Number(ingredient.productId || ingredient.product_id));
       if (raw && raw.quantity > 0 && ingredient.quantity > 0) {
         const possible = Math.floor(raw.quantity / ingredient.quantity);
         max = Math.min(max, possible);
@@ -598,7 +660,7 @@ export default function Inventory() {
       if (!ingredient) return;
       // Support both camelCase (productId, from Recipes.jsx) and snake_case (product_id)
       const ingProductId = ingredient.productId || ingredient.product_id;
-      const raw = (productList || []).find(p => p && p.id === ingProductId);
+      const raw = productById.get(Number(ingProductId));
       if (raw) {
         // Always use cost_per_unit — it is the fixed unit cost and doesn't vary with stock level.
         const unitCost = Number(raw.cost_per_unit || raw.costPerUnit || raw.cost || 0);
@@ -683,14 +745,14 @@ export default function Inventory() {
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="relative">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex w-full flex-col gap-3 md:flex-row md:items-center">
+          <div className="relative w-full md:max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
               placeholder="Search products..."
-              className="input pl-10 w-80"
+              className="input w-full pl-10"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -699,7 +761,7 @@ export default function Inventory() {
           <select 
             value={filter} 
             onChange={(e) => setFilter(e.target.value)}
-            className="input w-40"
+            className="input w-full md:w-48"
           >
             <option value="all">All Products</option>
             <option value="raw">Raw Materials</option>
@@ -714,7 +776,7 @@ export default function Inventory() {
             setImagePreview('');
             setShowAddModal(true);
           }}
-          className="btn-primary flex items-center gap-2"
+          className="btn-primary flex w-full items-center justify-center gap-2 md:w-auto"
           disabled={isAddingProduct}
         >
           <Plus className="w-4 h-4" />
@@ -767,9 +829,9 @@ export default function Inventory() {
                 const isExpanded = expandedRow === product.id;
 
                 return (
-                  <>
+                  <Fragment key={product.id}>
 
-                    <tr key={product.id} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
+                    <tr className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
 
                       <td className="px-4 py-3">
                         {product.image ? (
@@ -955,7 +1017,7 @@ export default function Inventory() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 );
               })}
             </tbody>
@@ -966,13 +1028,13 @@ export default function Inventory() {
 
       {/* Add Stock Modal */}
       {showAddStock && selectedProduct && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={(e) => {
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={(e) => {
           if (e.target === e.currentTarget) {
             setShowAddStock(false);
             setSelectedProduct(null);
           }
         }}>
-          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
+          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl bg-white p-6 shadow-2xl">
             <h3 className="text-xl font-bold mb-4 text-gray-900">Add Stock for {selectedProduct.name}</h3>
             <form onSubmit={handleAddStock} className="space-y-4">
               <input
@@ -1022,8 +1084,8 @@ export default function Inventory() {
 
       {/* Add Product Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-2xl shadow-2xl ring-1 ring-black/5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-black/5">
             <div className="mb-4">
               <h3 className="text-2xl font-bold text-gray-900">Add New Product</h3>
               <p className="text-sm text-gray-500">Create products faster with inline image preview and quick pricing.</p>
@@ -1054,7 +1116,7 @@ export default function Inventory() {
                   </div>
                 )}
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <input
                   type="number"
                   step="0.01"
@@ -1073,7 +1135,7 @@ export default function Inventory() {
                   onChange={(e) => setNewProduct({ ...newProduct, cost: e.target.value })}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <input
                   type="number"
                   step="1"
@@ -1093,7 +1155,7 @@ export default function Inventory() {
                   <option value="service">Service</option>
                 </select>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <select
                   className="input"
                   value={newProduct.unit}
@@ -1143,8 +1205,8 @@ export default function Inventory() {
 
       {/* Edit Product Modal */}
       {showEditModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-2xl shadow-2xl ring-1 ring-black/5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-black/5">
             <div className="mb-4">
               <h3 className="text-2xl font-bold text-gray-900">Edit Product</h3>
               <p className="text-sm text-gray-500">Changes save fast and sync across cashiers.</p>
@@ -1180,7 +1242,7 @@ export default function Inventory() {
                   <img src={editProduct.image} alt="Preview" className="w-20 h-20 object-cover rounded" />
                 )}
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <input
                   type="number"
                   step="0.01"
@@ -1209,7 +1271,7 @@ export default function Inventory() {
                 value={editProduct.reorder_level ?? ''}
                 onChange={(e) => setEditProduct({ ...editProduct, reorder_level: e.target.value })}
               />
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="relative">
                   <input
                     type="number"
@@ -1278,8 +1340,8 @@ export default function Inventory() {
 
       {/* Weight-Based Pricing Modal */}
       {showWeightPricingModal && selectedProduct && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-96 overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-6">
             <h3 className="text-xl font-bold mb-4">Weight-Based Pricing - {selectedProduct.name}</h3>
             <p className="text-sm text-gray-600 mb-4">Set different prices for different weights (in 0.1kg increments)</p>
             
@@ -1287,7 +1349,7 @@ export default function Inventory() {
               {/* Add new weight price */}
               <div className="border border-gray-200 rounded-lg p-4 space-y-3">
                 <h4 className="font-semibold text-sm text-gray-700">Add New Weight Price</h4>
-                <form onSubmit={handleAddWeightPrice} className="flex gap-3">
+                <form onSubmit={handleAddWeightPrice} className="flex flex-col gap-3 md:flex-row">
                   <input
                     type="number"
                     step="0.1"

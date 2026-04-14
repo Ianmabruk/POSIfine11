@@ -42,6 +42,7 @@ const requestWithRetry = async (endpoint, options = {}, retryCount = 0, maxRetri
   
   const config = {
     ...options,
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       ...(token && !(cleanEndpoint.startsWith('/auth') && cleanEndpoint !== '/auth/me') && !cleanEndpoint.includes('/main-admin/auth/login') && { Authorization: `Bearer ${token}` }),
@@ -60,6 +61,7 @@ const requestWithRetry = async (endpoint, options = {}, retryCount = 0, maxRetri
           try {
             const refreshResp = await fetch(`${BASE_API_URL}/auth/refresh`, {
               method: 'POST',
+              credentials: 'include',
               headers: {
                 'Content-Type': 'application/json',
                 ...(csrfToken && { 'X-CSRF-Token': csrfToken })

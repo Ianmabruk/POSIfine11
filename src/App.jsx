@@ -1,18 +1,14 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ProductsProvider } from './context/ProductsContext';
-import { ScreenLockProvider, useScreenLock } from './context/ScreenLockContext';
 import { ProtectedRoute as RouteGuard, ProPlanGuard, RoleGuard, BusinessTypeGuard, AdminGuard, PetroleumPlanGuard } from './components/RouteGuards';
 import ReminderModal from './components/ReminderModal';
-import ScreenLock from './components/ScreenLock';
 import SubscriptionReminderBar from './components/SubscriptionReminderBar';
 import StockUpdateListener from './components/StockUpdateListener';
 import ErrorBoundary from './components/ErrorBoundary';
 import CookieConsent from './components/CookieConsent';
-import useInactivity from './hooks/useInactivity';
-import { BASE_API_URL } from './services/api';
 import performanceMonitor from './services/performanceMonitor';
-import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 
 import Landing from './pages/Landing';
 import LandingModern from './components/modern-landing/LandingModern';
@@ -55,35 +51,10 @@ const SupermarketDashboard = lazy(() => import('./pages/business/SupermarketDash
 
 function ProtectedRoute({ children, adminOnly = false, ultraOnly = false, ownerOnly = false }) {
   const { user, loading } = useAuth();
-  const { isLocked: isScreenLocked, lock: lockScreen, unlock: unlockScreen } = useScreenLock();
   const [showReminders, setShowReminders] = useState(false);
-  const inactivityResult = useInactivity(60000); // 1 minute for all dashboards
-  const isLocked = inactivityResult?.[0] || isScreenLocked || false;
-  const unlock = useCallback(() => {
-    inactivityResult?.[1]?.();
-    unlockScreen();
-  }, [inactivityResult, unlockScreen]);
-  const [settings, setSettings] = useState({});
   
   useEffect(() => {
-    const loadSettings = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const API_URL = BASE_API_URL;
-        const res = await fetch(`${API_URL}/settings`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setSettings(data);
-        }
-      } catch (error) {
-        console.error('Failed to load settings:', error);
-      }
-    };
-    
     if (user && !ownerOnly) {
-      loadSettings();
       // Only show reminders once per session to avoid duplicate displays
       const reminderShown = sessionStorage.getItem('reminderShown');
       if (!reminderShown) {
@@ -92,28 +63,6 @@ function ProtectedRoute({ children, adminOnly = false, ultraOnly = false, ownerO
       }
     }
   }, [user, ownerOnly]);
-
-  useEffect(() => {
-    const handleSettingsChanged = (event) => {
-      if (event?.detail) {
-        setSettings((prev) => ({ ...prev, ...event.detail }));
-      }
-    };
-
-    window.addEventListener('settingsChanged', handleSettingsChanged);
-    return () => window.removeEventListener('settingsChanged', handleSettingsChanged);
-  }, []);
-
-  // Listen for screen lock from admin
-  useEffect(() => {
-    const handleAdminLock = (event) => {
-      console.log('🔒 Admin locked screen:', event.detail);
-      lockScreen('admin');
-    };
-
-    window.addEventListener('admin_locked_user_screen', handleAdminLock);
-    return () => window.removeEventListener('admin_locked_user_screen', handleAdminLock);
-  }, [lockScreen]);
   
   if (loading && !ownerOnly) {
     return (
@@ -144,19 +93,10 @@ function ProtectedRoute({ children, adminOnly = false, ultraOnly = false, ownerO
     if (ultraOnly && (user.role !== 'admin' || user.plan !== 'ultra')) return <Navigate to="/dashboard" />;
   }
   
-  const userType = ownerOnly ? 'main_admin' : 'user';
-  
   return (
     <>
       <SubscriptionReminderBar />
       <StockUpdateListener />
-      {isLocked && (
-        <ScreenLock
-          onUnlock={unlock}
-          userType={userType}
-          logo={settings.logo || settings.business_logo || user?.business_logo}
-        />
-      )}
       {showReminders && <ReminderModal onClose={() => setShowReminders(false)} />}
       {children}
     </>
@@ -246,15 +186,14 @@ function App() {
     <ErrorBoundary>
       <AuthProvider>
         <ProductsProvider>
-          <ScreenLockProvider>
-            <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-              <Suspense fallback={
-                <div className="min-h-screen flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-                </div>
-              }>
-                <ErrorBoundary>
-                  <Routes>
+          <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+            <Suspense fallback={
+              <div className="min-h-screen flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              </div>
+            }>
+              <ErrorBoundary>
+                <Routes>
                 <Route path="/" element={<LandingModern />} />
                 <Route path="/landing-old" element={<Landing />} />
                 <Route path="/get-started" element={<LandingModern />} />
@@ -496,12 +435,11 @@ function App() {
                 
                 {/* OLD Cashier route - direct access to old CashierPOS */}
                 <Route path="/cashier" element={<ProtectedRoute><CashierPOS /></ProtectedRoute>} />
-                  </Routes>
-                </ErrorBoundary>
-              </Suspense>
-              <CookieConsent />
-            </BrowserRouter>
-          </ScreenLockProvider>
+                </Routes>
+              </ErrorBoundary>
+            </Suspense>
+            <CookieConsent />
+          </BrowserRouter>
         </ProductsProvider>
       </AuthProvider>
     </ErrorBoundary>

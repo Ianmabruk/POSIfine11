@@ -4,6 +4,18 @@ import { useAuth } from './AuthContext';
 
 const ProductsContext = createContext();
 
+const mergeProductsById = (existingProducts = [], incomingProducts = []) => {
+  const merged = new Map((existingProducts || []).map(product => [product.id, product]));
+
+  (incomingProducts || []).forEach((incomingProduct) => {
+    if (!incomingProduct?.id) return;
+    const previous = merged.get(incomingProduct.id) || {};
+    merged.set(incomingProduct.id, { ...previous, ...incomingProduct });
+  });
+
+  return Array.from(merged.values());
+};
+
 export const useProducts = () => useContext(ProductsContext);
 
 export const ProductsProvider = ({ children }) => {
@@ -16,6 +28,17 @@ export const ProductsProvider = ({ children }) => {
 
   const getAccountKey = () => user?.account_id || user?.accountId || user?.id || 'anonymous';
   const getProductsCacheKey = () => `products_cache_${getAccountKey()}`;
+
+  const persistProductsCache = useCallback((nextProducts) => {
+    try {
+      localStorage.setItem(getProductsCacheKey(), JSON.stringify({
+        products: nextProducts,
+        savedAt: Date.now()
+      }));
+    } catch (error) {
+      console.warn('Failed to persist products cache:', error);
+    }
+  }, [user?.account_id, user?.accountId, user?.id]);
 
   const fetchProducts = useCallback(async () => {
     const token = localStorage.getItem('token');
@@ -35,10 +58,7 @@ export const ProductsProvider = ({ children }) => {
         return !p.pendingDelete;
       });
 
-      localStorage.setItem(getProductsCacheKey(), JSON.stringify({
-        products: visibleProducts,
-        savedAt: Date.now()
-      }));
+      persistProductsCache(visibleProducts);
       
       setProducts(visibleProducts);
       setError(null);
@@ -87,7 +107,7 @@ export const ProductsProvider = ({ children }) => {
       setLoading(false);
       setLastUpdated(Date.now());
     }
-  }, [user?.account_id, user?.accountId, user?.id, products]);
+  }, [user?.account_id, user?.accountId, user?.id, products, persistProductsCache]);
 
   // Initial fetch only
   useEffect(() => {
@@ -159,6 +179,25 @@ export const ProductsProvider = ({ children }) => {
     const freshProducts = await fetchProducts();
     return freshProducts;
   };
+
+  const upsertProducts = useCallback((incomingProducts) => {
+    const normalizedIncoming = Array.isArray(incomingProducts) ? incomingProducts : [incomingProducts];
+    setProducts((prevProducts) => {
+      const nextProducts = mergeProductsById(prevProducts, normalizedIncoming).filter(product => !product?.pendingDelete);
+      persistProductsCache(nextProducts);
+      return nextProducts;
+    });
+    setLastUpdated(Date.now());
+  }, [persistProductsCache]);
+
+  const removeProduct = useCallback((productId) => {
+    setProducts((prevProducts) => {
+      const nextProducts = (prevProducts || []).filter(product => product?.id !== productId);
+      persistProductsCache(nextProducts);
+      return nextProducts;
+    });
+    setLastUpdated(Date.now());
+  }, [persistProductsCache]);
   
   // Allow components to signal they're editing
   const setEditingState = (editing) => {
@@ -174,6 +213,8 @@ export const ProductsProvider = ({ children }) => {
         error, 
         lastUpdated,
         refreshProducts,
+        upsertProducts,
+        removeProduct,
         setEditingState // Export so components can pause auto-refresh when editing
       }}
     >
