@@ -36,8 +36,7 @@ const SchoolCashierPOS = lazy(() => import('./pages/cashier/SchoolCashierPOS'));
 const KioskCashierPOS = lazy(() => import('./pages/cashier/KioskCashierPOS'));
 const PetrolCashierPOS = lazy(() => import('./pages/cashier/PetrolCashierPOS'));
 const ShoesCashierPOS = lazy(() => import('./pages/cashier/ShoesCashierPOS'));
-const MainAdmin = lazy(() => import('./pages/MainAdmin'));
-const MainAdminLogin = lazy(() => import('./pages/MainAdminLogin'));
+
 const AdminClinicDashboard = lazy(() => import('./pages/admin/AdminClinicDashboard'));
 const AdminBarDashboard = lazy(() => import('./pages/admin/AdminBarDashboard'));
 const PetrolAdminDashboard = lazy(() => import('./pages/admin/PetrolAdminDashboard'));
@@ -265,10 +264,7 @@ function App() {
                 <Route path="/plans" element={<Navigate to="/choose-subscription" />} />
                 <Route path="/build-pos" element={<BuildPOS />} />
                 
-                {/* Owner Main Admin Routes (strict /main.admin) */}
-                <Route path="/main.admin" element={<Navigate to="/main.admin/login" replace />} />
-                <Route path="/main.admin/login" element={<MainAdminLogin />} />
-                <Route path="/main.admin/dashboard" element={<ProtectedRoute ownerOnly><MainAdmin /></ProtectedRoute>} />
+
                 
                 {/* Pro Plan Business Type Selection */}
                 <Route path="/select-business-type" element={<ProtectedRoute adminOnly><BusinessTypeSelector /></ProtectedRoute>} />

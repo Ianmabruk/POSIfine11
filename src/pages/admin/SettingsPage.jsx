@@ -119,7 +119,14 @@ export default function SettingsPage() {
         const base64 = reader.result;
         setProfilePicture(base64);
         try {
-          await updateUser({ ...user, profilePicture: base64, profile_picture: base64 });
+          const updated = { ...user, profilePicture: base64, profile_picture: base64 };
+          await updateUser(updated);
+          // Persist in localStorage so it survives page refreshes until next API load
+          const cached = JSON.parse(localStorage.getItem('user') || '{}');
+          cached.profilePicture = base64;
+          cached.profile_picture = base64;
+          localStorage.setItem('user', JSON.stringify(cached));
+          window.dispatchEvent(new Event('localStorageUpdated'));
         } catch (error) {
           console.error('Failed to save profile picture:', error);
         }

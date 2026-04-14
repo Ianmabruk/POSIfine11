@@ -227,7 +227,24 @@ export default function Sales() {
                   <td className="px-4 py-3 text-sm">{new Date(sale.createdAt).toLocaleString()}</td>
                   <td className="px-4 py-3 text-sm">{sale.items?.length || 0} items</td>
                   <td className="px-4 py-3 text-sm">
-                    <span className="badge badge-success">{sale.paymentMethod}</span>
+                    {(() => {
+                      const pm = String(sale.paymentMethod || sale.payment_method || '').toLowerCase();
+                      const cls = pm === 'cash'
+                        ? 'bg-green-100 text-green-800'
+                        : pm === 'card'
+                        ? 'bg-blue-100 text-blue-800'
+                        : pm === 'mpesa' || pm === 'm-pesa'
+                        ? 'bg-purple-100 text-purple-800'
+                        : pm === 'credit'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : 'bg-gray-100 text-gray-600';
+                      const icon = pm === 'cash' ? '💵' : pm === 'card' ? '💳' : pm === 'mpesa' || pm === 'm-pesa' ? '📱' : '💰';
+                      return (
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${cls}`}>
+                          {icon} {sale.paymentMethod || sale.payment_method || '—'}
+                        </span>
+                      );
+                    })()}
                   </td>
                   <td className="px-4 py-3 text-sm font-semibold text-green-600">
                     KSH {sale.total?.toLocaleString()}

@@ -55,7 +55,17 @@ export default function CashierPOS() {
   const [reminderNotes, setReminderNotes] = useState({});
   const [reminderSignatures, setReminderSignatures] = useState({});
   const [remindersLoading, setRemindersLoading] = useState(false);
+  const [saleToast, setSaleToast] = useState(null); // { type: 'success'|'error'|'warning', message, id }
+  const toastTimerRef = useRef(null);
   const productRefreshTimeoutRef = useRef(null);
+
+  // Show a non-blocking toast notification (auto-dismisses after `ms` ms)
+  const showToast = useCallback((type, message, ms = 3500) => {
+    const id = Date.now();
+    setSaleToast({ type, message, id });
+    clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setSaleToast(null), ms);
+  }, []);
 
   const getAccountKey = () => user?.account_id || user?.accountId || user?.id || 'anonymous';
   const getCashierSnapshotKey = () => `cashier_snapshot_${getAccountKey()}`;
@@ -748,27 +758,21 @@ export default function CashierPOS() {
             }
           }));
           
-          // Show success message
-          const deductionsSummary = successData.stockDeductions?.products?.map?.(d => 
-            `${d.name || d.productName}: -${d.quantity || d.deducted}${d.unit || ''}`
-          ).join('\n') || 'Stock updated';
-          
-          alert(
-            `✅ SALE COMPLETE!\n\n` +
-            `Sale ID: #${successData.saleId}\n` +
-            `Amount: KSH ${finalTotal.toLocaleString()}\n` +
-            `Time: ${successData.processingTime || successData.clientElapsedMs.toFixed(1) + 'ms'}\n` +
-            `Performance: ${successData.performanceGrade}\n\n` +
-            `Stock Deducted:\n${deductionsSummary}`
+          // Show success message – non-blocking toast so the cashier can
+          // immediately start the next sale without dismissing a dialog.
+          showToast(
+            'success',
+            `Sale #${successData.saleId} — KSH ${finalTotal.toLocaleString()} (${successData.processingTime || successData.clientElapsedMs?.toFixed(0) + 'ms'})`,
+            4000
           );
           
           // Show low stock warnings if any
           if (successData.lowStockWarnings && successData.lowStockWarnings.length > 0) {
             const warnings = successData.lowStockWarnings
-              .map(w => `⚠️ ${w.name}: ${w.quantity}${w.unit} (Low Stock!)`)
-              .join('\n');
+              .map(w => `${w.name}: ${w.quantity}${w.unit || ''} left`)
+              .join(' · ');
             console.warn('⚠️ [Checkout] Low stock warnings:\n' + warnings);
-            setTimeout(() => alert('Low Stock Alert:\n\n' + warnings), 1000);
+            setTimeout(() => showToast('warning', `Low Stock: ${warnings}`, 6000), 800);
           }
           
           // Trigger stats refresh
@@ -787,7 +791,7 @@ export default function CashierPOS() {
             console.log('🔄 [Checkout] Rolled back to previous state');
           }
           
-          alert(`❌ Sale Failed:\n\n${errorData.error}\n\nPlease try again.`);
+          showToast('error', `Sale Failed: ${errorData.error}`, 5000);
         }
       );
       
@@ -796,13 +800,13 @@ export default function CashierPOS() {
     } catch (error) {
       console.error('❌ [Checkout] Unexpected error:', error);
       
-      // Rollback on unexpected error
+        // Rollback on unexpected error
       setCart(savedCart);
       setCartItemUnits(savedCartUnits);
       setSelectedDiscount(savedDiscount);
       setTaxType(savedTaxType);
       
-      alert(`❌ Checkout Failed:\n\n${error.message || 'Unknown error occurred'}\n\nYour cart has been restored.`);
+      showToast('error', `Checkout Failed: ${error.message || 'Unknown error — cart restored'}`, 5000);
     } finally {
       // Always clear processing states
       setCheckoutLoading(false);
@@ -819,6 +823,7 @@ export default function CashierPOS() {
     refreshProducts,
     refreshStats,
     selectedDiscount,
+    showToast,
     taxType,
     user?.accountId,
     user?.id,
@@ -1036,6 +1041,18 @@ export default function CashierPOS() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col">
+      {/* Sale Toast Notification — non-blocking, auto-dismisses */}
+      {saleToast && (
+        <div
+          key={saleToast.id}
+          className={`fixed top-4 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-3 px-5 py-3 rounded-2xl shadow-2xl text-white text-sm font-semibold transition-all animate-bounce-in max-w-md
+            ${saleToast.type === 'success' ? 'bg-green-600' : saleToast.type === 'warning' ? 'bg-amber-500' : 'bg-red-600'}`}
+        >
+          <span>{saleToast.type === 'success' ? '✅' : saleToast.type === 'warning' ? '⚠️' : '❌'}</span>
+          <span>{saleToast.message}</span>
+          <button onClick={() => setSaleToast(null)} className="ml-2 opacity-70 hover:opacity-100 text-lg leading-none">&times;</button>
+        </div>
+      )}
       <LowStockAlert />
       <nav className="bg-white/80 backdrop-blur-md border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 sticky top-0 z-50 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">

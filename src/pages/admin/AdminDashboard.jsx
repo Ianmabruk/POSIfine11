@@ -5,7 +5,7 @@ import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-
 import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard, ShoppingBag, Package, Layers, TrendingDown, TrendingUp,
-  Users, Settings, LogOut, Menu, X, ExternalLink, Clock, Bell, DollarSign, Tag, CreditCard, Truck, MessageSquare
+  Users, Settings, LogOut, Menu, X, ExternalLink, Clock, Bell, DollarSign, Tag, CreditCard, Truck, MessageSquare, BarChart3
 } from 'lucide-react';
 import Overview from './Overview';
 import Analytics from './Analytics';
@@ -22,6 +22,7 @@ import Discounts from './Discounts';
 import CreditRequests from './CreditRequests';
 import Vendors from './Vendors';
 import AdminSupportChat from './AdminSupportChat';
+import StockDashboard from './StockDashboard';
 import ReminderModal from '../../components/ReminderModal';
 import ScreenLock from '../../components/ScreenLock';
 import useInactivity from '../../hooks/useInactivity';
@@ -29,7 +30,7 @@ import { settings as settingsApi } from '../../services/api';
 
 
 export default function AdminDashboard() {
-  const { user, logout, isCashierUserManagementEnabled } = useAuth();
+  const { user, logout, isCashierUserManagementEnabled, appSettings: ctxSettings } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -38,8 +39,21 @@ export default function AdminDashboard() {
   const [aiAnswer, setAiAnswer] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState('');
-  const [appSettings, setAppSettings] = useState({});
+  // Seed appSettings from context (which reads localStorage + backend on login)
+  const [appSettings, setAppSettings] = useState(() => {
+    try {
+      const cached = localStorage.getItem('appLogo');
+      return cached ? { logo: cached } : {};
+    } catch { return {}; }
+  });
   const [isLocked, unlock] = useInactivity(45000); // 45 seconds
+
+  // Sync from AuthContext appSettings whenever it changes
+  useEffect(() => {
+    if (ctxSettings && Object.keys(ctxSettings).length > 0) {
+      setAppSettings(prev => ({ ...prev, ...ctxSettings }));
+    }
+  }, [ctxSettings]);
 
   // 🚫 CRITICAL: Pro Plan users should NOT access this Basic/Ultra Admin Dashboard
   // Redirect them to their business-specific dashboards
@@ -163,6 +177,7 @@ export default function AdminDashboard() {
     { id: 'analytics', label: 'Analytics', icon: TrendingUp, path: '/admin/analytics' },
     { id: 'sales', label: 'Sales', icon: ShoppingBag, path: '/admin/sales' },
     { id: 'inventory', label: 'Inventory', icon: Package, path: '/admin/inventory' },
+    { id: 'stock', label: 'Stock Dashboard', icon: BarChart3, path: '/admin/stock' },
     { id: 'recipes', label: 'Recipes/BOM', icon: Layers, path: '/admin/recipes' },
     { id: 'expenses', label: 'Expenses', icon: TrendingDown, path: '/admin/expenses' },
     { id: 'vendors', label: 'Vendors', icon: Truck, path: '/admin/vendors' },
@@ -388,6 +403,7 @@ export default function AdminDashboard() {
             <Route path="/" element={<Overview />} />
             <Route path="/sales" element={<Sales />} />
             <Route path="/inventory" element={<Inventory />} />
+            <Route path="/stock" element={<StockDashboard />} />
             <Route path="/recipes" element={<Recipes />} />
             <Route path="/expenses" element={<Expenses />} />
             <Route path="/vendors" element={<Vendors />} />

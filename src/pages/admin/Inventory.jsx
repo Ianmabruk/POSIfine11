@@ -418,6 +418,7 @@ export default function Inventory() {
 
       const originalCost = Number(originalProduct.cost_per_unit || originalProduct.cost || 0);
       const safeCost = parsedCost === null ? originalCost : parsedCost;
+      const costChanged = parsedCost !== null && parsedCost !== originalCost;
 
       // Keep image if user does not provide a new one.
       const safeImage = editProduct.image === '' ? (originalProduct.image || '') : editProduct.image;
@@ -425,13 +426,21 @@ export default function Inventory() {
         ...editProduct,
         image: safeImage,
         price: parsedPrice,
-        cost: safeCost,
-        cost_per_unit: safeCost,
         reorder_level: parsedReorder ?? Number(originalProduct.reorder_level || 0)
       };
 
       // Quantity is managed via Add Stock, not edit payload.
       delete updateData.quantity;
+      // Only include cost fields when the admin explicitly changed them.
+      // This prevents a stale edit-modal value from overwriting a cost update
+      // that a batch receipt just applied.
+      if (costChanged) {
+        updateData.cost = safeCost;
+        updateData.cost_per_unit = safeCost;
+      } else {
+        delete updateData.cost;
+        delete updateData.cost_per_unit;
+      }
 
       setIsSyncing(true);
       showNotification('⚡ Updating product...', 'info');
@@ -581,20 +590,18 @@ export default function Inventory() {
   const calculateCOGS = (product) => {
     if (!product) return 0;
     if (!product.recipe) {
-      const costPerUnit = Number(product.cost_per_unit || product.costPerUnit || 0);
-      const baseCost = costPerUnit > 0 ? costPerUnit : Number(product.cost ?? 0);
-      return Number(baseCost || 0);
+      // Use cost_per_unit (always synced with cost on the backend).
+      return Number(product.cost_per_unit || product.costPerUnit || product.cost || 0);
     }
     let totalCost = 0;
     (product.recipe || []).forEach(ingredient => {
       if (!ingredient) return;
-
-      const raw = (productList || []).find(p => p && p.id === ingredient.productId);
+      // Support both camelCase (productId, from Recipes.jsx) and snake_case (product_id)
+      const ingProductId = ingredient.productId || ingredient.product_id;
+      const raw = (productList || []).find(p => p && p.id === ingProductId);
       if (raw) {
-        const rawCostPerUnit = raw.cost_per_unit || raw.costPerUnit;
-        const unitCost = rawCostPerUnit
-          ? Number(rawCostPerUnit)
-          : (raw.quantity > 0 ? (raw.cost || 0) / raw.quantity : (raw.cost || 0));
+        // Always use cost_per_unit — it is the fixed unit cost and doesn't vary with stock level.
+        const unitCost = Number(raw.cost_per_unit || raw.costPerUnit || raw.cost || 0);
         totalCost += unitCost * (ingredient.quantity || 0);
       }
     });
@@ -920,13 +927,11 @@ export default function Inventory() {
                               <tbody>
                                 {(product.recipe || []).map((ingredient, idx) => {
                                   if (!ingredient) return null;
-
-                                  const raw = (productList || []).find(p => p && p.id === ingredient.productId);
+                                  const ingProductId = ingredient.productId || ingredient.product_id;
+                                  const raw = (productList || []).find(p => p && p.id === ingProductId);
                                   if (!raw) return null;
-                                  const rawCostPerUnit = raw.cost_per_unit || raw.costPerUnit;
-                                  const unitCost = rawCostPerUnit
-                                    ? Number(rawCostPerUnit)
-                                    : (raw.quantity > 0 ? (raw.cost || 0) / raw.quantity : (raw.cost || 0));
+                                  // Use the fixed unit cost — don't divide by stock quantity
+                                  const unitCost = Number(raw.cost_per_unit || raw.costPerUnit || raw.cost || 0);
                                   const totalCost = unitCost * (ingredient.quantity || 0);
                                   return (
                                     <tr key={idx} className="border-t border-blue-100">

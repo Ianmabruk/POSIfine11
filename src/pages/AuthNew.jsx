@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { auth } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -21,7 +21,15 @@ export default function AuthNew() {
   const [loading, setLoading] = useState(false);
   const [needsPasswordSetup, setNeedsPasswordSetup] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, user, loading: authLoading } = useAuth();
+
+  // Redirect already-authenticated users to their dashboard
+  useEffect(() => {
+    if (!authLoading && user) {
+      const route = getDashboardRoute(user);
+      navigate(route, { replace: true });
+    }
+  }, [user, authLoading, navigate]);
 
   const getSelectedPlan = () => {
     try {

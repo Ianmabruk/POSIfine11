@@ -11,7 +11,7 @@ export default function SimpleAdminDashboard() {
   const [showAddUser, setShowAddUser] = useState(false);
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'cashier' });
-  const [newProduct, setNewProduct] = useState({ name: '', price: '', quantity: 0 });
+  const [newProduct, setNewProduct] = useState({ name: '', price: '', quantity: 0, cost: '' });
 
   useEffect(() => {
     loadData();
@@ -61,13 +61,16 @@ export default function SimpleAdminDashboard() {
   const handleAddProduct = async (e) => {
     e.preventDefault();
     try {
+      const parsedCost = newProduct.cost === '' ? 0 : parseFloat(newProduct.cost) || 0;
       await productsApi.create({
         name: newProduct.name,
         price: parseFloat(newProduct.price),
-        quantity: parseInt(newProduct.quantity) || 0
+        quantity: parseInt(newProduct.quantity) || 0,
+        cost: parsedCost,
+        cost_per_unit: parsedCost
       });
-      alert('✅ Product added successfully!');
-      setNewProduct({ name: '', price: '', quantity: 0 });
+      alert('\u2705 Product added successfully!');
+      setNewProduct({ name: '', price: '', quantity: 0, cost: '' });
       setShowAddProduct(false);
       loadData();
     } catch (error) {
@@ -254,6 +257,18 @@ export default function SimpleAdminDashboard() {
                   />
                 </div>
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Cost / COG (TZS)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0"
+                    value={newProduct.cost}
+                    onChange={(e) => setNewProduct({...newProduct, cost: e.target.value})}
+                    className="w-full px-3 py-2 border rounded"
+                  />
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Stock Quantity</label>
                   <input
                     type="number"
@@ -284,6 +299,7 @@ export default function SimpleAdminDashboard() {
                 <tr className="border-b">
                   <th className="text-left py-2">Product Name</th>
                   <th className="text-left py-2">Price</th>
+                  <th className="text-left py-2">Cost/COG</th>
                   <th className="text-left py-2">Stock</th>
                 </tr>
               </thead>
@@ -292,6 +308,7 @@ export default function SimpleAdminDashboard() {
                   <tr key={p.id} className="border-b">
                     <td className="py-2">{p.name}</td>
                     <td className="py-2">TZS {p.price?.toLocaleString()}</td>
+                    <td className="py-2">TZS {(p.cost_per_unit || p.cost || 0).toLocaleString()}</td>
                     <td className="py-2">{p.quantity || 0}</td>
                   </tr>
                 ))}

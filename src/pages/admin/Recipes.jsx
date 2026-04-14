@@ -51,11 +51,10 @@ export default function Recipes() {
         p.name.toLowerCase() === ing.name.toLowerCase()
       );
       if (raw && ing.quantity) {
-        const unitCost = raw.cost / raw.quantity;
+        // Always use cost_per_unit — it is the fixed unit cost set by the admin.
+        const unitCost = Number(raw.cost_per_unit || raw.costPerUnit || raw.cost || 0);
         return total + (unitCost * parseFloat(ing.quantity));
       }
-      // For custom ingredients not in inventory, use a default cost of 0
-      // This allows recipes to be created even with custom ingredients
       return total;
     }, 0);
   };
@@ -105,6 +104,8 @@ export default function Recipes() {
         quantity: 0,
         unit: 'pcs',
         category: 'composite',
+        is_composite: true,
+        isComposite: true,
         recipe: mappedIngredients, // Now stores custom ingredient objects
         image: newRecipe.image || '',
         visibleToCashier: newRecipe.visibleToCashier,
