@@ -23,13 +23,18 @@ export default function AuthNew() {
   const navigate = useNavigate();
   const { login, user, loading: authLoading } = useAuth();
 
-  // Redirect already-authenticated users to their dashboard
+  // When user explicitly visits /auth/login or /auth/signup, clear any
+  // existing session so the login form always shows (e.g. cashier on a
+  // shared device after admin was logged in).
   useEffect(() => {
-    if (!authLoading && user) {
-      const route = getDashboardRoute(user);
-      navigate(route, { replace: true });
-    }
-  }, [user, authLoading, navigate]);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('csrfToken');
+    localStorage.removeItem('appLogo');
+    // Notify AuthContext's storage listener to set user → null
+    window.dispatchEvent(new Event('storage'));
+  }, []);
 
   const getSelectedPlan = () => {
     try {

@@ -342,27 +342,37 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
+    // Capture refresh token before clearing localStorage
+    const refreshToken = localStorage.getItem('refreshToken');
+
+    // Clear local state immediately so the UI updates even if the API call is slow
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('csrfToken');
+    localStorage.removeItem('appLogo');
+    setUser(null);
+    setAppSettings({});
+
     try {
-      const refreshToken = localStorage.getItem('refreshToken');
       if (refreshToken) {
+        // Fire-and-forget with a 3s timeout so logout is never blocked
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 3000);
         await fetch(`${BASE_API_URL}/auth/logout`, {
           method: 'POST',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refreshToken })
-        });
+          body: JSON.stringify({ refreshToken }),
+          signal: controller.signal
+        }).catch(() => {});
+        clearTimeout(timer);
       }
     } catch (e) {
       // ignore
     } finally {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('csrfToken');
-      localStorage.removeItem('appLogo');
-      setUser(null);
-      setAppSettings({});
-      window.location.href = '/auth/login';
+      // Use replace so back-button doesn't return to a stale dashboard
+      window.location.replace('/auth/login');
     }
   };
 

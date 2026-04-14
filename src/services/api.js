@@ -310,6 +310,11 @@ export const expenses = {
   })
 };
 
+// Raw Materials API
+export const rawMaterials = {
+  getAll: () => request('/raw-materials')
+};
+
 // Statistics API
 export const stats = {
   get: (params) => request(`/stats${toQueryString(params)}`)
