@@ -119,6 +119,7 @@ export default function UserManagement() {
         pin: cashierPIN,
         cashier_pin: cashierPIN,
         profilePicture: newUser.profilePicture || undefined,
+        permissions: newUser.permissions,
         // Add business type and role for Pro plan users
         ...(isProPlan && newUser.businessType && {
           businessType: newUser.businessType,
@@ -174,21 +175,24 @@ export default function UserManagement() {
         setUsers(prev => prev.filter(u => u.id !== tempId));
         throw apiError;
       }
-      
+
     } catch (error) {
       console.error('Error creating cashier:', error);
-      let errorMessage = 'Failed to add cashier';
-      
-      if (error.message.includes('Current user not found')) {
+      let errorMessage = 'Failed to add cashier. Please try again.';
+
+      const msg = (error.message || '').toLowerCase();
+      if (msg.includes('unauthorized') || error.status === 401) {
+        errorMessage = 'Session expired. Please refresh the page and try again.';
+      } else if (msg.includes('current user not found') || msg.includes('admin access required')) {
         errorMessage = 'Authentication error. Please refresh the page and try again.';
-      } else if (error.message.includes('email')) {
-        errorMessage = 'Email already exists. Please use a different email.';
-      } else if (error.message.includes('network') || error.message.includes('fetch')) {
+      } else if (msg.includes('email') || msg.includes('already exists')) {
+        errorMessage = 'This email is already in use. Please use a different email.';
+      } else if (msg.includes('network') || msg.includes('fetch') || msg.includes('connect')) {
         errorMessage = 'Network error. Please check your connection and try again.';
       } else if (error.message) {
         errorMessage = `Failed to add cashier: ${error.message}`;
       }
-      
+
       alert(errorMessage);
     }
   };
@@ -585,7 +589,7 @@ export default function UserManagement() {
                           <button
                             onClick={() => {
                               localStorage.setItem('adminViewingCashier', user.id);
-                              window.location.href = '/cashier/pos';
+                              window.location.href = '/cashier';
                             }}
                             className="p-2 hover:bg-blue-50 rounded-lg text-blue-600"
                             title="Access Cashier POS"
@@ -721,22 +725,6 @@ export default function UserManagement() {
               <p className="text-xs text-gray-500">
                 💡 The cashier will use this email and password to log in to the system
               </p>
-                                <td className="px-4 py-3 text-sm font-medium">
-                                  <div className="flex items-center gap-3">
-                                    {user.profile_picture || user.profilePicture ? (
-                                      <img
-                                        src={user.profile_picture || user.profilePicture}
-                                        alt={user.name}
-                                        className="w-10 h-10 rounded-full object-cover border border-gray-200"
-                                      />
-                                    ) : (
-                                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center text-white text-sm font-semibold">
-                                        {user.name?.charAt(0)?.toUpperCase() || 'U'}
-                                      </div>
-                                    )}
-                                    <span>{user.name}</span>
-                                  </div>
-                                </td>
               
               {/* Business Type Selection for Pro Plan */}
               {isProPlan && (

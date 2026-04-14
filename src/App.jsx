@@ -121,6 +121,20 @@ function DashboardRouter() {
     if (user.role === 'admin') {
       return <Navigate to={`/admin/${businessType}`} />;
     }
+
+    // Cashiers should always use cashier flows.
+    if (user.role === 'cashier') {
+      if (businessType === 'clinic') return <Navigate to="/cashier/clinic" />;
+      if (businessType === 'bar') return <Navigate to="/cashier/bar" />;
+      if (businessType === 'hotel') return <Navigate to="/cashier/hotel" />;
+      if (businessType === 'supermarket') return <Navigate to="/cashier/supermarket" />;
+      if (businessType === 'hospital') return <Navigate to="/cashier/hospital" />;
+      if (businessType === 'school') return <Navigate to="/cashier/school" />;
+      if (businessType === 'kiosk') return <Navigate to="/cashier/kiosk" />;
+      if (businessType === 'shoes') return <Navigate to="/cashier/shoes" />;
+      if (businessType === 'petrol') return <Navigate to="/cashier/petrol" />;
+      return <Navigate to="/dashboard/cashier" />;
+    }
     
     // Non-admin Pro users with business_role go to their role-specific dashboard
     if (businessRole) {

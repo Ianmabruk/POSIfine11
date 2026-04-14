@@ -121,7 +121,7 @@ export const AuthProvider = ({ children }) => {
             const normalized = normalizeUser(data);
             setUser(normalized);
             localStorage.setItem('user', JSON.stringify(normalized));
-            await loadAppSettings();
+            loadAppSettings();
           } else if (resp.status === 401) {
             // Actual 401 — token is explicitly rejected by the server
             // Try refresh before giving up
@@ -147,7 +147,7 @@ export const AuthProvider = ({ children }) => {
                     }
                     localStorage.setItem('user', JSON.stringify(normalized));
                     setUser(normalized);
-                    await loadAppSettings();
+                    loadAppSettings();
                     return; // success via refresh
                   }
                 } else {
@@ -212,7 +212,7 @@ export const AuthProvider = ({ children }) => {
                   }
                   localStorage.setItem('user', JSON.stringify(normalized));
                   setUser(normalized);
-                  await loadAppSettings();
+                  loadAppSettings();
                 }
               }
             } catch (_) {
@@ -259,7 +259,7 @@ export const AuthProvider = ({ children }) => {
         }
         localStorage.setItem('user', JSON.stringify(normalized));
         setUser(normalized);
-        await loadAppSettings();
+        loadAppSettings();
         return payload;
       }
 
@@ -276,7 +276,7 @@ export const AuthProvider = ({ children }) => {
         }
         localStorage.setItem('user', JSON.stringify(normalized));
         setUser(normalized);
-        await loadAppSettings();
+        loadAppSettings();
         return response;
       }
       throw new Error('Invalid response from server');
@@ -300,7 +300,7 @@ export const AuthProvider = ({ children }) => {
         }
         localStorage.setItem('user', JSON.stringify(normalized));
         setUser(normalized);
-        await loadAppSettings();
+        loadAppSettings();
         return response;
       }
       throw new Error('Invalid response from server');

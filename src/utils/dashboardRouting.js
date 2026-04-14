@@ -63,17 +63,17 @@ export function getDashboardRoute(user) {
       console.log(`[getDashboardRoute] → /admin/${businessType} (Pro Admin - ${businessType})`);
       return `/admin/${businessType}`;
     }
+
+    // Cashiers should always land in cashier POS flows.
+    if (role === 'cashier') {
+      console.log(`[getDashboardRoute] → /cashier/${businessType} (Pro Cashier - ${businessType})`);
+      return `/cashier/${businessType}`;
+    }
     
     // Pro User with Business Role → Role-specific dashboard
     if (businessRole && businessRole !== 'admin') {
       console.log(`[getDashboardRoute] → /dashboard/${businessType}/${businessRole} (Pro ${businessRole})`);
       return `/dashboard/${businessType}/${businessRole}`;
-    }
-    
-    // Pro Cashier/User with Business Type → Business-specific cashier interface
-    if (role === 'cashier') {
-      console.log(`[getDashboardRoute] → /cashier/${businessType} (Pro Cashier - ${businessType})`);
-      return `/cashier/${businessType}`;
     }
   }
 

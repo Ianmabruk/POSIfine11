@@ -1,20 +1,62 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { timeEntries } from '../../services/api';
-import { Clock, Calendar, User } from 'lucide-react';
+import { Clock, Calendar, User, LogIn, LogOut } from 'lucide-react';
 
 export default function TimeTracking() {
   const { user } = useAuth();
   const [records, setRecords] = useState([]);
   const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(true);
+  const [clockStatus, setClockStatus] = useState(null);
+  const [clockLoading, setClockLoading] = useState(false);
 
   useEffect(() => {
     loadRecords();
-    // Auto-refresh every 30 seconds
-    const interval = setInterval(loadRecords, 30000);
+    loadClockStatus();
+    const interval = setInterval(() => {
+      loadRecords();
+      loadClockStatus();
+    }, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  const loadClockStatus = async () => {
+    try {
+      const data = await timeEntries.getStatus();
+      setClockStatus(data);
+    } catch (error) {
+      console.warn('Failed to load clock status:', error);
+    }
+  };
+
+  const handleClockIn = async () => {
+    try {
+      setClockLoading(true);
+      await timeEntries.create('clock_in');
+      await loadRecords();
+      await loadClockStatus();
+    } catch (error) {
+      console.error('Clock in failed:', error);
+      alert(error.message || 'Clock in failed');
+    } finally {
+      setClockLoading(false);
+    }
+  };
+
+  const handleClockOut = async () => {
+    try {
+      setClockLoading(true);
+      await timeEntries.create('clock_out');
+      await loadRecords();
+      await loadClockStatus();
+    } catch (error) {
+      console.error('Clock out failed:', error);
+      alert(error.message || 'Clock out failed');
+    } finally {
+      setClockLoading(false);
+    }
+  };
 
   const loadRecords = async () => {
     try {
@@ -65,9 +107,37 @@ export default function TimeTracking() {
 
   return (
     <div className="p-4 md:p-6 space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold">Time Tracking</h2>
-        <p className="text-sm text-gray-600 mt-1">Monitor cashier clock in/out records</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold">Time Tracking</h2>
+          <p className="text-sm text-gray-600 mt-1">Monitor staff and admin clock in/out records</p>
+        </div>
+        <div className="flex items-center gap-3">
+          {clockStatus?.isClockedIn ? (
+            <button
+              onClick={handleClockOut}
+              disabled={clockLoading}
+              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 font-medium"
+            >
+              <LogOut className="w-4 h-4" />
+              {clockLoading ? 'Clocking out...' : 'Clock Out'}
+            </button>
+          ) : (
+            <button
+              onClick={handleClockIn}
+              disabled={clockLoading}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 font-medium"
+            >
+              <LogIn className="w-4 h-4" />
+              {clockLoading ? 'Clocking in...' : 'Clock In'}
+            </button>
+          )}
+          {clockStatus?.isClockedIn && clockStatus?.clockInTime && (
+            <span className="text-sm text-green-700 bg-green-50 px-3 py-1 rounded-full">
+              Since {new Date(clockStatus.clockInTime).toLocaleTimeString()}
+            </span>
+          )}
+        </div>
       </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">

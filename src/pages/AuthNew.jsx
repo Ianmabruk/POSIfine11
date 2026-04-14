@@ -133,7 +133,22 @@ export default function AuthNew() {
       navigate(dashRoute, { replace: true });
 
     } catch (err) {
-      setError(err.message || 'Authentication failed');
+      let errorMsg = err.message || 'Authentication failed. Please try again.';
+      
+      // Provide helpful error messages for common issues
+      if (errorMsg.includes('Email already registered')) {
+        errorMsg = '✓ This email is already registered. Please log in instead.';
+      } else if (errorMsg.includes('already exists')) {
+        errorMsg = '✓ This account already exists. Please log in instead.';
+      } else if (errorMsg.includes('500') || errorMsg.includes('Server error')) {
+        errorMsg = '⚠️ Server error - Please wait a moment and try again. If this persists, contact support.';
+      } else if (errorMsg.includes('network') || errorMsg.includes('no response')) {
+        errorMsg = '⚠️ Network error - Check your internet connection and try again.';
+      } else if (!isLogin && errorMsg.includes('failed')) {
+        errorMsg = '⚠️ Signup failed - Please ensure all fields are filled correctly:\n• Email must be valid\n• Password must be at least 6 characters\n• Name must not be empty';
+      }
+      
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }

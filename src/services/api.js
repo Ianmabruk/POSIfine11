@@ -17,6 +17,7 @@ const getBaseUrl = () => {
 };
 
 const BASE_API_URL = getBaseUrl();
+let refreshPromise = null;
 
 const getToken = () => localStorage.getItem('token') || localStorage.getItem('ownerToken') || localStorage.getItem('mainAdminToken');
 const getRefreshToken = () => localStorage.getItem('refreshToken');
@@ -29,8 +30,54 @@ const toQueryString = (params = {}) => {
   return `?${search.toString()}`;
 };
 
+const shouldRetryRequest = (options = {}) => {
+  const method = String(options.method || 'GET').toUpperCase();
+  return method === 'GET' || method === 'HEAD';
+};
+
+const refreshAuthSession = async (csrfToken) => {
+  if (!refreshPromise) {
+    const refreshToken = getRefreshToken();
+    if (!refreshToken) {
+      return null;
+    }
+
+    refreshPromise = fetch(`${BASE_API_URL}/auth/refresh`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(csrfToken && { 'X-CSRF-Token': csrfToken })
+      },
+      body: JSON.stringify({ refreshToken })
+    })
+      .then(async (refreshResp) => {
+        if (!refreshResp.ok) {
+          return null;
+        }
+        const refreshData = await refreshResp.json();
+        if (refreshData.token) {
+          localStorage.setItem('token', refreshData.token);
+        }
+        if (refreshData.refreshToken) {
+          localStorage.setItem('refreshToken', refreshData.refreshToken);
+        }
+        if (refreshData.csrfToken) {
+          localStorage.setItem('csrfToken', refreshData.csrfToken);
+        }
+        return refreshData;
+      })
+      .catch(() => null)
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+
+  return refreshPromise;
+};
+
 // Retry logic for network failures (handles Render free tier spindown)
-const requestWithRetry = async (endpoint, options = {}, retryCount = 0, maxRetries = 3, didRefresh = false) => {
+const requestWithRetry = async (endpoint, options = {}, retryCount = 0, maxRetries = 2, didRefresh = false) => {
   const token = getToken();
   const csrfToken = getCsrfToken();
   
@@ -56,34 +103,9 @@ const requestWithRetry = async (endpoint, options = {}, retryCount = 0, maxRetri
 
     if (response.status === 401) {
       if (!didRefresh) {
-        const refreshToken = getRefreshToken();
-        if (refreshToken) {
-          try {
-            const refreshResp = await fetch(`${BASE_API_URL}/auth/refresh`, {
-              method: 'POST',
-              credentials: 'include',
-              headers: {
-                'Content-Type': 'application/json',
-                ...(csrfToken && { 'X-CSRF-Token': csrfToken })
-              },
-              body: JSON.stringify({ refreshToken })
-            });
-            if (refreshResp.ok) {
-              const refreshData = await refreshResp.json();
-              if (refreshData.token) {
-                localStorage.setItem('token', refreshData.token);
-              }
-              if (refreshData.refreshToken) {
-                localStorage.setItem('refreshToken', refreshData.refreshToken);
-              }
-              if (refreshData.csrfToken) {
-                localStorage.setItem('csrfToken', refreshData.csrfToken);
-              }
-              return requestWithRetry(endpoint, options, retryCount, maxRetries, true);
-            }
-          } catch (e) {
-            // fall through to auth reset
-          }
+        const refreshed = await refreshAuthSession(csrfToken);
+        if (refreshed?.token) {
+          return requestWithRetry(endpoint, options, retryCount, maxRetries, true);
         }
       }
       // For login endpoints, return the error response instead of throwing
@@ -92,29 +114,17 @@ const requestWithRetry = async (endpoint, options = {}, retryCount = 0, maxRetri
         throw new Error(errorData.error || 'Invalid credentials');
       }
       
-      // For other endpoints, clear tokens and redirect
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('csrfToken');
-      const path = window.location.pathname || '';
-      
-      // Public pages that should NOT redirect on 401
-      const publicPaths = ['/', '/get-started', '/choose-subscription', '/plans', '/subscription', '/build-pos', '/login', '/signup', '/auth', '/main.admin'];
-      const isPublicPage = publicPaths.some(p => path === p || path.startsWith(p));
-      
-      if (!isPublicPage) {
-        try {
-          window.location.href = '/auth/login';
-        } catch (e) {}
-      }
-      const err = new Error('Unauthorized');
+      // For other endpoints, DON'T clear tokens or redirect.
+      // The request simply failed auth — let the caller's catch handle the UI error.
+      // Clearing tokens here causes cascading failures for all subsequent requests.
+      const errorData = await response.json().catch(() => ({ error: 'Request failed' }));
+      const err = new Error(errorData.error || 'Request failed');
       err.status = 401;
       throw err;
     }
 
     if (response.status === 500) {
-      throw new Error('Server error 500 - Backend unavailable');
+      throw new Error('Server error - please try again');
     }
 
     if (response.ok) {
@@ -134,8 +144,8 @@ const requestWithRetry = async (endpoint, options = {}, retryCount = 0, maxRetri
       console.error("Attempted URL:", `${BASE_API_URL}${cleanEndpoint}`);
       
       // If not max retries, wait and retry
-      if (retryCount < maxRetries) {
-        const delayMs = Math.min(1000 * Math.pow(2, retryCount), 10000); // Exponential backoff: 1s, 2s, 4s
+      if (shouldRetryRequest(options) && retryCount < maxRetries) {
+        const delayMs = Math.min(250 * Math.pow(2, retryCount), 2000);
         console.log(`Retrying in ${delayMs}ms...`);
         await new Promise(resolve => setTimeout(resolve, delayMs));
         return requestWithRetry(endpoint, options, retryCount + 1, maxRetries);
@@ -149,7 +159,7 @@ const requestWithRetry = async (endpoint, options = {}, retryCount = 0, maxRetri
 };
 
 const request = (endpoint, options = {}) => {
-  return requestWithRetry(endpoint, options, 0, 3);
+  return requestWithRetry(endpoint, options, 0, shouldRetryRequest(options) ? 2 : 0);
 };
 
 

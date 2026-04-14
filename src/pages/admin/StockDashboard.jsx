@@ -79,6 +79,13 @@ export default function StockDashboard() {
 
   useEffect(() => {
     loadData();
+    
+    // Set up auto-refresh every 5 seconds for real-time updates
+    const pollInterval = setInterval(() => {
+      loadData().catch(err => console.warn('Auto-refresh failed:', err));
+    }, 5000);
+    
+    return () => clearInterval(pollInterval);
   }, [loadData]);
 
   const handleProductFilter = async (productId) => {
