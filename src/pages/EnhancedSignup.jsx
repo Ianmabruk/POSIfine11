@@ -65,8 +65,8 @@ export default function EnhancedSignup() {
 
     if (!formData.password) {
       newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+    } else if (formData.password.length < 8 || !/[0-9]/.test(formData.password) || !/[A-Z]/.test(formData.password)) {
+      newErrors.password = 'Password must be at least 8 characters with a number and uppercase letter';
     }
 
     if (formData.password !== formData.confirmPassword) {

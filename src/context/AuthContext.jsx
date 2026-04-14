@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { auth, users, BASE_API_URL } from '../services/api';
 
 const AuthContext = createContext();
@@ -223,20 +223,28 @@ export const AuthProvider = ({ children }) => {
       } else if (savedUser) {
         // No token but savedUser present — clear stale user data so login page is shown
         localStorage.removeItem('user');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('csrfToken');
       }
     } catch (error) {
       console.error('Error initializing auth:', error);
-      // Don't clear user data on unexpected errors — only navigate away if truly unauthorized
-      // This prevents "Oops something went wrong" on network hiccups
-      const savedUser = localStorage.getItem('user');
-      if (savedUser) {
-        try {
-          const parsed = JSON.parse(savedUser);
-          setUser(normalizeUser(parsed));
-        } catch (e) {
+      // Only preserve user state if a token actually exists
+      const token = localStorage.getItem('token');
+      if (token) {
+        const savedUser = localStorage.getItem('user');
+        if (savedUser) {
+          try {
+            const parsed = JSON.parse(savedUser);
+            setUser(normalizeUser(parsed));
+          } catch (e) {
+            setUser(null);
+          }
+        } else {
           setUser(null);
         }
       } else {
+        // No token — always clear stale user data
+        localStorage.removeItem('user');
         setUser(null);
       }
     } finally {
@@ -377,18 +385,15 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const isAuthenticated = () => !!user && !!localStorage.getItem('token');
+  const isAuthenticated = useCallback(() => !!user && !!localStorage.getItem('token'), [user]);
   
-  const hasRole = (role) => user && (user.role === role);
+  const hasRole = useCallback((role) => user && (user.role === role), [user]);
   
-  // Helper to check if user is owner/main admin
-  const isOwner = () => user && (user.role === 'main_admin');
+  const isOwner = useCallback(() => user && (user.role === 'main_admin'), [user]);
   
-  // Helper to check if user is admin
-  const isAdmin = () => user && (user.role === 'admin' || user.role === 'main_admin');
+  const isAdmin = useCallback(() => user && (user.role === 'admin' || user.role === 'main_admin'), [user]);
   
-  // Helper to check if user is cashier
-  const isCashier = () => user && (user.role === 'cashier');
+  const isCashier = useCallback(() => user && (user.role === 'cashier'), [user]);
   
   /**
    * Get the correct dashboard URL for the current user's role
@@ -399,7 +404,7 @@ export const AuthProvider = ({ children }) => {
    * - 'admin' (Regular Business Admin) → /admin
    * - 'cashier' (POS Staff) → /cashier
    */
-  const getDashboardUrl = (userRole = null) => {
+  const getDashboardUrl = useCallback((userRole = null) => {
     const role = userRole || user?.role;
     
     if (role === 'main_admin') {
@@ -411,14 +416,14 @@ export const AuthProvider = ({ children }) => {
     } else {
       return '/dashboard'; // Fallback
     }
-  };
+  }, [user]);
 
   // Package-related helper functions
-  const isUltraPackage = () => user && (user.plan === 'ultra');
-  const isBasicPackage = () => user && (user.plan === 'basic');
-  const canEditStock = () => user && (user.role === 'admin' || user.role === 'cashier');
-  const canManageUsers = () => user && (user.role === 'admin' && user.plan === 'ultra');
-  const canViewAnalytics = () => user && (user.role === 'admin');
+  const isUltraPackage = useCallback(() => user && (user.plan === 'ultra'), [user]);
+  const isBasicPackage = useCallback(() => user && (user.plan === 'basic'), [user]);
+  const canEditStock = useCallback(() => user && (user.role === 'admin' || user.role === 'cashier'), [user]);
+  const canManageUsers = useCallback(() => user && (user.role === 'admin' && user.plan === 'ultra'), [user]);
+  const canViewAnalytics = useCallback(() => user && (user.role === 'admin'), [user]);
   const isRealTimeProductSyncEnabled = () => true;
   const isCashierUserManagementEnabled = () => true;
 
@@ -427,32 +432,32 @@ export const AuthProvider = ({ children }) => {
     return <LockedAccount />;
   }
 
+  const contextValue = useMemo(() => ({ 
+    user, 
+    loading, 
+    isInitialized,
+    appSettings,
+    login, 
+    signup,
+    updateUser,
+    logout,
+    isAuthenticated,
+    hasRole,
+    isOwner,
+    isAdmin,
+    isCashier,
+    getDashboardUrl,
+    isUltraPackage,
+    isBasicPackage,
+    canEditStock,
+    canManageUsers,
+    canViewAnalytics,
+    isRealTimeProductSyncEnabled,
+    isCashierUserManagementEnabled
+  }), [user, loading, isInitialized, appSettings, login, signup, updateUser, logout, isAuthenticated, hasRole, isOwner, isAdmin, isCashier, getDashboardUrl, isUltraPackage, isBasicPackage, canEditStock, canManageUsers, canViewAnalytics]);
+
   return (
-    <AuthContext.Provider 
-      value={{ 
-        user, 
-        loading, 
-        isInitialized,
-        appSettings,
-        login, 
-        signup,
-        updateUser,
-        logout,
-        isAuthenticated,
-        hasRole,
-        isOwner,
-        isAdmin,
-        isCashier,
-        getDashboardUrl,
-        isUltraPackage,
-        isBasicPackage,
-        canEditStock,
-        canManageUsers,
-        canViewAnalytics,
-        isRealTimeProductSyncEnabled,
-        isCashierUserManagementEnabled
-      }}
-    >
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );

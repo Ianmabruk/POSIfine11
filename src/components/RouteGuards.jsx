@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
  */
 export function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
+  const hasToken = !!localStorage.getItem('token');
 
   if (loading) {
     return (
@@ -18,7 +19,7 @@ export function ProtectedRoute({ children }) {
     );
   }
 
-  if (!user) {
+  if (!user || !hasToken) {
     return <Navigate to="/auth/login" replace />;
   }
 

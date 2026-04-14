@@ -53,16 +53,20 @@ function ProtectedRoute({ children, adminOnly = false, ultraOnly = false, ownerO
   const { user, loading } = useAuth();
   const [showReminders, setShowReminders] = useState(false);
   
+  // Security: verify a token actually exists alongside the user object.
+  // This prevents stale localStorage cache from granting access when
+  // the token has been cleared (e.g., after logout or session expiry).
+  const hasToken = !!localStorage.getItem('token');
+  
   useEffect(() => {
-    if (user && !ownerOnly) {
-      // Only show reminders once per session to avoid duplicate displays
+    if (user && hasToken && !ownerOnly) {
       const reminderShown = sessionStorage.getItem('reminderShown');
       if (!reminderShown) {
         setShowReminders(true);
         sessionStorage.setItem('reminderShown', 'true');
       }
     }
-  }, [user, ownerOnly]);
+  }, [user, hasToken, ownerOnly]);
   
   if (loading && !ownerOnly) {
     return (
@@ -86,11 +90,11 @@ function ProtectedRoute({ children, adminOnly = false, ultraOnly = false, ownerO
       return <Navigate to="/main.admin/login" replace />;
     }
   } else {
-    // Regular route protection
-    if (!user) return <Navigate to="/auth/login" />;
-    if (!user.active) return <Navigate to="/choose-subscription" />;
-    if (adminOnly && user.role !== 'admin') return <Navigate to="/dashboard" />;
-    if (ultraOnly && (user.role !== 'admin' || user.plan !== 'ultra')) return <Navigate to="/dashboard" />;
+    // Regular route protection — MUST have both user object AND a valid token
+    if (!user || !hasToken) return <Navigate to="/auth/login" replace />;
+    if (!user.active) return <Navigate to="/choose-subscription" replace />;
+    if (adminOnly && user.role !== 'admin') return <Navigate to="/dashboard" replace />;
+    if (ultraOnly && (user.role !== 'admin' || user.plan !== 'ultra')) return <Navigate to="/dashboard" replace />;
   }
   
   return (
@@ -215,7 +219,7 @@ function App() {
                 <Route path="/auth/login" element={<AuthNew />} />
                 <Route path="/auth/signup" element={<AuthNew />} />
                 <Route path="/plans" element={<Navigate to="/choose-subscription" />} />
-                <Route path="/build-pos" element={<BuildPOS />} />
+                <Route path="/build-pos" element={<ProtectedRoute><BuildPOS /></ProtectedRoute>} />
                 
 
                 

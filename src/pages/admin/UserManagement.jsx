@@ -102,8 +102,8 @@ export default function UserManagement() {
       return;
     }
 
-    if (newUser.password.length < 6) {
-      alert('Password must be at least 6 characters long');
+    if (newUser.password.length < 8) {
+      alert('Password must be at least 8 characters with a number and uppercase letter');
       return;
     }
     

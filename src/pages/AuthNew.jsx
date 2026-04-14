@@ -37,8 +37,8 @@ export default function AuthNew() {
       localStorage.removeItem('appLogo');
       // Notify AuthContext's storage listener to set user → null
       window.dispatchEvent(new Event('storage'));
-    } else if (!authLoading && user) {
-      // Already authenticated — send to dashboard
+    } else if (!authLoading && user && localStorage.getItem('token')) {
+      // Already authenticated with valid token — send to dashboard
       const route = getDashboardRoute(user);
       navigate(route, { replace: true });
     }
@@ -65,8 +65,8 @@ export default function AuthNew() {
           setLoading(false);
           return;
         }
-        if (formData.newPassword.length < 6) {
-          setError('Password must be at least 6 characters');
+        if (formData.newPassword.length < 8) {
+          setError('Password must be at least 8 characters with a number and uppercase letter');
           setLoading(false);
           return;
         }
