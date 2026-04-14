@@ -881,7 +881,11 @@ export default function Inventory() {
                         KSH {product.price?.toLocaleString()}
                       </td>
                       <td className="px-4 py-3 text-orange-600">
-                        KSH {cogs.toLocaleString()}
+                        {cogs > 0 ? (
+                          <>KSH {cogs.toLocaleString()}</>
+                        ) : (
+                          <span className="text-xs text-gray-400 italic">No cost set</span>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">

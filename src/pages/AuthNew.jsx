@@ -23,18 +23,26 @@ export default function AuthNew() {
   const navigate = useNavigate();
   const { login, user, loading: authLoading } = useAuth();
 
-  // When user explicitly visits /auth/login or /auth/signup, clear any
-  // existing session so the login form always shows (e.g. cashier on a
-  // shared device after admin was logged in).
+  // Only clear session when the user explicitly logged out (?logout=1).
+  // Otherwise, if the user is already authenticated (e.g. navigated here
+  // by accident), redirect them straight to their dashboard so cached
+  // data (snapshots, stats) is preserved.
   useEffect(() => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('csrfToken');
-    localStorage.removeItem('appLogo');
-    // Notify AuthContext's storage listener to set user → null
-    window.dispatchEvent(new Event('storage'));
-  }, []);
+    const params = new URLSearchParams(location.search);
+    if (params.get('logout') === '1') {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('csrfToken');
+      localStorage.removeItem('appLogo');
+      // Notify AuthContext's storage listener to set user → null
+      window.dispatchEvent(new Event('storage'));
+    } else if (!authLoading && user) {
+      // Already authenticated — send to dashboard
+      const route = getDashboardRoute(user);
+      navigate(route, { replace: true });
+    }
+  }, [authLoading, user, location.search, navigate]);
 
   const getSelectedPlan = () => {
     try {

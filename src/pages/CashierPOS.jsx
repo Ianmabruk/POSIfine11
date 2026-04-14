@@ -721,24 +721,31 @@ export default function CashierPOS() {
         (successData) => {
           console.log(`✅ [Checkout] Sale completed in ${successData.clientElapsedMs.toFixed(1)}ms ${successData.performanceGrade}`);
           
-          // Always refetch inventory, but prefer server response for immediate UI update
-          const refreshPromise = refreshProducts().catch(() => []);
-
+          // Merge updated products into the existing list so we get fresh
+          // stock quantities without losing all the other products.
           if (successData.updatedProducts && successData.updatedProducts.length > 0) {
-            const filtered = successData.updatedProducts.filter(p => p.visibleToCashier !== false && !p.expenseOnly);
-            setProductList(filtered);
-            console.log('📦 [Checkout] Products updated from server');
-          } else {
-            refreshPromise.then((fresh) => {
-              const filtered = Array.isArray(fresh)
-                ? fresh.filter(p => p.visibleToCashier !== false && !p.expenseOnly)
-                : [];
-              if (filtered.length) {
-                setProductList(filtered);
-                console.log('📦 [Checkout] Products refreshed from server');
-              }
-            }).catch(() => {});
+            const updatedMap = {};
+            for (const p of successData.updatedProducts) {
+              if (p.id != null) updatedMap[p.id] = p;
+            }
+            setProductList(prev => {
+              const merged = prev.map(p => updatedMap[p.id] ? updatedMap[p.id] : p);
+              // Filter visibility after merge
+              return merged.filter(p => p.visibleToCashier !== false && !p.expenseOnly);
+            });
+            console.log('📦 [Checkout] Products merged from server');
           }
+
+          // Always follow up with a full refresh to catch any missed changes
+          refreshProducts().then((fresh) => {
+            const filtered = Array.isArray(fresh)
+              ? fresh.filter(p => p.visibleToCashier !== false && !p.expenseOnly)
+              : [];
+            if (filtered.length) {
+              setProductList(filtered);
+              console.log('📦 [Checkout] Products fully refreshed from server');
+            }
+          }).catch(() => {});
           
           // Invalidate cache to force fresh data on next fetch
           invalidateProductCache();
