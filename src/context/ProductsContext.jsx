@@ -19,7 +19,7 @@ const mergeProductsById = (existingProducts = [], incomingProducts = []) => {
 export const useProducts = () => useContext(ProductsContext);
 
 export const ProductsProvider = ({ children }) => {
-  const { user } = useAuth();
+  const { user, isInitialized } = useAuth();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -109,13 +109,11 @@ export const ProductsProvider = ({ children }) => {
     }
   }, [user?.account_id, user?.accountId, user?.id, products, persistProductsCache]);
 
-  // Initial fetch only
+  // Fetch when auth is ready and user changes
   useEffect(() => {
-    fetchProducts();
-  }, []); // Only run on mount
+    // Wait for auth to finish initializing before making any API calls
+    if (!isInitialized) return;
 
-  // Re-fetch when user changes to avoid cross-account data mixing
-  useEffect(() => {
     if (!user) {
       setProducts([]);
       setError(null);
@@ -138,12 +136,13 @@ export const ProductsProvider = ({ children }) => {
 
     setLoading(true);
     fetchProducts();
-  }, [user?.id, user?.account_id, user?.accountId]);
+  }, [user?.id, user?.account_id, user?.accountId, isInitialized]);
 
   // SMART AUTO-REFRESH: Only when NOT editing
   // Refreshes every 30 seconds to ensure cashiers see admin updates
   // But respects active editing state to prevent data loss
   useEffect(() => {
+    if (!user) return; // Don't auto-refresh when not authenticated
     const interval = setInterval(() => {
       if (!isEditing && document.visibilityState === 'visible') {
         console.log('🔄 Auto-refresh: Fetching latest products from backend...');
@@ -154,7 +153,7 @@ export const ProductsProvider = ({ children }) => {
     }, 30000); // 30 seconds
 
     return () => clearInterval(interval);
-  }, [isEditing, fetchProducts]);
+  }, [isEditing, fetchProducts, user]);
 
   // Listen for clear-data events and force immediate refetch
   useEffect(() => {
