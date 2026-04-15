@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { auth } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { Mail, Lock, User, Loader } from 'lucide-react';
+import { Mail, Lock, User, Loader, LogOut, ArrowRight } from 'lucide-react';
 import { getDashboardRoute } from '../utils/dashboardRouting';
 
 export default function AuthNew() {
@@ -20,18 +20,31 @@ export default function AuthNew() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [needsPasswordSetup, setNeedsPasswordSetup] = useState(false);
+  const [switchingUser, setSwitchingUser] = useState(false);
   const navigate = useNavigate();
-  const { login, user, loading: authLoading } = useAuth();
+  const { login, logout, user, loading: authLoading } = useAuth();
 
-  // If the user is already authenticated (e.g. navigated here
-  // by accident), redirect them straight to their dashboard so cached
-  // data (snapshots, stats) is preserved.
-  useEffect(() => {
-    if (!authLoading && user && localStorage.getItem('token')) {
-      const route = getDashboardRoute(user);
-      navigate(route, { replace: true });
-    }
-  }, [authLoading, user, navigate]);
+  // Determine if a different user is already logged in.
+  // Do NOT auto-redirect — let the user choose to continue or switch accounts.
+  const existingSession = !authLoading && user && localStorage.getItem('token');
+
+  // If user clicked "Sign in as different user", clear the session first
+  const handleSwitchUser = async () => {
+    setSwitchingUser(true);
+    // Clear all session data locally (don't navigate to /logged-out)
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('csrfToken');
+    localStorage.removeItem('appLogo');
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('products_cache_')) localStorage.removeItem(key);
+    });
+    sessionStorage.removeItem('reminderShown');
+    sessionStorage.removeItem('adminReminderShown');
+    // Force full reload so AuthProvider re-initializes with clean state
+    window.location.replace(location.pathname);
+  };
 
   const getSelectedPlan = () => {
     try {
@@ -183,6 +196,28 @@ export default function AuthNew() {
         </div>
 
         <div className="bg-white rounded-3xl shadow-2xl w-full p-8 border border-slate-200">
+          {/* Already logged in banner */}
+          {existingSession && !switchingUser && (
+            <div className="mb-6 p-4 rounded-xl bg-blue-50 border border-blue-200">
+              <p className="text-sm text-blue-800 font-medium mb-1">You're signed in as</p>
+              <p className="text-blue-900 font-semibold truncate">{user?.email}</p>
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={() => navigate(getDashboardRoute(user), { replace: true })}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
+                >
+                  <ArrowRight size={16} /> Go to Dashboard
+                </button>
+                <button
+                  onClick={handleSwitchUser}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-blue-300 text-blue-700 text-sm font-medium hover:bg-blue-100 transition-colors"
+                >
+                  <LogOut size={16} /> Switch Account
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Logo */}
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-gradient-to-br from-[#2d4cff] via-[#3b82f6] to-[#22c55e] rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg">

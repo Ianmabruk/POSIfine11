@@ -70,8 +70,8 @@ function ProtectedRoute({ children, adminOnly = false, ultraOnly = false, ownerO
     // Regular route protection — MUST have both user object AND a valid token
     if (!user || !hasToken) return <Navigate to="/auth/login" replace />;
     if (!user.active) return <Navigate to="/choose-subscription" replace />;
-    if (adminOnly && user.role !== 'admin') return <Navigate to="/dashboard" replace />;
-    if (ultraOnly && (user.role !== 'admin' || user.plan !== 'ultra')) return <Navigate to="/dashboard" replace />;
+    if (adminOnly && user.role !== 'admin') return <Navigate to="/dashboard/cashier" replace />;
+    if (ultraOnly && (user.role !== 'admin' || user.plan !== 'ultra')) return <Navigate to="/dashboard/cashier" replace />;
   }
   
   return (

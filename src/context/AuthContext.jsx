@@ -265,12 +265,25 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (payload) => {
     try {
-      // Clear stale products cache from any previous account
+      // CRITICAL: Fully clear ALL previous session data before setting new session.
+      // This prevents data leaking between different users/accounts.
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('csrfToken');
+      localStorage.removeItem('appLogo');
+      // Clear ALL products caches from any previous account
       Object.keys(localStorage).forEach(key => {
         if (key.startsWith('products_cache_')) {
           localStorage.removeItem(key);
         }
       });
+      // Clear session flags so they don't bleed across accounts
+      sessionStorage.removeItem('reminderShown');
+      sessionStorage.removeItem('adminReminderShown');
+      setUser(null);
+      setAppSettings({});
+
       // If payload already contains token & user (caller passed the auth response), just set state
       if (payload && payload.token && payload.user) {
         const normalized = normalizeUser(payload.user);
@@ -312,12 +325,22 @@ export const AuthProvider = ({ children }) => {
 
   const signup = async (userData) => {
     try {
-      // Clear any stale products cache from a previous account
+      // CRITICAL: Fully clear ALL previous session data before creating new account.
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('csrfToken');
+      localStorage.removeItem('appLogo');
       Object.keys(localStorage).forEach(key => {
         if (key.startsWith('products_cache_')) {
           localStorage.removeItem(key);
         }
       });
+      sessionStorage.removeItem('reminderShown');
+      sessionStorage.removeItem('adminReminderShown');
+      setUser(null);
+      setAppSettings({});
+
       const response = await auth.signup(userData);
       if (response.token && response.user) {
         const normalized = normalizeUser(response.user);
