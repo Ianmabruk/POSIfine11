@@ -9,7 +9,11 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [appSettings, setAppSettings] = useState({});
+  const [appSettings, setAppSettings] = useState(() => {
+    // Hydrate from localStorage for instant logo display before API call
+    const cachedLogo = localStorage.getItem('appLogo');
+    return cachedLogo ? { logo: cachedLogo } : {};
+  });
 
   const normalizeUser = (rawUser) => {
     if (!rawUser) return rawUser;

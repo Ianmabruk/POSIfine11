@@ -52,6 +52,7 @@ export default function CashierPOS() {
   const [reminderNotes, setReminderNotes] = useState({});
   const [reminderSignatures, setReminderSignatures] = useState({});
   const [remindersLoading, setRemindersLoading] = useState(false);
+  const remindersLoadedRef = useRef(false);
   const [saleToast, setSaleToast] = useState(null); // { type: 'success'|'error'|'warning', message, id }
   const toastTimerRef = useRef(null);
   const productRefreshTimeoutRef = useRef(null);
@@ -522,11 +523,12 @@ export default function CashierPOS() {
     }
   };
 
-  const fetchReminders = async () => {
+  const fetchReminders = async (showSpinner = true) => {
     try {
-      setRemindersLoading(true);
+      if (showSpinner && !remindersLoadedRef.current) setRemindersLoading(true);
       const data = await reminders.getToday();
       setReminderList(Array.isArray(data) ? data : []);
+      remindersLoadedRef.current = true;
     } catch (error) {
       console.error('Failed to fetch reminders:', error);
       setReminderList([]);
@@ -992,8 +994,8 @@ export default function CashierPOS() {
 
   const handleCreditRequest = async (e) => {
     e.preventDefault();
-    if (!creditRequestForm.customerName || !creditRequestForm.amount) {
-      alert('Please fill in all required fields');
+    if (!creditRequestForm.customerName || !creditRequestForm.amount || !creditRequestForm.reason) {
+      alert('Please fill in all required fields (Customer Name, Amount, and Reason)');
       return;
     }
     
@@ -1158,7 +1160,11 @@ export default function CashierPOS() {
         <button
           onClick={() => {
             setActiveView('reminders');
-            fetchReminders();
+            if (remindersLoadedRef.current) {
+              fetchReminders(false); // background refresh, no spinner
+            } else {
+              fetchReminders(true);
+            }
           }}
           className={`px-4 sm:px-6 py-3 sm:py-2 min-h-[44px] rounded-lg font-medium transition-all text-sm sm:text-base whitespace-nowrap touch-manipulation ${
             activeView === 'reminders' ? 'bg-gradient-to-r from-green-600 to-teal-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -1823,11 +1829,12 @@ export default function CashierPOS() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Reason</label>
+                <label className="block text-sm font-medium mb-2">Reason *</label>
                 <select
                   value={creditRequestForm.reason}
                   onChange={(e) => setCreditRequestForm({ ...creditRequestForm, reason: e.target.value })}
                   className="w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
                   disabled={creditRequestSubmitting}
                 >
                   <option value="">Select reason...</option>
