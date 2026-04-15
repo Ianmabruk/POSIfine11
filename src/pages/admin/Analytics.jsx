@@ -14,6 +14,7 @@ import {
 import { BASE_API_URL } from '../../services/api';
 import AICharts from '../../components/AICharts';
 import StaffScores from '../../components/StaffScores';
+import { exportAnalyticsCSV } from '../../utils/exportData';
 
 export default function Analytics() {
   const [sales, setSales] = useState([]);
@@ -177,9 +178,12 @@ export default function Analytics() {
             <option value="90days">Last 90 Days</option>
             <option value="all">All Time</option>
           </select>
-          <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+          <button
+            onClick={() => exportAnalyticsCSV(productStats, stats)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
             <Download className="w-4 h-4" />
-            Export
+            Export CSV
           </button>
         </div>
       </div>

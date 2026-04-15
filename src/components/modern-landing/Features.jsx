@@ -6,51 +6,51 @@ export default function Features() {
     {
       icon: Sparkles,
       title: "AI-Powered Forecasting",
-      description: "GPT-4 powered sales predictions and intelligent business insights",
+      description: "GPT-4 powered sales predictions and intelligent business insights that help you plan ahead",
       badge: "NEW",
-      gradient: "from-[#8b5a2b] via-[#00ff88] to-[#cd853f]"
+      gradient: "from-violet-500 to-purple-600"
     },
     {
       icon: Package,
       title: "Intelligent Inventory",
-      description: "Track products and stock levels with AI-powered predictions",
-      gradient: "from-[#cd853f] to-[#8b5a2b]"
+      description: "Track products and stock levels in real-time with smart reorder alerts",
+      gradient: "from-blue-500 to-cyan-500"
     },
     {
       icon: Activity,
       title: "Real-Time Sync",
-      description: "Monitor daily and monthly sales across all devices instantly",
-      gradient: "from-[#8b5a2b] to-[#00ff88]"
+      description: "Monitor daily and monthly sales across all devices instantly with live updates",
+      gradient: "from-emerald-500 to-teal-500"
     },
     {
       icon: BarChart3,
       title: "Smart Analytics",
-      description: "Detailed charts & reports with predictive insights",
-      gradient: "from-[#cd853f] to-[#d2691e]"
+      description: "Detailed charts, reports, and cost breakdowns with predictive insights",
+      gradient: "from-indigo-500 to-blue-500"
     },
     {
       icon: TrendingUp,
       title: "Growth Optimization",
-      description: "AI-driven insights to boost revenue automatically",
+      description: "AI-driven revenue insights and profit margin analysis to boost your business",
       badge: "PRO",
-      gradient: "from-[#8b5a2b] to-[#cd853f]"
+      gradient: "from-orange-500 to-amber-500"
     },
     {
       icon: Shield,
       title: "Bank-Level Security",
-      description: "Enterprise-grade encryption and role-based access",
-      gradient: "from-[#d2691e] to-[#8b5a2b]"
+      description: "Enterprise-grade encryption, role-based access, and secure authentication",
+      gradient: "from-slate-600 to-slate-800"
     },
     {
       icon: Users,
       title: "Staff Performance",
-      description: "Automated performance analysis and coaching",
-      gradient: "from-[#cd853f] to-[#8b5a2b]"
+      description: "Automated performance analysis, scoring, and actionable coaching insights",
+      gradient: "from-pink-500 to-rose-500"
     }
   ];
 
   return (
-    <section id="features" className="py-24 px-6 md:px-12 lg:px-20 bg-gradient-to-br from-[#f5efe6] via-[#fef8f0] to-[#f5efe6]">
+    <section id="features" className="py-24 px-6 md:px-12 lg:px-20 bg-gradient-to-br from-slate-50 via-white to-blue-50">
       <div className="max-w-7xl mx-auto">
         {/* Section Header */}
         <motion.div
@@ -64,15 +64,15 @@ export default function Features() {
             initial={{ opacity: 0, scale: 0.9 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
-            className="inline-block px-4 py-2 bg-white border border-[#cd853f]/30 rounded-full text-sm font-semibold text-[#6b4c3b] mb-4"
+            className="inline-block px-4 py-2 bg-blue-50 border border-blue-200 rounded-full text-sm font-semibold text-blue-700 mb-4"
           >
             Powerful Features
           </motion.span>
           
-          <h2 className="text-4xl md:text-5xl font-bold text-[#6b4c3b] mb-4">
+          <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-4">
             Everything You Need to Succeed
           </h2>
-          <p className="text-lg text-[#8b5a2b] max-w-2xl mx-auto">
+          <p className="text-lg text-slate-500 max-w-2xl mx-auto">
             Built with cutting-edge AI technology to give your business the competitive edge
           </p>
         </motion.div>
@@ -88,13 +88,13 @@ export default function Features() {
               transition={{ duration: 0.5, delay: index * 0.1 }}
               whileHover={{ 
                 y: -8,
-                boxShadow: "0 20px 40px rgba(107, 76, 59, 0.2)"
+                boxShadow: "0 20px 40px rgba(0, 0, 0, 0.1)"
               }}
-              className="relative group bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border border-[#cd853f]/10"
+              className="relative group bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border border-slate-100"
             >
               {/* Badge */}
               {feature.badge && (
-                <div className="absolute top-4 right-4 px-3 py-1 bg-gradient-to-r from-[#00ff88] to-[#8b5a2b] text-white text-xs font-bold rounded-full">
+                <div className="absolute top-4 right-4 px-3 py-1 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xs font-bold rounded-full shadow-sm">
                   {feature.badge}
                 </div>
               )}
@@ -108,15 +108,15 @@ export default function Features() {
               </motion.div>
 
               {/* Content */}
-              <h3 className="text-xl font-bold text-[#6b4c3b] mb-3 group-hover:text-[#8b5a2b] transition-colors">
+              <h3 className="text-xl font-bold text-slate-900 mb-3 group-hover:text-blue-700 transition-colors">
                 {feature.title}
               </h3>
-              <p className="text-[#8b5a2b] leading-relaxed">
+              <p className="text-slate-500 leading-relaxed">
                 {feature.description}
               </p>
 
               {/* Hover Gradient Border */}
-              <div className={`absolute inset-0 rounded-2xl bg-gradient-to-r ${feature.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-300`} />
+              <div className={`absolute inset-0 rounded-2xl bg-gradient-to-r ${feature.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
             </motion.div>
           ))}
         </div>
@@ -138,12 +138,12 @@ export default function Features() {
             <motion.div
               key={index}
               whileHover={{ scale: 1.05 }}
-              className="bg-gradient-to-br from-white to-[#f5efe6] rounded-2xl p-6 text-center shadow-lg border border-[#cd853f]/10"
+              className="bg-white rounded-2xl p-6 text-center shadow-lg border border-slate-100"
             >
-              <div className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#6b4c3b] to-[#cd853f] bg-clip-text text-transparent mb-2">
+              <div className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
                 {stat.value}
               </div>
-              <div className="text-sm text-[#8b5a2b] font-medium">
+              <div className="text-sm text-slate-500 font-medium">
                 {stat.label}
               </div>
             </motion.div>

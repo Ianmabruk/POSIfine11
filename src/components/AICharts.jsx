@@ -164,7 +164,7 @@ export default function AICharts({ periods = 4 }) {
           <XAxis dataKey="name" stroke="#64748b" />
           <YAxis stroke="#64748b" />
           <Tooltip
-            formatter={(value) => `$${value.toFixed(2)}`}
+            formatter={(value) => `KSH ${value.toLocaleString()}`}
             labelStyle={{ color: '#333' }}
             contentStyle={{ borderRadius: '16px', borderColor: '#cbd5e1' }}
           />
@@ -193,13 +193,13 @@ export default function AICharts({ periods = 4 }) {
           <span className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">Projected Revenue</span>
           <div className="mt-2 flex items-center gap-2 text-2xl font-bold text-emerald-800">
             <TrendingUp className="w-5 h-5" />
-            ${data[data.length - 1]?.revenue.toFixed(2)}
+            KSH {data[data.length - 1]?.revenue.toLocaleString()}
           </div>
         </div>
         <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3">
           <span className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">Projected Profit</span>
-          <div className="mt-2 text-2xl font-bold text-blue-800">
-            ${data[data.length - 1]?.profit.toFixed(2)}
+          <div className="mt-2 flex items-center gap-2 text-2xl font-bold text-blue-800">
+            KSH {data[data.length - 1]?.profit.toLocaleString()}
           </div>
         </div>
       </div>

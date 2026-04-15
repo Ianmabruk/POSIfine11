@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { CreditCard, CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react';
+import { CreditCard, CheckCircle, XCircle, Clock, AlertCircle, Download } from 'lucide-react';
 import { creditRequests as creditRequestsApi } from '../../services/api';
+import { exportCreditRequestsCSV } from '../../utils/exportData';
 
 export default function CreditRequests() {
   const [requests, setRequests] = useState([]);
@@ -29,7 +30,7 @@ export default function CreditRequests() {
   const handleApprove = async (id) => {
     setProcessingId(id);
     try {
-      await creditRequestsApi.update(id, { status: 'approved' });
+      await creditRequestsApi.update(id, { action: 'approve' });
       console.log('✅ Credit request approved');
       loadRequests();
     } catch (error) {
@@ -51,8 +52,8 @@ export default function CreditRequests() {
     setProcessingId(selectedRequest.id);
     try {
       await creditRequestsApi.update(selectedRequest.id, { 
-        status: 'rejected',
-        rejectionReason 
+        action: 'reject',
+        adminNotes: rejectionReason 
       });
       console.log('✅ Credit request rejected');
       setShowRejectModal(false);
@@ -97,7 +98,14 @@ export default function CreditRequests() {
           <h2 className="text-2xl font-bold">Credit Requests</h2>
           <p className="text-sm text-gray-600 mt-1">Review and manage credit requests from cashiers</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <button
+            onClick={() => exportCreditRequestsCSV(filteredRequests)}
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center gap-2 font-medium"
+          >
+            <Download className="w-4 h-4" />
+            Export
+          </button>
           {['all', 'pending', 'approved', 'rejected'].map(status => (
             <button
               key={status}
@@ -131,8 +139,8 @@ export default function CreditRequests() {
                   {getStatusIcon(request.status)}
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-lg">{request.customerName}</h3>
-                  <p className="text-sm text-gray-600">Requested by: {request.cashierName}</p>
+                  <h3 className="font-semibold text-lg">{request.customer_name || request.customerName}</h3>
+                  <p className="text-sm text-gray-600">Requested by: {request.cashier_name || request.cashierName}</p>
                   <div className="flex items-center gap-4 mt-2 text-sm">
                     <span>Amount: <strong className="text-green-600">KSH {request.amount?.toLocaleString()}</strong></span>
                     {request.reason && (
@@ -143,17 +151,17 @@ export default function CreditRequests() {
                     <p className="text-sm text-gray-600 mt-2">Notes: {request.notes}</p>
                   )}
                   <p className="text-xs text-gray-500 mt-2">
-                    Requested: {new Date(request.createdAt).toLocaleString()}
+                    Requested: {new Date(request.created_at || request.createdAt).toLocaleString()}
                   </p>
-                  {request.approvalDate && (
+                  {(request.reviewed_at || request.approvalDate) && (
                     <p className="text-xs text-gray-500">
-                      {request.status === 'approved' ? 'Approved' : 'Processed'}: {new Date(request.approvalDate).toLocaleString()}
-                      {request.approvedBy && ` by ${request.approvedBy}`}
+                      {request.status === 'approved' ? 'Approved' : 'Processed'}: {new Date(request.reviewed_at || request.approvalDate).toLocaleString()}
+                      {(request.reviewed_by || request.approvedBy) && ` by ID: ${request.reviewed_by || request.approvedBy}`}
                     </p>
                   )}
-                  {request.rejectionReason && (
+                  {(request.admin_notes || request.rejectionReason) && request.status === 'rejected' && (
                     <p className="text-xs text-red-600 mt-2">
-                      Rejection reason: {request.rejectionReason}
+                      Rejection reason: {request.admin_notes || request.rejectionReason}
                     </p>
                   )}
                 </div>
@@ -206,7 +214,7 @@ export default function CreditRequests() {
             </div>
             <div className="p-6 space-y-4">
               <p className="text-sm text-gray-600">
-                Are you sure you want to reject this credit request from <strong>{selectedRequest.customerName}</strong> for <strong>KSH {selectedRequest.amount?.toLocaleString()}</strong>?
+                Are you sure you want to reject this credit request from <strong>{selectedRequest.customer_name || selectedRequest.customerName}</strong> for <strong>KSH {selectedRequest.amount?.toLocaleString()}</strong>?
               </p>
               <div>
                 <label className="block text-sm font-medium mb-2">Rejection Reason</label>

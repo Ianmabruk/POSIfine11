@@ -3,8 +3,9 @@ import { products as productsApi } from '../../services/api';
 import api from '../../services/api';
 import {
   Package, TrendingDown, AlertTriangle, RefreshCw, Search,
-  ChevronDown, ChevronUp, Filter, BarChart3
+  ChevronDown, ChevronUp, Filter, BarChart3, Download
 } from 'lucide-react';
+import { exportStockCSV } from '../../utils/exportData';
 
 const hasRecipe = (product) => Array.isArray(product?.recipe) && product.recipe.length > 0;
 
@@ -80,10 +81,10 @@ export default function StockDashboard() {
   useEffect(() => {
     loadData();
     
-    // Set up auto-refresh every 5 seconds for real-time updates
+    // Set up auto-refresh every 60 seconds (not 5s to prevent constant reloading)
     const pollInterval = setInterval(() => {
       loadData().catch(err => console.warn('Auto-refresh failed:', err));
-    }, 5000);
+    }, 60000);
     
     return () => clearInterval(pollInterval);
   }, [loadData]);
@@ -220,14 +221,23 @@ export default function StockDashboard() {
             {lastRefreshed && <span className="ml-2 text-xs">• Last updated: {lastRefreshed}</span>}
           </p>
         </div>
-        <button
-          onClick={loadData}
-          disabled={loading}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => exportStockCSV(products, [])}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+          >
+            <Download className="w-4 h-4" />
+            Export CSV
+          </button>
+          <button
+            onClick={loadData}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -543,9 +553,18 @@ export default function StockDashboard() {
       {/* Composite Products & Their Ingredient Usage */}
       {compositeProducts.length > 0 && (
         <div className="card">
-          <h3 className="text-lg font-semibold mb-4">Composite Products — Ingredient Usage Per Sale</h3>
+          <h3 className="text-lg font-semibold mb-4">Composite Products — Ingredient Usage & Cost Analysis</h3>
           <div className="space-y-4">
-            {compositeProducts.map(cp => (
+            {compositeProducts.map(cp => {
+              // Count how many times this composite product was sold from deductions
+              const cpDeductions = deductions.filter(d => 
+                d.deduction_reason?.includes(cp.name) || d.parent_product === cp.name
+              );
+              // Group by sale event to count distinct sales
+              const saleEvents = new Set(cpDeductions.map(d => d.sale_id || d.created_at));
+              const totalSold = saleEvents.size;
+
+              return (
               <div key={cp.id} className="border border-gray-200 rounded-lg p-4">
                 <div className="flex items-center gap-3 mb-3">
                   {cp.image ? (
@@ -555,14 +574,19 @@ export default function StockDashboard() {
                       <span className="text-lg">🍳</span>
                     </div>
                   )}
-                  <div>
+                  <div className="flex-1">
                     <h4 className="font-semibold text-gray-900">{cp.name}</h4>
                     <p className="text-xs text-gray-500">Selling price: KSH {Number(cp.price || 0).toLocaleString()}</p>
                   </div>
+                  {totalSold > 0 && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-1 text-sm">
+                      <span className="text-blue-700 font-semibold">{totalSold} sold</span>
+                    </div>
+                  )}
                 </div>
                 <div className="bg-gray-50 rounded-lg p-3">
                   <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Ingredients deducted per 1 sale:</p>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {(cp.recipe || []).map((ing, idx) => {
                       const ingId = ing.productId || ing.product_id || ing.id;
                       const rawMaterialId = ing.raw_material_id || ing.rawMaterialId || ing.materialId;
@@ -578,32 +602,116 @@ export default function StockDashboard() {
                       const unit = ing.unit || ingredientProduct?.unit || 'pcs';
                       const currentStock = ingredientProduct ? Number(ingredientProduct.quantity || 0) : null;
                       const stock_ok = currentStock === null || currentStock >= Number(ing.quantity || 0);
+                      const perUseQty = Number(ing.quantity || 0);
+
+                      // Calculate total deducted for this ingredient across all sales of this composite product
+                      const entityKey = ingredientProduct ? getProductEntityKey(ingredientProduct) : null;
+                      const totalIngDeducted = entityKey ? (productDeductionTotals[entityKey] || 0) : 0;
+
+                      // Cost calculation: if ingredient has a cost/price, calculate cost per use
+                      const ingCostPerUnit = Number(ingredientProduct?.cost_per_unit || ingredientProduct?.cost || ingredientProduct?.price || 0);
+                      const costPerUse = perUseQty * ingCostPerUnit;
+                      const totalCostDeducted = totalIngDeducted * ingCostPerUnit;
 
                       return (
                         <div
                           key={idx}
-                          className={`flex items-center justify-between bg-white px-3 py-2 rounded border ${
+                          className={`bg-white px-3 py-2 rounded border ${
                             !stock_ok ? 'border-red-200 bg-red-50' : 'border-gray-100'
                           }`}
                         >
-                          <div>
-                            <p className="text-xs font-medium text-gray-800">{name}</p>
-                            {currentStock !== null && (
-                              <p className={`text-xs ${stock_ok ? 'text-gray-400' : 'text-red-500'}`}>
-                                Stock: {currentStock.toFixed(3)} {unit}
-                              </p>
-                            )}
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-xs font-medium text-gray-800">{name}</p>
+                              {currentStock !== null && (
+                                <p className={`text-xs ${stock_ok ? 'text-gray-400' : 'text-red-500'}`}>
+                                  Stock: {currentStock.toFixed(3)} {unit}
+                                </p>
+                              )}
+                            </div>
+                            <span className={`text-sm font-bold ml-2 ${stock_ok ? 'text-blue-600' : 'text-red-600'}`}>
+                              −{perUseQty} {unit}
+                            </span>
                           </div>
-                          <span className={`text-sm font-bold ml-2 ${stock_ok ? 'text-blue-600' : 'text-red-600'}`}>
-                            −{Number(ing.quantity || 0)} {unit}
-                          </span>
+                          {/* Cost breakdown */}
+                          {ingCostPerUnit > 0 && (
+                            <div className="mt-1 pt-1 border-t border-gray-100 text-xs text-gray-500">
+                              <p>Cost per {unit}: KSH {ingCostPerUnit.toLocaleString()}</p>
+                              <p className="font-medium text-gray-700">Cost per sale: KSH {costPerUse.toLocaleString()}</p>
+                            </div>
+                          )}
+                          {/* Total deducted summary */}
+                          {totalIngDeducted > 0 && (
+                            <div className="mt-1 pt-1 border-t border-gray-100 text-xs">
+                              <p className="text-red-600">Total deducted: {totalIngDeducted.toFixed(3)} {unit}</p>
+                              {ingCostPerUnit > 0 && (
+                                <p className="text-red-700 font-medium">Total cost: KSH {totalCostDeducted.toLocaleString()}</p>
+                              )}
+                            </div>
+                          )}
                         </div>
                       );
                     })}
                   </div>
+                  {/* Total cost per composite sale */}
+                  {(() => {
+                    const totalCostPerSale = (cp.recipe || []).reduce((sum, ing) => {
+                      const ingId = ing.productId || ing.product_id || ing.id;
+                      const rawMaterialId = ing.raw_material_id || ing.rawMaterialId || ing.materialId;
+                      const ingName = String(ing.name || '').trim().toLowerCase();
+                      const ingredientProduct = products.find((p) => {
+                        if (rawMaterialId) return Number(p.raw_material_id) === Number(rawMaterialId);
+                        if (ingId) return p.raw_material_id ? false : Number(p.id) === Number(ingId);
+                        return ingName && String(p.name || '').trim().toLowerCase() === ingName;
+                      });
+                      const ingCost = Number(ingredientProduct?.cost_per_unit || ingredientProduct?.cost || ingredientProduct?.price || 0);
+                      return sum + (Number(ing.quantity || 0) * ingCost);
+                    }, 0);
+                    const sellingPrice = Number(cp.price || 0);
+                    const profitPerSale = sellingPrice - totalCostPerSale;
+
+                    if (totalCostPerSale > 0) {  
+                      return (
+                        <div className="mt-3 bg-white rounded-lg p-3 border border-gray-200">
+                          <div className="grid grid-cols-3 gap-3 text-center">
+                            <div>
+                              <p className="text-xs text-gray-500">Ingredient Cost</p>
+                              <p className="text-sm font-bold text-red-600">KSH {totalCostPerSale.toLocaleString()}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">Selling Price</p>
+                              <p className="text-sm font-bold text-blue-600">KSH {sellingPrice.toLocaleString()}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">Profit Per Sale</p>
+                              <p className={`text-sm font-bold ${profitPerSale >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                KSH {profitPerSale.toLocaleString()}
+                              </p>
+                            </div>
+                          </div>
+                          {totalSold > 0 && (
+                            <div className="mt-2 pt-2 border-t border-gray-100 grid grid-cols-2 gap-3 text-center">
+                              <div>
+                                <p className="text-xs text-gray-500">Total Revenue ({totalSold} sales)</p>
+                                <p className="text-sm font-bold text-blue-700">KSH {(sellingPrice * totalSold).toLocaleString()}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-500">Total Profit</p>
+                                <p className={`text-sm font-bold ${(profitPerSale * totalSold) >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                                  KSH {(profitPerSale * totalSold).toLocaleString()}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

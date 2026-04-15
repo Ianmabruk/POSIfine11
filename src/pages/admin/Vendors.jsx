@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Search, Phone, Mail, MapPin, X } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, Phone, Mail, MapPin, X, Download } from 'lucide-react';
 import { BASE_API_URL } from '../../services/api';
+import { exportVendorsCSV } from '../../utils/exportData';
 
 export default function Vendors() {
   const [vendors, setVendors] = useState([]);
@@ -129,13 +130,22 @@ export default function Vendors() {
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Vendors</h1>
-        <button
-          onClick={handleAddVendor}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-        >
-          <Plus className="w-5 h-5" />
-          Add Vendor
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => exportVendorsCSV(vendors)}
+            className="flex items-center gap-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200"
+          >
+            <Download className="w-5 h-5" />
+            Export CSV
+          </button>
+          <button
+            onClick={handleAddVendor}
+            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+          >
+            <Plus className="w-5 h-5" />
+            Add Vendor
+          </button>
+        </div>
       </div>
 
       {/* Search Bar */}

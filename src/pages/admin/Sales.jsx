@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { sales as salesApi, BASE_API_URL } from '../../services/api';
 import { Calendar, Download, Filter, Trash2, Trash } from 'lucide-react';
+import { exportSalesCSV, exportSalesDetailedCSV } from '../../utils/exportData';
 
 export default function Sales() {
   const [sales, setSales] = useState([]);
@@ -154,10 +155,26 @@ export default function Sales() {
             <Trash className="w-4 h-4" />
             Clear All Sales
           </button>
-          <button className="btn-secondary flex items-center gap-2">
-            <Download className="w-4 h-4" />
-            Export
-          </button>
+          <div className="relative group">
+            <button className="btn-secondary flex items-center gap-2">
+              <Download className="w-4 h-4" />
+              Export
+            </button>
+            <div className="hidden group-hover:block absolute right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[180px]">
+              <button
+                onClick={() => exportSalesCSV(filteredSales)}
+                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 rounded-t-lg"
+              >
+                Export Summary CSV
+              </button>
+              <button
+                onClick={() => exportSalesDetailedCSV(filteredSales)}
+                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 rounded-b-lg"
+              >
+                Export Detailed CSV
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 

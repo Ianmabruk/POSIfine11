@@ -1,35 +1,40 @@
 import { useState } from 'react';
-import { BASE_API_URL } from '../services/api';
+import { creditRequests } from '../services/api';
 import { CreditCard, X } from 'lucide-react';
 
 export default function CreditRequestForm({ product, onClose, onSubmit }) {
   const [formData, setFormData] = useState({
     customerName: '',
     quantity: 1,
-    amount: product.price
+    amount: product.price,
+    reason: 'credit_sale',
+    notes: ''
   });
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
+    setError(null);
     try {
-      const token = localStorage.getItem('token');
-
-      const res = await fetch(`${BASE_API_URL}/credit-requests`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          productId: product.id,
-          ...formData
-        })
+      const data = await creditRequests.create({
+        customerName: formData.customerName,
+        amount: formData.amount,
+        reason: formData.reason,
+        notes: formData.notes || `${product.name} x${formData.quantity}`
       });
-      const data = await res.json();
-      onSubmit(data);
-      onClose();
-    } catch (error) {
-      console.error('Failed to submit credit request:', error);
+      if (data?.error) {
+        setError(data.error);
+      } else {
+        onSubmit(data);
+        onClose();
+      }
+    } catch (err) {
+      console.error('Failed to submit credit request:', err);
+      setError(err.message || 'Failed to submit credit request');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -46,6 +51,11 @@ export default function CreditRequestForm({ product, onClose, onSubmit }) {
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium mb-2">Product</label>
             <input
@@ -62,8 +72,24 @@ export default function CreditRequestForm({ product, onClose, onSubmit }) {
               value={formData.customerName}
               onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
               className="w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-orange-500"
+              placeholder="Enter customer name"
               required
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-2">Reason</label>
+            <select
+              value={formData.reason}
+              onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+              className="w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-orange-500"
+              required
+            >
+              <option value="credit_sale">Credit Sale</option>
+              <option value="customer_request">Customer Request</option>
+              <option value="regular_customer">Regular Customer</option>
+              <option value="business_account">Business Account</option>
+              <option value="other">Other</option>
+            </select>
           </div>
           <div>
             <label className="block text-sm font-medium mb-2">Quantity</label>
@@ -77,7 +103,7 @@ export default function CreditRequestForm({ product, onClose, onSubmit }) {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-2">Amount</label>
+            <label className="block text-sm font-medium mb-2">Amount (KSH)</label>
             <input
               type="number"
               value={formData.amount}
@@ -86,11 +112,22 @@ export default function CreditRequestForm({ product, onClose, onSubmit }) {
               required
             />
           </div>
+          <div>
+            <label className="block text-sm font-medium mb-2">Notes (optional)</label>
+            <textarea
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              className="w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-orange-500"
+              placeholder="Additional details..."
+              rows="2"
+            />
+          </div>
           <button
             type="submit"
-            className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-4 rounded-lg font-bold hover:shadow-lg transition"
+            disabled={submitting}
+            className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-4 rounded-lg font-bold hover:shadow-lg transition disabled:opacity-50"
           >
-            Submit Request
+            {submitting ? 'Submitting...' : 'Submit Request'}
           </button>
         </form>
       </div>

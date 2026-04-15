@@ -359,6 +359,9 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('csrfToken');
     localStorage.removeItem('appLogo');
+    // Clear session flags so they don't persist across re-logins
+    sessionStorage.removeItem('reminderShown');
+    sessionStorage.removeItem('adminReminderShown');
     setUser(null);
     setAppSettings({});
 

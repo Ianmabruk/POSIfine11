@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { expenses as expensesApi, rawMaterials as rawMaterialsApi } from '../../services/api';
 import websocketService from '../../services/websocketService';
-import { Plus, TrendingDown, Package } from 'lucide-react';
+import { Plus, TrendingDown, Package, Download } from 'lucide-react';
+import { exportExpensesCSV } from '../../utils/exportData';
 
 export default function Expenses() {
   const [expenses, setExpenses] = useState([]);
@@ -141,13 +142,22 @@ export default function Expenses() {
           <h2 className="text-2xl font-bold">Expense Management</h2>
           <p className="text-sm text-gray-600 mt-1">Track manual expenses and automatic ingredient deductions from sales</p>
         </div>
-        <button 
-          onClick={() => setShowAddModal(true)}
-          className="btn-primary flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Add Expense
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => exportExpensesCSV(expenses)}
+            className="btn-secondary flex items-center gap-2"
+          >
+            <Download className="w-4 h-4" />
+            Export CSV
+          </button>
+          <button 
+            onClick={() => setShowAddModal(true)}
+            className="btn-primary flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Add Expense
+          </button>
+        </div>
       </div>
 
       {/* Summary Cards */}
