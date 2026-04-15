@@ -17,6 +17,8 @@ export const AuthProvider = ({ children }) => {
     const plan = rawUser.plan ?? rawUser.subscription ?? rawUser.account_plan;
     const profilePicture = rawUser.profilePicture ?? rawUser.profile_picture ?? null;
     const businessLogo = rawUser.business_logo ?? rawUser.businessLogo ?? null;
+    const businessType = rawUser.business_type ?? rawUser.businessType ?? null;
+    const accountId = rawUser.account_id ?? rawUser.accountId ?? null;
     return {
       ...rawUser,
       active,
@@ -24,7 +26,11 @@ export const AuthProvider = ({ children }) => {
       profilePicture,
       profile_picture: profilePicture,
       business_logo: businessLogo,
-      businessLogo
+      businessLogo,
+      business_type: businessType,
+      businessType,
+      account_id: accountId,
+      accountId,
     };
   };
 
@@ -255,6 +261,12 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (payload) => {
     try {
+      // Clear stale products cache from any previous account
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('products_cache_')) {
+          localStorage.removeItem(key);
+        }
+      });
       // If payload already contains token & user (caller passed the auth response), just set state
       if (payload && payload.token && payload.user) {
         const normalized = normalizeUser(payload.user);
@@ -296,6 +308,12 @@ export const AuthProvider = ({ children }) => {
 
   const signup = async (userData) => {
     try {
+      // Clear any stale products cache from a previous account
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('products_cache_')) {
+          localStorage.removeItem(key);
+        }
+      });
       const response = await auth.signup(userData);
       if (response.token && response.user) {
         const normalized = normalizeUser(response.user);
@@ -359,6 +377,12 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('csrfToken');
     localStorage.removeItem('appLogo');
+    // Clear ALL products caches to prevent data leaking across accounts
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('products_cache_')) {
+        localStorage.removeItem(key);
+      }
+    });
     // Clear session flags so they don't persist across re-logins
     sessionStorage.removeItem('reminderShown');
     sessionStorage.removeItem('adminReminderShown');

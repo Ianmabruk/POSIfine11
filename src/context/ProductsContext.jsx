@@ -26,12 +26,17 @@ export const ProductsProvider = ({ children }) => {
   const [lastUpdated, setLastUpdated] = useState(Date.now());
   const [isEditing, setIsEditing] = useState(false); // Track if user is actively editing
 
-  const getAccountKey = () => user?.account_id || user?.accountId || user?.id || 'anonymous';
-  const getProductsCacheKey = () => `products_cache_${getAccountKey()}`;
+  const getAccountKey = () => user?.account_id || user?.accountId || user?.id || null;
+  const getProductsCacheKey = () => {
+    const key = getAccountKey();
+    return key ? `products_cache_${key}` : null;
+  };
 
   const persistProductsCache = useCallback((nextProducts) => {
     try {
-      localStorage.setItem(getProductsCacheKey(), JSON.stringify({
+      const cacheKey = getProductsCacheKey();
+      if (!cacheKey) return;
+      localStorage.setItem(cacheKey, JSON.stringify({
         products: nextProducts,
         savedAt: Date.now()
       }));
@@ -88,13 +93,16 @@ export const ProductsProvider = ({ children }) => {
       }
 
       try {
-        const cached = localStorage.getItem(getProductsCacheKey());
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          const cachedProducts = Array.isArray(parsed?.products) ? parsed.products : [];
-          if (cachedProducts.length) {
-            setProducts(cachedProducts);
-            return cachedProducts;
+        const cacheKey = getProductsCacheKey();
+        if (cacheKey) {
+          const cached = localStorage.getItem(cacheKey);
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            const cachedProducts = Array.isArray(parsed?.products) ? parsed.products : [];
+            if (cachedProducts.length) {
+              setProducts(cachedProducts);
+              return cachedProducts;
+            }
           }
         }
       } catch (cacheError) {
@@ -122,12 +130,15 @@ export const ProductsProvider = ({ children }) => {
     }
 
     try {
-      const cached = localStorage.getItem(getProductsCacheKey());
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        const cachedProducts = Array.isArray(parsed?.products) ? parsed.products : [];
-        if (cachedProducts.length) {
-          setProducts(cachedProducts);
+      const cacheKey = getProductsCacheKey();
+      if (cacheKey) {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          const cachedProducts = Array.isArray(parsed?.products) ? parsed.products : [];
+          if (cachedProducts.length) {
+            setProducts(cachedProducts);
+          }
         }
       }
     } catch (cacheError) {
