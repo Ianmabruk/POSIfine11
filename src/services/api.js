@@ -87,12 +87,16 @@ const requestWithRetry = async (endpoint, options = {}, retryCount = 0, maxRetri
     ? cleanEndpoint.replace(/^\/api/, '')
     : cleanEndpoint;
   
+  // Auth endpoints that should NOT send the token (public/unauthenticated)
+  const skipAuthEndpoints = ['/auth/login', '/auth/signup', '/auth/pin-login', '/auth/refresh', '/main-admin/auth/login'];
+  const shouldSkipAuth = skipAuthEndpoints.some(ep => cleanEndpoint === ep);
+
   const config = {
     ...options,
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      ...(token && !(cleanEndpoint.startsWith('/auth') && cleanEndpoint !== '/auth/me' && cleanEndpoint !== '/auth/change-password' && cleanEndpoint !== '/auth/update-pin' && cleanEndpoint !== '/auth/lock-screen' && cleanEndpoint !== '/auth/unlock-screen' && cleanEndpoint !== '/auth/logout') && !cleanEndpoint.includes('/main-admin/auth/login') && { Authorization: `Bearer ${token}` }),
+      ...(token && !shouldSkipAuth && { Authorization: `Bearer ${token}` }),
       ...(csrfToken && { 'X-CSRF-Token': csrfToken }),
       ...options.headers
     }
