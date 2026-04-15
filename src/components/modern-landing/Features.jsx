@@ -32,7 +32,6 @@ export default function Features() {
       icon: TrendingUp,
       title: "Growth Optimization",
       description: "AI-driven revenue insights and profit margin analysis to boost your business",
-      badge: "PRO",
       gradient: "from-orange-500 to-amber-500"
     },
     {

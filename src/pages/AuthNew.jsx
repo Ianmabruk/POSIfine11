@@ -105,7 +105,6 @@ export default function AuthNew() {
       } else {
         const selectedPlan = getSelectedPlan();
         const planId = localStorage.getItem('planId') || selectedPlan?.id || 'basic';
-        const businessType = localStorage.getItem('businessType') || localStorage.getItem('selectedBusinessType') || selectedPlan?.business_type;
         const selectedFeatures = localStorage.getItem('selectedFeatures');
         
         res = await auth.signup({
@@ -113,7 +112,6 @@ export default function AuthNew() {
           password: formData.password,
           name: formData.name,
           plan: planId,
-          business_type: businessType,
           selectedFeatures: selectedFeatures ? JSON.parse(selectedFeatures) : []
         });
       }

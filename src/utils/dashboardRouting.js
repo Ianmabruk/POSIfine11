@@ -2,16 +2,14 @@
  * Dashboard Routing Utility
  * 
  * Determines the correct dashboard route based on user attributes:
- * - subscription (basic, ultra, pro, custom)
+ * - subscription (basic, ultra)
  * - role (main_admin, admin, cashier)
- * - businessType (bar, clinic, hotel, supermarket, etc.)
- * - businessRole (doctor, waiter, reception, etc.)
  */
 
 /**
  * Get the correct dashboard route for a user
  * 
- * @param {Object} user - User object with subscription, role, businessType
+ * @param {Object} user - User object with subscription, role
  * @returns {string} - Dashboard route path
  */
 export function getDashboardRoute(user) {
@@ -20,109 +18,34 @@ export function getDashboardRoute(user) {
     return '/auth/login';
   }
 
-  const subscription = user.subscription || user.plan || 'basic';
   const role = user.role || 'cashier';
-  const businessType = user.businessType || user.business_type;
-  const businessRole = user.businessRole || user.business_role;
 
   console.log('[getDashboardRoute] Evaluating:', {
-    subscription,
     role,
-    businessType,
-    businessRole,
     user: user.email
   });
 
-  // ============================================================
   // 1. MAIN ADMIN - Always goes to /main.admin
-  // ============================================================
-    // 1. MAIN ADMIN - Always goes to /main.admin
-    if (role === 'main_admin') {
-      console.log('[getDashboardRoute] → /main.admin (Main Admin)');
+  if (role === 'main_admin') {
+    console.log('[getDashboardRoute] → /main.admin (Main Admin)');
     return '/main.admin';
   }
 
-  // ============================================================
-  // 2. PRO/CUSTOM SUBSCRIPTION with BUSINESS TYPE
-  // ============================================================
-  const isPro = subscription === 'pro' || subscription === 'custom' || subscription === 3400 || subscription === 3000 || subscription === 'PRO_PETROLEUM';
-
-  // Petroleum access is restricted to PRO_PETROLEUM only
-  if (businessType === 'petrol' && subscription !== 'PRO_PETROLEUM') {
-    if (role === 'admin') {
-      return '/admin';
-    }
-    if (role === 'cashier') {
-      return '/cashier';
-    }
-  }
-
-  if (isPro && businessType) {
-    // Pro Admin with Business Type → Business-specific admin dashboard
-    if (role === 'admin') {
-      console.log(`[getDashboardRoute] → /admin/${businessType} (Pro Admin - ${businessType})`);
-      return `/admin/${businessType}`;
-    }
-
-    // Cashiers should always land in cashier POS flows.
-    if (role === 'cashier') {
-      console.log(`[getDashboardRoute] → /cashier/${businessType} (Pro Cashier - ${businessType})`);
-      return `/cashier/${businessType}`;
-    }
-    
-    // Pro User with Business Role → Role-specific dashboard
-    if (businessRole && businessRole !== 'admin') {
-      console.log(`[getDashboardRoute] → /dashboard/${businessType}/${businessRole} (Pro ${businessRole})`);
-      return `/dashboard/${businessType}/${businessRole}`;
-    }
-  }
-
-  // ============================================================
-  // 3. PRO/CUSTOM SUBSCRIPTION WITHOUT BUSINESS TYPE
-  // ============================================================
-  if (isPro && !businessType) {
-    // Pro Admin without business type → Select business type first
-    if (role === 'admin') {
-      console.log('[getDashboardRoute] → /select-business-type (Pro Admin - No business type)');
-      return '/select-business-type';
-    }
-    
-    // Pro Cashier without business type → Default cashier dashboard
-    if (role === 'cashier') {
-      console.log('[getDashboardRoute] → /cashier (Pro Cashier - No business type)');
-      return '/cashier';
-    }
-  }
-
-  // ============================================================
-  // 4. BASIC/ULTRA SUBSCRIPTION - Standard Dashboards
-  // ============================================================
+  // 2. ADMIN - Standard admin dashboard
   if (role === 'admin') {
-    console.log(`[getDashboardRoute] → /admin (${subscription} Admin)`);
+    console.log('[getDashboardRoute] → /admin (Admin)');
     return '/admin';
   }
 
+  // 3. CASHIER - Cashier dashboard
   if (role === 'cashier') {
-    console.log(`[getDashboardRoute] → /cashier (${subscription} Cashier)`);
-    return '/cashier';
+    console.log('[getDashboardRoute] → /dashboard/cashier (Cashier)');
+    return '/dashboard/cashier';
   }
 
-  // ============================================================
-  // 5. FALLBACK - Default dashboard
-  // ============================================================
+  // 4. FALLBACK
   console.warn('[getDashboardRoute] → /dashboard (Fallback)');
   return '/dashboard';
-}
-
-/**
- * Check if user should see Pro dashboard features
- * @param {Object} user - User object
- * @returns {boolean}
- */
-export function isProUser(user) {
-  if (!user) return false;
-  const subscription = user.subscription || user.plan;
-  return subscription === 'pro' || subscription === 'custom' || subscription === 'PRO_PETROLEUM' || subscription === 'pro_petroleum' || subscription === 3000 || subscription === 3400;
 }
 
 /**
@@ -133,54 +56,4 @@ export function isProUser(user) {
 export function hasBusinessType(user) {
   if (!user) return false;
   return !!(user.businessType || user.business_type);
-}
-
-/**
- * Get business-specific dashboard component name
- * @param {Object} user - User object
- * @returns {string} - Component name or null
- */
-export function getBusinessDashboardComponent(user) {
-  if (!user) return null;
-  
-  const businessType = user.businessType || user.business_type;
-  const businessRole = user.businessRole || user.business_role;
-  
-  if (!businessType) return null;
-
-  // Map business types to dashboard components
-  const dashboardMap = {
-    bar: 'BarDashboard',
-    clinic: businessRole === 'doctor' ? 'DoctorDashboard' :
-            businessRole === 'pharmacy' ? 'PharmacyDashboard' :
-            'ReceptionDashboard',
-    hotel: 'HotelDashboard',
-    supermarket: 'SupermarketDashboard',
-    restaurant: 'RestaurantDashboard',
-    pharmacy: 'PharmacyDashboard',
-    hospital: 'HospitalDashboard',
-    petrol: 'PetrolDashboard',
-    school: 'SchoolDashboard',
-    gym: 'GymDashboard',
-    salon: 'SalonDashboard',
-    retail: 'RetailDashboard'
-  };
-
-  return dashboardMap[businessType] || 'AdminDashboard';
-}
-
-/**
- * Debug helper: Log complete routing decision
- * @param {Object} user - User object
- */
-export function debugRoutingDecision(user) {
-  console.group('🔍 Dashboard Routing Debug');
-  console.log('User:', user?.email);
-  console.log('Subscription:', user?.subscription || user?.plan);
-  console.log('Role:', user?.role);
-  console.log('Business Type:', user?.businessType || user?.business_type);
-  console.log('Business Role:', user?.businessRole || user?.business_role);
-  console.log('→ Route:', getDashboardRoute(user));
-  console.log('→ Component:', getBusinessDashboardComponent(user));
-  console.groupEnd();
 }

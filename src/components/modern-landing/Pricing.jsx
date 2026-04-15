@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Check, Zap, Crown, Sparkles } from "lucide-react";
+import { Check, Zap, Crown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export default function Pricing() {
@@ -33,27 +33,10 @@ export default function Pricing() {
         "API Access",
         "Custom Reports"
       ],
-      highlight: false,
-      icon: Sparkles,
-      gradient: "from-[#22c55e] to-[#16a34a]"
-    },
-    {
-      name: "Pro",
-      price: "KES 3,600",
-      description: "Ultimate business solution",
-      features: [
-        "Unlimited Users",
-        "AI Forecasting",
-        "Staff Performance",
-        "24/7 VIP Support",
-        "White Label",
-        "Custom Integrations",
-        "Dedicated Manager"
-      ],
       highlight: true,
       badge: "MOST POPULAR",
       icon: Crown,
-      gradient: "from-[#2d4cff] via-[#3b82f6] to-[#f59e0b]"
+      gradient: "from-[#2d4cff] via-[#3b82f6] to-[#22c55e]"
     }
   ];
 
@@ -86,7 +69,7 @@ export default function Pricing() {
         </motion.div>
 
         {/* Pricing Cards */}
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
           {plans.map((plan, index) => (
             <motion.div
               key={index}
