@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { CreditCard, CheckCircle, XCircle, Clock, AlertCircle, Download } from 'lucide-react';
 import { creditRequests as creditRequestsApi } from '../../services/api';
-import { exportCreditRequestsCSV, exportCreditRequestsHTML } from '../../utils/exportData';
+import { exportCreditRequestsPDF } from '../../utils/exportData';
 
 export default function CreditRequests() {
   const [requests, setRequests] = useState([]);
@@ -106,16 +106,10 @@ export default function CreditRequests() {
             </button>
             <div className="hidden group-hover:block absolute right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[200px]">
               <button
-                onClick={() => exportCreditRequestsCSV(filteredRequests)}
-                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 rounded-t-lg"
+                onClick={() => exportCreditRequestsPDF(filteredRequests)}
+                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 rounded-lg"
               >
-                Export CSV
-              </button>
-              <button
-                onClick={() => exportCreditRequestsHTML(filteredRequests)}
-                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 rounded-b-lg border-t"
-              >
-                Export Report (with Logo)
+                Export PDF
               </button>
             </div>
           </div>

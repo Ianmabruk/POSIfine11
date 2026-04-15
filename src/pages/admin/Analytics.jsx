@@ -14,7 +14,7 @@ import {
 import { BASE_API_URL } from '../../services/api';
 import AICharts from '../../components/AICharts';
 import StaffScores from '../../components/StaffScores';
-import { exportAnalyticsCSV, exportAnalyticsHTML } from '../../utils/exportData';
+import { exportAnalyticsPDF } from '../../utils/exportData';
 
 export default function Analytics() {
   const [sales, setSales] = useState([]);
@@ -37,11 +37,11 @@ export default function Analytics() {
         fetch(`${BASE_API_URL}/products`, { headers })
       ]);
 
-      const salesData = await salesRes.json();
-      const productsData = await productsRes.json();
+      const salesData = salesRes.ok ? await salesRes.json() : [];
+      const productsData = productsRes.ok ? await productsRes.json() : [];
 
-      setSales(salesData);
-      setProducts(productsData);
+      setSales(Array.isArray(salesData) ? salesData : []);
+      setProducts(Array.isArray(productsData) ? productsData : []);
     } catch (error) {
       console.error('Failed to load analytics data:', error);
     } finally {
@@ -185,16 +185,10 @@ export default function Analytics() {
             </button>
             <div className="hidden group-hover:block absolute right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[200px]">
               <button
-                onClick={() => exportAnalyticsCSV(productStats, stats)}
-                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 rounded-t-lg"
+                onClick={() => exportAnalyticsPDF(productStats, stats)}
+                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 rounded-lg"
               >
-                Export CSV
-              </button>
-              <button
-                onClick={() => exportAnalyticsHTML(productStats, stats)}
-                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 rounded-b-lg border-t"
-              >
-                Export Report (with Logo)
+                Export PDF
               </button>
             </div>
           </div>

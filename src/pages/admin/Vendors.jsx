@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Search, Phone, Mail, MapPin, X, Download } from 'lucide-react';
 import { BASE_API_URL } from '../../services/api';
-import { exportVendorsCSV, exportVendorsHTML } from '../../utils/exportData';
+import { exportVendorsPDF } from '../../utils/exportData';
 
 export default function Vendors() {
   const [vendors, setVendors] = useState([]);
@@ -138,16 +138,10 @@ export default function Vendors() {
             </button>
             <div className="hidden group-hover:block absolute right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[200px]">
               <button
-                onClick={() => exportVendorsCSV(vendors)}
-                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 rounded-t-lg"
+                onClick={() => exportVendorsPDF(vendors)}
+                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 rounded-lg"
               >
-                Export CSV
-              </button>
-              <button
-                onClick={() => exportVendorsHTML(vendors)}
-                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 rounded-b-lg border-t"
-              >
-                Export Report (with Logo)
+                Export PDF
               </button>
             </div>
           </div>

@@ -5,7 +5,7 @@ import {
   Package, TrendingDown, AlertTriangle, RefreshCw, Search,
   ChevronDown, ChevronUp, Filter, BarChart3, Download
 } from 'lucide-react';
-import { exportStockCSV } from '../../utils/exportData';
+import { exportStockPDF } from '../../utils/exportData';
 
 const hasRecipe = (product) => Array.isArray(product?.recipe) && product.recipe.length > 0;
 
@@ -223,11 +223,11 @@ export default function StockDashboard() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => exportStockCSV(products, [])}
+            onClick={() => exportStockPDF(products, [])}
             className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
           >
             <Download className="w-4 h-4" />
-            Export CSV
+            Export PDF
           </button>
           <button
             onClick={loadData}

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { sales as salesApi, BASE_API_URL } from '../../services/api';
 import { Calendar, Download, Filter, Trash2, Trash } from 'lucide-react';
-import { exportSalesCSV, exportSalesDetailedCSV, exportSalesHTML } from '../../utils/exportData';
+import { exportSalesPDF, exportSalesDetailedPDF } from '../../utils/exportData';
 
 export default function Sales() {
   const [sales, setSales] = useState([]);
@@ -162,22 +162,16 @@ export default function Sales() {
             </button>
             <div className="hidden group-hover:block absolute right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[200px]">
               <button
-                onClick={() => exportSalesCSV(filteredSales)}
+                onClick={() => exportSalesPDF(filteredSales)}
                 className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 rounded-t-lg"
               >
-                Export Summary CSV
+                Export Summary PDF
               </button>
               <button
-                onClick={() => exportSalesDetailedCSV(filteredSales)}
-                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                onClick={() => exportSalesDetailedPDF(filteredSales)}
+                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 rounded-b-lg"
               >
-                Export Detailed CSV
-              </button>
-              <button
-                onClick={() => exportSalesHTML(filteredSales)}
-                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 rounded-b-lg border-t"
-              >
-                Export Report (with Logo)
+                Export Detailed PDF
               </button>
             </div>
           </div>
