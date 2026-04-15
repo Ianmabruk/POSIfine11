@@ -92,7 +92,7 @@ const requestWithRetry = async (endpoint, options = {}, retryCount = 0, maxRetri
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      ...(token && !(cleanEndpoint.startsWith('/auth') && cleanEndpoint !== '/auth/me') && !cleanEndpoint.includes('/main-admin/auth/login') && { Authorization: `Bearer ${token}` }),
+      ...(token && !(cleanEndpoint.startsWith('/auth') && cleanEndpoint !== '/auth/me' && cleanEndpoint !== '/auth/change-password' && cleanEndpoint !== '/auth/update-pin' && cleanEndpoint !== '/auth/lock-screen' && cleanEndpoint !== '/auth/unlock-screen' && cleanEndpoint !== '/auth/logout') && !cleanEndpoint.includes('/main-admin/auth/login') && { Authorization: `Bearer ${token}` }),
       ...(csrfToken && { 'X-CSRF-Token': csrfToken }),
       ...options.headers
     }
