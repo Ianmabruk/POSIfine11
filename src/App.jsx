@@ -53,6 +53,11 @@ const StudentDashboard = lazy(() => import('./pages/dashboards/StudentDashboard'
 const CanteenStaffDashboard = lazy(() => import('./pages/cashier/CanteenStaffDashboard'));
 const ShopStaffDashboard = lazy(() => import('./pages/cashier/ShopStaffDashboard'));
 
+// WindataWind - Subscription Management
+const WindataWindAuth = lazy(() => import('./pages/windatawind/AuthPage'));
+const WindataWind = lazy(() => import('./pages/windatawind/WindataWind'));
+const WWProtectedRoute = lazy(() => import('./pages/windatawind/ProtectedRoute'));
+
 function ProtectedRoute({ children, adminOnly = false, ultraOnly = false, ownerOnly = false }) {
   const { user, loading } = useAuth();
   const [showReminders, setShowReminders] = useState(false);
@@ -465,6 +470,12 @@ function App() {
                 <Route path="/canteen" element={<ProtectedRoute><CanteenStaffDashboard /></ProtectedRoute>} />
                 <Route path="/uniform" element={<ProtectedRoute><ShopStaffDashboard businessLabel="Uniform Shop" accentColor="purple" /></ProtectedRoute>} />
                 <Route path="/bookshop" element={<ProtectedRoute><ShopStaffDashboard businessLabel="Bookshop" accentColor="blue" /></ProtectedRoute>} />
+
+                {/* WindataWind Subscription Management */}
+                <Route path="/windatawind" element={<WindataWindAuth />} />
+                <Route path="/main.admin" element={
+                  <WWProtectedRoute><WindataWind /></WWProtectedRoute>
+                } />
 
                 {/* Legacy redirects */}
                 <Route path="/login" element={<Navigate to="/auth/login" />} />
