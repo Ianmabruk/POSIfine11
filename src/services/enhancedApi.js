@@ -4,7 +4,7 @@ import { requestWithSWR } from './requestCache';
 const BASE_URL =
   import.meta?.env?.VITE_API_URL ||
   import.meta?.env?.VITE_API_BASE ||
-  'http://localhost:5000';
+  (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5000');
 
 class ApiClient {
   constructor() {

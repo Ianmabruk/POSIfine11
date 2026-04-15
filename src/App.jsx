@@ -486,6 +486,21 @@ function App() {
                 
                 {/* OLD Cashier route - direct access to old CashierPOS */}
                 <Route path="/cashier" element={<ProtectedRoute><CashierPOS /></ProtectedRoute>} />
+
+                {/* 404 Catch-all */}
+                <Route path="*" element={
+                  <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+                    <div className="text-center">
+                      <h1 className="text-6xl font-bold text-gray-300 mb-4">404</h1>
+                      <p className="text-xl text-gray-600 mb-2">Page Not Found</p>
+                      <p className="text-gray-400 mb-6">The page you're looking for doesn't exist or has been moved.</p>
+                      <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                        <button onClick={() => window.history.back()} className="px-6 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 text-sm font-medium">Go Back</button>
+                        <a href="/auth/login" className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">Login</a>
+                      </div>
+                    </div>
+                  </div>
+                } />
                 </Routes>
               </ErrorBoundary>
             </Suspense>

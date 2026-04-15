@@ -13,7 +13,7 @@ export default function ClockInOut({ shiftId, onClockOut }) {
     const fetchShift = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/v2/shifts/current`, {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || window.location.origin}/api/v2/shifts/current`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
@@ -56,7 +56,7 @@ export default function ClockInOut({ shiftId, onClockOut }) {
 
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/v2/shifts/clock-out`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || window.location.origin}/api/v2/shifts/clock-out`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
