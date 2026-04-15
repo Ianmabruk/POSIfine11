@@ -15,6 +15,7 @@ import Landing from './pages/Landing';
 import LandingModern from './components/modern-landing/LandingModern';
 import AuthNew from './pages/AuthNew';
 import Subscription from './pages/Subscription';
+import LoggedOut from './pages/LoggedOut';
 
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const BusinessAwareAdminRouter = lazy(() => import('./pages/BusinessAwareAdminRouter'));
@@ -114,8 +115,9 @@ function ProtectedRoute({ children, adminOnly = false, ultraOnly = false, ownerO
 }
 
 function DashboardRouter() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   
+  if (loading) return <LogoPreloader text="Loading..." />;
   if (!user || !user.active) return <Navigate to="/choose-subscription" />;
   
   // 🎯 PRO PLAN ROUTING - Business-specific dashboards
@@ -220,6 +222,7 @@ function App() {
                 <Route path="/choose-subscription" element={<Subscription />} />
                 <Route path="/auth/login" element={<AuthNew />} />
                 <Route path="/auth/signup" element={<AuthNew />} />
+                <Route path="/logged-out" element={<LoggedOut />} />
                 <Route path="/plans" element={<Navigate to="/choose-subscription" />} />
                 <Route path="/build-pos" element={<ProtectedRoute><BuildPOS /></ProtectedRoute>} />
                 

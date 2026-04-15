@@ -411,8 +411,7 @@ export const AuthProvider = ({ children }) => {
       // ignore
     } finally {
       // Use replace so back-button doesn't return to a stale dashboard.
-      // The ?logout=1 flag tells AuthNew to clear stale tokens/snapshots.
-      window.location.replace('/auth/login?logout=1');
+      window.location.replace('/logged-out');
     }
   };
 

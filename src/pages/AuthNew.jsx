@@ -23,26 +23,15 @@ export default function AuthNew() {
   const navigate = useNavigate();
   const { login, user, loading: authLoading } = useAuth();
 
-  // Only clear session when the user explicitly logged out (?logout=1).
-  // Otherwise, if the user is already authenticated (e.g. navigated here
+  // If the user is already authenticated (e.g. navigated here
   // by accident), redirect them straight to their dashboard so cached
   // data (snapshots, stats) is preserved.
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    if (params.get('logout') === '1') {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('csrfToken');
-      localStorage.removeItem('appLogo');
-      // Notify AuthContext's storage listener to set user → null
-      window.dispatchEvent(new Event('storage'));
-    } else if (!authLoading && user && localStorage.getItem('token')) {
-      // Already authenticated with valid token — send to dashboard
+    if (!authLoading && user && localStorage.getItem('token')) {
       const route = getDashboardRoute(user);
       navigate(route, { replace: true });
     }
-  }, [authLoading, user, location.search, navigate]);
+  }, [authLoading, user, navigate]);
 
   const getSelectedPlan = () => {
     try {

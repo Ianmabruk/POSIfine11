@@ -8,15 +8,17 @@ import AdminDashboard from './admin/AdminDashboard';
 import BarAdminDashboard from './admin/BarAdminDashboard';
 
 const DashboardRouter = () => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!user) {
+    if (!loading && !user) {
       navigate('/auth/login');
       return;
     }
-  }, [user, navigate]);
+  }, [user, loading, navigate]);
+
+  if (loading) return null;
 
   // Get business type from user or localStorage
   const businessType = user?.businessType || localStorage.getItem('selectedBusinessType');

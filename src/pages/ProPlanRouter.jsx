@@ -52,10 +52,11 @@ import ShopStaffDashboard from './cashier/ShopStaffDashboard';
  *   - Any role → SupermarketDashboard (retail POS with barcode scanning)
  */
 export default function ProPlanRouter() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (loading) return;
     if (!user) {
       navigate('/auth/login');
       return;
@@ -85,9 +86,9 @@ export default function ProPlanRouter() {
     }
     
     console.log('[PRO ROUTER] Pro user with business type:', user.businessType || user.business_type, '- rendering dashboard');
-  }, [user, navigate]);
+  }, [user, loading, navigate]);
 
-  if (!user) return null;
+  if (loading || !user) return null;
 
   // Get business context - check multiple sources
   const businessType = user.businessType || 

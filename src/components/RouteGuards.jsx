@@ -24,7 +24,11 @@ export function ProtectedRoute({ children }) {
  * Pro Plan Guard - Requires Pro subscription
  */
 export function ProPlanGuard({ children }) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <LogoPreloader text="Loading..." />;
+  }
 
   if (!user) {
     return <Navigate to="/auth/login" replace />;
@@ -43,7 +47,11 @@ export function ProPlanGuard({ children }) {
  * Petroleum Plan Guard - Requires PRO_PETROLEUM subscription
  */
 export function PetroleumPlanGuard({ children }) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <LogoPreloader text="Loading..." />;
+  }
 
   if (!user) {
     return <Navigate to="/auth/login" replace />;
@@ -62,7 +70,11 @@ export function PetroleumPlanGuard({ children }) {
  * Role Guard - Requires specific role
  */
 export function RoleGuard({ children, allowedRoles = [] }) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <LogoPreloader text="Loading..." />;
+  }
 
   if (!user) {
     return <Navigate to="/auth/login" replace />;
@@ -98,7 +110,11 @@ export function RoleGuard({ children, allowedRoles = [] }) {
  * Business Type Guard - Requires specific business type
  */
 export function BusinessTypeGuard({ children, requiredType }) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <LogoPreloader text="Loading..." />;
+  }
 
   if (!user) {
     return <Navigate to="/auth/login" replace />;

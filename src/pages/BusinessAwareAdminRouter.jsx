@@ -15,10 +15,11 @@ import PetrolAdminDashboard from './admin/PetrolAdminDashboard';
 import ShoeAdminDashboard from './admin/ShoeAdminDashboard';
 
 const BusinessAwareAdminRouter = () => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (loading) return;
     if (!user) {
       navigate('/auth/login');
       return;
@@ -30,7 +31,9 @@ const BusinessAwareAdminRouter = () => {
       navigate('/dashboard/cashier');
       return;
     }
-  }, [user, navigate]);
+  }, [user, loading, navigate]);
+
+  if (loading) return null;
 
   // Get business type from user or localStorage
   const businessType = user?.businessType || localStorage.getItem('selectedBusinessType');
