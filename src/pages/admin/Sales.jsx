@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { sales as salesApi, BASE_API_URL } from '../../services/api';
 import { Calendar, Download, Filter, Trash2, Trash } from 'lucide-react';
-import { exportSalesCSV, exportSalesDetailedCSV } from '../../utils/exportData';
+import { exportSalesCSV, exportSalesDetailedCSV, exportSalesHTML } from '../../utils/exportData';
 
 export default function Sales() {
   const [sales, setSales] = useState([]);
@@ -160,7 +160,7 @@ export default function Sales() {
               <Download className="w-4 h-4" />
               Export
             </button>
-            <div className="hidden group-hover:block absolute right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[180px]">
+            <div className="hidden group-hover:block absolute right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[200px]">
               <button
                 onClick={() => exportSalesCSV(filteredSales)}
                 className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 rounded-t-lg"
@@ -169,9 +169,15 @@ export default function Sales() {
               </button>
               <button
                 onClick={() => exportSalesDetailedCSV(filteredSales)}
-                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 rounded-b-lg"
+                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
               >
                 Export Detailed CSV
+              </button>
+              <button
+                onClick={() => exportSalesHTML(filteredSales)}
+                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 rounded-b-lg border-t"
+              >
+                Export Report (with Logo)
               </button>
             </div>
           </div>

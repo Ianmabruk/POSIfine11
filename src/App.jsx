@@ -7,6 +7,7 @@ import SubscriptionReminderBar from './components/SubscriptionReminderBar';
 import StockUpdateListener from './components/StockUpdateListener';
 import ErrorBoundary from './components/ErrorBoundary';
 import CookieConsent from './components/CookieConsent';
+import LogoPreloader from './components/LogoPreloader';
 import performanceMonitor from './services/performanceMonitor';
 import { useState, useEffect, lazy, Suspense } from 'react';
 
@@ -48,6 +49,9 @@ const ClinicPharmacyDashboard = lazy(() => import('./pages/clinic/PharmacyDashbo
 const BarDashboard = lazy(() => import('./pages/bar/BarDashboard'));
 const HotelDashboard = lazy(() => import('./pages/hotel/HotelDashboard'));
 const SupermarketDashboard = lazy(() => import('./pages/business/SupermarketDashboard'));
+const StudentDashboard = lazy(() => import('./pages/dashboards/StudentDashboard'));
+const CanteenStaffDashboard = lazy(() => import('./pages/cashier/CanteenStaffDashboard'));
+const ShopStaffDashboard = lazy(() => import('./pages/cashier/ShopStaffDashboard'));
 
 function ProtectedRoute({ children, adminOnly = false, ultraOnly = false, ownerOnly = false }) {
   const { user, loading } = useAuth();
@@ -69,11 +73,7 @@ function ProtectedRoute({ children, adminOnly = false, ultraOnly = false, ownerO
   }, [user, hasToken, ownerOnly]);
   
   if (loading && !ownerOnly) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <LogoPreloader text="Loading..." />;
   }
   
   // Owner route protection (main.admin)
@@ -205,11 +205,7 @@ function App() {
       <AuthProvider>
         <ProductsProvider>
           <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-            <Suspense fallback={
-              <div className="min-h-screen flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-              </div>
-            }>
+            <Suspense fallback={<LogoPreloader text="Loading..." />}>
               <ErrorBoundary>
                 <Routes>
                 <Route path="/" element={<LandingModern />} />
@@ -445,6 +441,31 @@ function App() {
                 <Route path="/admin/*" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
                 <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
                 
+                {/* Pro Plan Direct Access Routes — login with admin credentials */}
+                <Route path="/student" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
+                <Route path="/student/*" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
+                <Route path="/kiosk" element={<ProtectedRoute><AdminKioskDashboard /></ProtectedRoute>} />
+                <Route path="/kiosk/*" element={<ProtectedRoute><AdminKioskDashboard /></ProtectedRoute>} />
+                <Route path="/bar" element={<ProtectedRoute><BarDashboard /></ProtectedRoute>} />
+                <Route path="/bar/*" element={<ProtectedRoute><BarDashboard /></ProtectedRoute>} />
+                <Route path="/hotel" element={<ProtectedRoute><HotelDashboard /></ProtectedRoute>} />
+                <Route path="/hotel/*" element={<ProtectedRoute><HotelDashboard /></ProtectedRoute>} />
+                <Route path="/school" element={<ProtectedRoute><AdminSchoolDashboard /></ProtectedRoute>} />
+                <Route path="/school/*" element={<ProtectedRoute><AdminSchoolDashboard /></ProtectedRoute>} />
+                <Route path="/supermarket" element={<ProtectedRoute><SupermarketDashboard /></ProtectedRoute>} />
+                <Route path="/supermarket/*" element={<ProtectedRoute><SupermarketDashboard /></ProtectedRoute>} />
+                <Route path="/hospital" element={<ProtectedRoute><AdminHospitalDashboard /></ProtectedRoute>} />
+                <Route path="/hospital/*" element={<ProtectedRoute><AdminHospitalDashboard /></ProtectedRoute>} />
+                <Route path="/clinic" element={<ProtectedRoute><AdminClinicDashboard /></ProtectedRoute>} />
+                <Route path="/clinic/*" element={<ProtectedRoute><AdminClinicDashboard /></ProtectedRoute>} />
+                <Route path="/petrol" element={<ProtectedRoute><PetrolAdminDashboard /></ProtectedRoute>} />
+                <Route path="/petrol/*" element={<ProtectedRoute><PetrolAdminDashboard /></ProtectedRoute>} />
+                <Route path="/shoes" element={<ProtectedRoute><AdminShoeDashboard /></ProtectedRoute>} />
+                <Route path="/shoes/*" element={<ProtectedRoute><AdminShoeDashboard /></ProtectedRoute>} />
+                <Route path="/canteen" element={<ProtectedRoute><CanteenStaffDashboard /></ProtectedRoute>} />
+                <Route path="/uniform" element={<ProtectedRoute><ShopStaffDashboard businessLabel="Uniform Shop" accentColor="purple" /></ProtectedRoute>} />
+                <Route path="/bookshop" element={<ProtectedRoute><ShopStaffDashboard businessLabel="Bookshop" accentColor="blue" /></ProtectedRoute>} />
+
                 {/* Legacy redirects */}
                 <Route path="/login" element={<Navigate to="/auth/login" />} />
                 <Route path="/signup" element={<Navigate to="/auth/signup" />} />

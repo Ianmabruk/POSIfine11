@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Search, Phone, Mail, MapPin, X, Download } from 'lucide-react';
 import { BASE_API_URL } from '../../services/api';
-import { exportVendorsCSV } from '../../utils/exportData';
+import { exportVendorsCSV, exportVendorsHTML } from '../../utils/exportData';
 
 export default function Vendors() {
   const [vendors, setVendors] = useState([]);
@@ -131,13 +131,26 @@ export default function Vendors() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Vendors</h1>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => exportVendorsCSV(vendors)}
-            className="flex items-center gap-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200"
-          >
-            <Download className="w-5 h-5" />
-            Export CSV
-          </button>
+          <div className="relative group">
+            <button className="flex items-center gap-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200">
+              <Download className="w-5 h-5" />
+              Export
+            </button>
+            <div className="hidden group-hover:block absolute right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[200px]">
+              <button
+                onClick={() => exportVendorsCSV(vendors)}
+                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 rounded-t-lg"
+              >
+                Export CSV
+              </button>
+              <button
+                onClick={() => exportVendorsHTML(vendors)}
+                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 rounded-b-lg border-t"
+              >
+                Export Report (with Logo)
+              </button>
+            </div>
+          </div>
           <button
             onClick={handleAddVendor}
             className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"

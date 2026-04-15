@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { expenses as expensesApi, rawMaterials as rawMaterialsApi } from '../../services/api';
 import websocketService from '../../services/websocketService';
 import { Plus, TrendingDown, Package, Download } from 'lucide-react';
-import { exportExpensesCSV } from '../../utils/exportData';
+import { exportExpensesCSV, exportExpensesHTML } from '../../utils/exportData';
 
 export default function Expenses() {
   const [expenses, setExpenses] = useState([]);
@@ -143,13 +143,26 @@ export default function Expenses() {
           <p className="text-sm text-gray-600 mt-1">Track manual expenses and automatic ingredient deductions from sales</p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => exportExpensesCSV(expenses)}
-            className="btn-secondary flex items-center gap-2"
-          >
-            <Download className="w-4 h-4" />
-            Export CSV
-          </button>
+          <div className="relative group">
+            <button className="btn-secondary flex items-center gap-2">
+              <Download className="w-4 h-4" />
+              Export
+            </button>
+            <div className="hidden group-hover:block absolute right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[200px]">
+              <button
+                onClick={() => exportExpensesCSV(expenses)}
+                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 rounded-t-lg"
+              >
+                Export CSV
+              </button>
+              <button
+                onClick={() => exportExpensesHTML(expenses)}
+                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 rounded-b-lg border-t"
+              >
+                Export Report (with Logo)
+              </button>
+            </div>
+          </div>
           <button 
             onClick={() => setShowAddModal(true)}
             className="btn-primary flex items-center gap-2"

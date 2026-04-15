@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { CreditCard, CheckCircle, XCircle, Clock, AlertCircle, Download } from 'lucide-react';
 import { creditRequests as creditRequestsApi } from '../../services/api';
-import { exportCreditRequestsCSV } from '../../utils/exportData';
+import { exportCreditRequestsCSV, exportCreditRequestsHTML } from '../../utils/exportData';
 
 export default function CreditRequests() {
   const [requests, setRequests] = useState([]);
@@ -99,13 +99,26 @@ export default function CreditRequests() {
           <p className="text-sm text-gray-600 mt-1">Review and manage credit requests from cashiers</p>
         </div>
         <div className="flex gap-2 items-center">
-          <button
-            onClick={() => exportCreditRequestsCSV(filteredRequests)}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center gap-2 font-medium"
-          >
-            <Download className="w-4 h-4" />
-            Export
-          </button>
+          <div className="relative group">
+            <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center gap-2 font-medium">
+              <Download className="w-4 h-4" />
+              Export
+            </button>
+            <div className="hidden group-hover:block absolute right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[200px]">
+              <button
+                onClick={() => exportCreditRequestsCSV(filteredRequests)}
+                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 rounded-t-lg"
+              >
+                Export CSV
+              </button>
+              <button
+                onClick={() => exportCreditRequestsHTML(filteredRequests)}
+                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 rounded-b-lg border-t"
+              >
+                Export Report (with Logo)
+              </button>
+            </div>
+          </div>
           {['all', 'pending', 'approved', 'rejected'].map(status => (
             <button
               key={status}

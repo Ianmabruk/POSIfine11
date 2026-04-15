@@ -14,7 +14,7 @@ import {
 import { BASE_API_URL } from '../../services/api';
 import AICharts from '../../components/AICharts';
 import StaffScores from '../../components/StaffScores';
-import { exportAnalyticsCSV } from '../../utils/exportData';
+import { exportAnalyticsCSV, exportAnalyticsHTML } from '../../utils/exportData';
 
 export default function Analytics() {
   const [sales, setSales] = useState([]);
@@ -178,13 +178,26 @@ export default function Analytics() {
             <option value="90days">Last 90 Days</option>
             <option value="all">All Time</option>
           </select>
-          <button
-            onClick={() => exportAnalyticsCSV(productStats, stats)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            <Download className="w-4 h-4" />
-            Export CSV
-          </button>
+          <div className="relative group">
+            <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+              <Download className="w-4 h-4" />
+              Export
+            </button>
+            <div className="hidden group-hover:block absolute right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[200px]">
+              <button
+                onClick={() => exportAnalyticsCSV(productStats, stats)}
+                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 rounded-t-lg"
+              >
+                Export CSV
+              </button>
+              <button
+                onClick={() => exportAnalyticsHTML(productStats, stats)}
+                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 rounded-b-lg border-t"
+              >
+                Export Report (with Logo)
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
