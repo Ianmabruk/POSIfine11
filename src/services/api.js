@@ -190,6 +190,11 @@ export const auth = {
   updatePin: (pin) => request('/auth/update-pin', {
     method: 'POST',
     body: JSON.stringify({ pin })
+  }),
+
+  changePassword: (currentPassword, newPassword, newPin) => request('/auth/change-password', {
+    method: 'POST',
+    body: JSON.stringify({ currentPassword, newPassword, newPin })
   })
 };
 

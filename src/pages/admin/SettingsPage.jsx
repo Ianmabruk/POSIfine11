@@ -3,8 +3,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
-import { Bell, CreditCard, User, Shield, Check, Upload, Image as ImageIcon, Users, RefreshCw, Settings } from 'lucide-react';
-import { settings as settingsApi } from '../../services/api';
+import { Bell, CreditCard, User, Shield, Check, Upload, Image as ImageIcon, Users, RefreshCw, Settings, Eye, EyeOff, Lock } from 'lucide-react';
+import { settings as settingsApi, auth } from '../../services/api';
 
 
 export default function SettingsPage() {
@@ -19,6 +19,15 @@ export default function SettingsPage() {
   // New settings for cashier user management and product sync
   const [cashierUserManagement, setCashierUserManagement] = useState(true);
   const [realTimeProductSync, setRealTimeProductSync] = useState(true);
+
+  // Change password modal state
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '', newPin: '' });
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [passwordSuccess, setPasswordSuccess] = useState('');
 
   useEffect(() => {
     loadSettings();
@@ -132,6 +141,57 @@ export default function SettingsPage() {
         }
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    setPasswordError('');
+    setPasswordSuccess('');
+
+    if (!passwordForm.currentPassword) {
+      setPasswordError('Current password is required');
+      return;
+    }
+    if (!passwordForm.newPassword && !passwordForm.newPin) {
+      setPasswordError('Enter a new password or new PIN');
+      return;
+    }
+    if (passwordForm.newPassword && passwordForm.newPassword.length < 4) {
+      setPasswordError('New password must be at least 4 characters');
+      return;
+    }
+    if (passwordForm.newPassword && passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError('New passwords do not match');
+      return;
+    }
+    if (passwordForm.newPin && passwordForm.newPin.length < 4) {
+      setPasswordError('PIN must be at least 4 digits');
+      return;
+    }
+
+    setPasswordLoading(true);
+    try {
+      const result = await auth.changePassword(
+        passwordForm.currentPassword,
+        passwordForm.newPassword || undefined,
+        passwordForm.newPin || undefined
+      );
+      const changedWhat = [];
+      if (passwordForm.newPassword) changedWhat.push('Password');
+      if (passwordForm.newPin) changedWhat.push('PIN');
+      setPasswordSuccess(`${changedWhat.join(' and ')} changed successfully! Redirecting to login...`);
+      // Wait 2 seconds so user sees notification, then logout and redirect
+      setTimeout(() => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('refreshToken');
+        window.location.href = '/login';
+      }, 2000);
+    } catch (err) {
+      setPasswordError(err.message || 'Failed to change password');
+    } finally {
+      setPasswordLoading(false);
     }
   };
 
@@ -335,7 +395,7 @@ export default function SettingsPage() {
             <h3 className="text-lg font-semibold">Security</h3>
           </div>
           <div className="space-y-3">
-            <button className="btn-secondary text-sm w-full">Change Password</button>
+            <button onClick={() => { setShowChangePasswordModal(true); setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '', newPin: '' }); setPasswordError(''); setPasswordSuccess(''); }} className="btn-secondary text-sm w-full">Change Password / PIN</button>
             <button className="btn-secondary text-sm w-full">Enable 2FA</button>
           </div>
         </div>
@@ -398,6 +458,105 @@ export default function SettingsPage() {
               <button onClick={handleChangePlan} className="btn-primary flex-1">Confirm Change</button>
               <button onClick={() => setShowPlanModal(false)} className="btn-secondary">Cancel</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Change Password / PIN Modal */}
+      {showChangePasswordModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-6">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
+                <Lock className="w-5 h-5 text-red-600" />
+              </div>
+              <h3 className="text-xl font-bold">Change Password / PIN</h3>
+            </div>
+
+            {passwordSuccess && (
+              <div className="mb-4 p-3 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm font-medium">
+                ✅ {passwordSuccess}
+              </div>
+            )}
+
+            {passwordError && (
+              <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-800 text-sm">
+                ❌ {passwordError}
+              </div>
+            )}
+
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700">Current Password *</label>
+                <div className="relative mt-1">
+                  <input
+                    type={showCurrentPassword ? 'text' : 'password'}
+                    value={passwordForm.currentPassword}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg pr-10"
+                    placeholder="Enter current password"
+                    autoComplete="current-password"
+                  />
+                  <button type="button" onClick={() => setShowCurrentPassword(!showCurrentPassword)} className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600">
+                    {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700">New Password</label>
+                <div className="relative mt-1">
+                  <input
+                    type={showNewPassword ? 'text' : 'password'}
+                    value={passwordForm.newPassword}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg pr-10"
+                    placeholder="Enter new password (min 4 chars)"
+                    autoComplete="new-password"
+                  />
+                  <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600">
+                    {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700">Confirm New Password</label>
+                <input
+                  type="password"
+                  value={passwordForm.confirmPassword}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg mt-1"
+                  placeholder="Re-enter new password"
+                  autoComplete="new-password"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700">New PIN (optional)</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={passwordForm.newPin}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, newPin: e.target.value.replace(/\D/g, '') })}
+                  className="w-full px-3 py-2 border rounded-lg mt-1"
+                  placeholder="Enter new PIN (min 4 digits)"
+                  maxLength={8}
+                />
+              </div>
+
+              <p className="text-xs text-gray-500">Your email stays the same. All your data is preserved. You will be redirected to login after changing.</p>
+
+              <div className="flex gap-3 pt-2">
+                <button type="submit" disabled={passwordLoading || !!passwordSuccess} className="btn-primary flex-1 disabled:opacity-50">
+                  {passwordLoading ? 'Saving...' : 'Save Changes'}
+                </button>
+                <button type="button" onClick={() => setShowChangePasswordModal(false)} disabled={!!passwordSuccess} className="btn-secondary disabled:opacity-50">
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
