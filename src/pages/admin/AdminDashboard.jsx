@@ -32,7 +32,7 @@ export default function AdminDashboard() {
   const { user, logout, isCashierUserManagementEnabled, appSettings: ctxSettings } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [aiAnswer, setAiAnswer] = useState('');
@@ -249,8 +249,14 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 bg-black/40 z-30 md:hidden" onClick={() => setSidebarOpen(false)} />
+      )}
       {/* Sidebar */}
-      <aside className={`bg-white border-r border-gray-200 transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-20'} flex flex-col`}>
+      <aside className={`bg-white border-r border-gray-200 transition-all duration-300 flex flex-col
+        fixed md:relative z-40 h-full
+        ${sidebarOpen ? 'w-64 translate-x-0' : 'w-20 -translate-x-full md:translate-x-0'}`}>
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             {sidebarOpen && (
@@ -281,7 +287,7 @@ export default function AdminDashboard() {
             return (
               <button
                 key={item.id}
-                onClick={() => navigate(item.path)}
+                onClick={() => { navigate(item.path); if (window.innerWidth < 768) setSidebarOpen(false); }}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                   isActive(item.path)
                     ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md'
@@ -325,14 +331,17 @@ export default function AdminDashboard() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Top Navbar */}
-        <header className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between gap-6">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
+        <header className="bg-white border-b border-gray-200 px-3 sm:px-6 py-3 sm:py-4">
+          <div className="flex items-center justify-between gap-2 sm:gap-6 flex-wrap">
+            <div className="flex items-center gap-2">
+              <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 hover:bg-gray-100 rounded-lg md:hidden">
+                <Menu className="w-5 h-5" />
+              </button>
+              <h1 className="text-lg sm:text-2xl font-bold text-gray-900">
                 {menuItems.find(item => isActive(item.path))?.label || 'Dashboard'}
               </h1>
             </div>
-            <div className="flex-1 max-w-xl">
+            <div className="flex-1 max-w-xl hidden sm:block">
               <div className="relative">
                 <input
                   type="text"
@@ -369,11 +378,11 @@ export default function AdminDashboard() {
                 </button>
               </div>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               {appSettings.logo ? (
                 <img src={appSettings.logo} alt="Business logo" className="hidden md:block w-12 h-12 rounded-2xl object-cover border border-gray-200" />
               ) : null}
-              <div className="text-right">
+              <div className="text-right hidden sm:block">
                 <p className="text-sm font-semibold text-gray-900">{user?.name}</p>
                 <p className="text-xs text-gray-500">{user?.email}</p>
               </div>
@@ -392,10 +401,16 @@ export default function AdminDashboard() {
           </div>
         </header>
 
+        {/* Mobile search */}
+        <div className="sm:hidden px-3 py-2 bg-white border-b border-gray-200">
+          <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={handleSearchKeyDown}
+            placeholder="Search..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+
         {/* Page Content */}
         <main className="flex-1 overflow-auto">
           {(aiAnswer || aiError) && (
-            <div className="px-6 pt-4">
+            <div className="px-3 sm:px-6 pt-4">
               <div className={`rounded-lg border px-4 py-3 text-sm ${aiError ? 'border-red-200 bg-red-50 text-red-700' : 'border-blue-200 bg-blue-50 text-blue-900'}`}>
                 {aiError ? aiError : aiAnswer}
               </div>

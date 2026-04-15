@@ -9,7 +9,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import CookieConsent from './components/CookieConsent';
 import LogoPreloader from './components/LogoPreloader';
 import performanceMonitor from './services/performanceMonitor';
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 
 import Landing from './pages/Landing';
 import LandingModern from './components/modern-landing/LandingModern';
@@ -61,14 +61,15 @@ const WWProtectedRoute = lazy(() => import('./pages/windatawind/ProtectedRoute')
 function ProtectedRoute({ children, adminOnly = false, ultraOnly = false, ownerOnly = false }) {
   const { user, loading } = useAuth();
   const [showReminders, setShowReminders] = useState(false);
+  const reminderChecked = useRef(false);
   
   // Security: verify a token actually exists alongside the user object.
-  // This prevents stale localStorage cache from granting access when
-  // the token has been cleared (e.g., after logout or session expiry).
   const hasToken = !!localStorage.getItem('token');
   
   useEffect(() => {
+    if (reminderChecked.current) return;
     if (user && hasToken && !ownerOnly) {
+      reminderChecked.current = true;
       const reminderShown = sessionStorage.getItem('reminderShown');
       if (!reminderShown) {
         setShowReminders(true);
@@ -446,30 +447,30 @@ function App() {
                 <Route path="/admin/*" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
                 <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
                 
-                {/* Pro Plan Direct Access Routes — login with admin credentials */}
-                <Route path="/student" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
-                <Route path="/student/*" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
-                <Route path="/kiosk" element={<ProtectedRoute><AdminKioskDashboard /></ProtectedRoute>} />
-                <Route path="/kiosk/*" element={<ProtectedRoute><AdminKioskDashboard /></ProtectedRoute>} />
-                <Route path="/bar" element={<ProtectedRoute><BarDashboard /></ProtectedRoute>} />
-                <Route path="/bar/*" element={<ProtectedRoute><BarDashboard /></ProtectedRoute>} />
-                <Route path="/hotel" element={<ProtectedRoute><HotelDashboard /></ProtectedRoute>} />
-                <Route path="/hotel/*" element={<ProtectedRoute><HotelDashboard /></ProtectedRoute>} />
-                <Route path="/school" element={<ProtectedRoute><AdminSchoolDashboard /></ProtectedRoute>} />
-                <Route path="/school/*" element={<ProtectedRoute><AdminSchoolDashboard /></ProtectedRoute>} />
-                <Route path="/supermarket" element={<ProtectedRoute><SupermarketDashboard /></ProtectedRoute>} />
-                <Route path="/supermarket/*" element={<ProtectedRoute><SupermarketDashboard /></ProtectedRoute>} />
-                <Route path="/hospital" element={<ProtectedRoute><AdminHospitalDashboard /></ProtectedRoute>} />
-                <Route path="/hospital/*" element={<ProtectedRoute><AdminHospitalDashboard /></ProtectedRoute>} />
-                <Route path="/clinic" element={<ProtectedRoute><AdminClinicDashboard /></ProtectedRoute>} />
-                <Route path="/clinic/*" element={<ProtectedRoute><AdminClinicDashboard /></ProtectedRoute>} />
-                <Route path="/petrol" element={<ProtectedRoute><PetrolAdminDashboard /></ProtectedRoute>} />
-                <Route path="/petrol/*" element={<ProtectedRoute><PetrolAdminDashboard /></ProtectedRoute>} />
-                <Route path="/shoes" element={<ProtectedRoute><AdminShoeDashboard /></ProtectedRoute>} />
-                <Route path="/shoes/*" element={<ProtectedRoute><AdminShoeDashboard /></ProtectedRoute>} />
-                <Route path="/canteen" element={<ProtectedRoute><CanteenStaffDashboard /></ProtectedRoute>} />
-                <Route path="/uniform" element={<ProtectedRoute><ShopStaffDashboard businessLabel="Uniform Shop" accentColor="purple" /></ProtectedRoute>} />
-                <Route path="/bookshop" element={<ProtectedRoute><ShopStaffDashboard businessLabel="Bookshop" accentColor="blue" /></ProtectedRoute>} />
+                {/* Pro Plan Direct Access Routes — require auth + matching business type */}
+                <Route path="/student" element={<ProtectedRoute><RouteGuard><StudentDashboard /></RouteGuard></ProtectedRoute>} />
+                <Route path="/student/*" element={<ProtectedRoute><RouteGuard><StudentDashboard /></RouteGuard></ProtectedRoute>} />
+                <Route path="/kiosk" element={<ProtectedRoute adminOnly><RouteGuard><ProPlanGuard><BusinessTypeGuard requiredType="kiosk"><AdminKioskDashboard /></BusinessTypeGuard></ProPlanGuard></RouteGuard></ProtectedRoute>} />
+                <Route path="/kiosk/*" element={<ProtectedRoute adminOnly><RouteGuard><ProPlanGuard><BusinessTypeGuard requiredType="kiosk"><AdminKioskDashboard /></BusinessTypeGuard></ProPlanGuard></RouteGuard></ProtectedRoute>} />
+                <Route path="/bar" element={<ProtectedRoute adminOnly><RouteGuard><ProPlanGuard><BusinessTypeGuard requiredType="bar"><BarDashboard /></BusinessTypeGuard></ProPlanGuard></RouteGuard></ProtectedRoute>} />
+                <Route path="/bar/*" element={<ProtectedRoute adminOnly><RouteGuard><ProPlanGuard><BusinessTypeGuard requiredType="bar"><BarDashboard /></BusinessTypeGuard></ProPlanGuard></RouteGuard></ProtectedRoute>} />
+                <Route path="/hotel" element={<ProtectedRoute adminOnly><RouteGuard><ProPlanGuard><BusinessTypeGuard requiredType="hotel"><HotelDashboard /></BusinessTypeGuard></ProPlanGuard></RouteGuard></ProtectedRoute>} />
+                <Route path="/hotel/*" element={<ProtectedRoute adminOnly><RouteGuard><ProPlanGuard><BusinessTypeGuard requiredType="hotel"><HotelDashboard /></BusinessTypeGuard></ProPlanGuard></RouteGuard></ProtectedRoute>} />
+                <Route path="/school" element={<ProtectedRoute adminOnly><RouteGuard><ProPlanGuard><BusinessTypeGuard requiredType="school"><AdminSchoolDashboard /></BusinessTypeGuard></ProPlanGuard></RouteGuard></ProtectedRoute>} />
+                <Route path="/school/*" element={<ProtectedRoute adminOnly><RouteGuard><ProPlanGuard><BusinessTypeGuard requiredType="school"><AdminSchoolDashboard /></BusinessTypeGuard></ProPlanGuard></RouteGuard></ProtectedRoute>} />
+                <Route path="/supermarket" element={<ProtectedRoute adminOnly><RouteGuard><ProPlanGuard><BusinessTypeGuard requiredType="supermarket"><SupermarketDashboard /></BusinessTypeGuard></ProPlanGuard></RouteGuard></ProtectedRoute>} />
+                <Route path="/supermarket/*" element={<ProtectedRoute adminOnly><RouteGuard><ProPlanGuard><BusinessTypeGuard requiredType="supermarket"><SupermarketDashboard /></BusinessTypeGuard></ProPlanGuard></RouteGuard></ProtectedRoute>} />
+                <Route path="/hospital" element={<ProtectedRoute adminOnly><RouteGuard><ProPlanGuard><BusinessTypeGuard requiredType="hospital"><AdminHospitalDashboard /></BusinessTypeGuard></ProPlanGuard></RouteGuard></ProtectedRoute>} />
+                <Route path="/hospital/*" element={<ProtectedRoute adminOnly><RouteGuard><ProPlanGuard><BusinessTypeGuard requiredType="hospital"><AdminHospitalDashboard /></BusinessTypeGuard></ProPlanGuard></RouteGuard></ProtectedRoute>} />
+                <Route path="/clinic" element={<ProtectedRoute adminOnly><RouteGuard><ProPlanGuard><BusinessTypeGuard requiredType="clinic"><AdminClinicDashboard /></BusinessTypeGuard></ProPlanGuard></RouteGuard></ProtectedRoute>} />
+                <Route path="/clinic/*" element={<ProtectedRoute adminOnly><RouteGuard><ProPlanGuard><BusinessTypeGuard requiredType="clinic"><AdminClinicDashboard /></BusinessTypeGuard></ProPlanGuard></RouteGuard></ProtectedRoute>} />
+                <Route path="/petrol" element={<ProtectedRoute adminOnly><RouteGuard><PetroleumPlanGuard><BusinessTypeGuard requiredType="petrol"><PetrolAdminDashboard /></BusinessTypeGuard></PetroleumPlanGuard></RouteGuard></ProtectedRoute>} />
+                <Route path="/petrol/*" element={<ProtectedRoute adminOnly><RouteGuard><PetroleumPlanGuard><BusinessTypeGuard requiredType="petrol"><PetrolAdminDashboard /></BusinessTypeGuard></PetroleumPlanGuard></RouteGuard></ProtectedRoute>} />
+                <Route path="/shoes" element={<ProtectedRoute adminOnly><RouteGuard><ProPlanGuard><BusinessTypeGuard requiredType="shoes"><AdminShoeDashboard /></BusinessTypeGuard></ProPlanGuard></RouteGuard></ProtectedRoute>} />
+                <Route path="/shoes/*" element={<ProtectedRoute adminOnly><RouteGuard><ProPlanGuard><BusinessTypeGuard requiredType="shoes"><AdminShoeDashboard /></BusinessTypeGuard></ProPlanGuard></RouteGuard></ProtectedRoute>} />
+                <Route path="/canteen" element={<ProtectedRoute><RouteGuard><CanteenStaffDashboard /></RouteGuard></ProtectedRoute>} />
+                <Route path="/uniform" element={<ProtectedRoute><RouteGuard><ShopStaffDashboard businessLabel="Uniform Shop" accentColor="purple" /></RouteGuard></ProtectedRoute>} />
+                <Route path="/bookshop" element={<ProtectedRoute><RouteGuard><ShopStaffDashboard businessLabel="Bookshop" accentColor="blue" /></RouteGuard></ProtectedRoute>} />
 
                 {/* WindataWind Subscription Management */}
                 <Route path="/windatawind" element={<WindataWindAuth />} />
