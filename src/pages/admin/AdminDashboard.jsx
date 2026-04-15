@@ -1,7 +1,7 @@
 
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { BASE_API_URL } from '../../services/api';
-import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard, ShoppingBag, Package, Layers, TrendingDown, TrendingUp,
@@ -52,21 +52,6 @@ export default function AdminDashboard() {
       setAppSettings(prev => ({ ...prev, ...ctxSettings }));
     }
   }, [ctxSettings]);
-
-  // 🚫 CRITICAL: Pro Plan users should NOT access this Basic/Ultra Admin Dashboard
-  // Redirect them to their business-specific dashboards
-  const isPro = user?.subscription === 'pro' || user?.plan === 'pro' || user?.subscription === 'custom' || user?.plan === 3000;
-  const businessType = user?.businessType || user?.business_type;
-  
-  if (isPro && businessType) {
-    console.log('🚫 [AdminDashboard] Pro user detected - redirecting to business dashboard:', businessType);
-    return <Navigate to={`/admin/${businessType}`} replace />;
-  }
-  
-  if (isPro && !businessType && user?.role === 'admin') {
-    console.log('🚫 [AdminDashboard] Pro user without business type - redirecting to selector');
-    return <Navigate to="/select-business-type" replace />;
-  }
 
   useEffect(() => {
     // CRITICAL: Ensure user data is correct and prevent unnecessary redirects
