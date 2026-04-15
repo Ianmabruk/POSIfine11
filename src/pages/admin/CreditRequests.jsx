@@ -10,6 +10,8 @@ export default function CreditRequests() {
   const [rejectionReason, setRejectionReason] = useState('');
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadRequests();
@@ -21,9 +23,13 @@ export default function CreditRequests() {
   const loadRequests = async () => {
     try {
       const data = await creditRequestsApi.getAll();
-      setRequests(data || []);
-    } catch (error) {
-      console.error('Failed to load credit requests:', error);
+      setRequests(Array.isArray(data) ? data : []);
+      setError('');
+    } catch (err) {
+      console.error('Failed to load credit requests:', err);
+      setError(err.message || 'Failed to load credit requests');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -93,12 +99,22 @@ export default function CreditRequests() {
 
   return (
     <div className="p-4 md:p-6 space-y-6">
-      <div className="flex items-center justify-between">
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-red-800">Failed to load credit requests</p>
+            <p className="text-sm text-red-600 mt-1">{error}</p>
+            <button onClick={loadRequests} className="text-sm text-red-700 underline mt-2">Try again</button>
+          </div>
+        </div>
+      )}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold">Credit Requests</h2>
+          <h2 className="text-xl sm:text-2xl font-bold">Credit Requests</h2>
           <p className="text-sm text-gray-600 mt-1">Review and manage credit requests from cashiers</p>
         </div>
-        <div className="flex gap-2 items-center">
+        <div className="flex flex-wrap gap-2 items-center">
           <div className="relative group">
             <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center gap-2 font-medium">
               <Download className="w-4 h-4" />
@@ -135,20 +151,28 @@ export default function CreditRequests() {
       </div>
 
       <div className="grid grid-cols-1 gap-4">
+        {loading ? (
+          <div className="text-center py-12 text-gray-500">Loading credit requests...</div>
+        ) : filteredRequests.length === 0 && !error ? (
+          <div className="text-center py-12 text-gray-500">
+            <CreditCard className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+            <p className="text-lg">No {filter !== 'all' ? filter : ''} credit requests</p>
+          </div>
+        ) : null}
         {filteredRequests.map(request => (
           <div key={request.id} className={`card border-l-4 ${getStatusColor(request.status)}`}>
-            <div className="flex items-start justify-between">
+            <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
               <div className="flex items-start gap-4 flex-1">
-                <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                <div className={`w-12 h-12 rounded-lg flex-shrink-0 flex items-center justify-center ${
                   request.status === 'pending' ? 'bg-orange-600' :
                   request.status === 'approved' ? 'bg-green-600' : 'bg-red-600'
                 }`}>
                   {getStatusIcon(request.status)}
                 </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg">{request.customer_name || request.customerName}</h3>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-lg">{request.customer_name || request.customerName || 'Unknown Customer'}</h3>
                   <p className="text-sm text-gray-600">Requested by: {request.cashier_name || request.cashierName}</p>
-                  <div className="flex items-center gap-4 mt-2 text-sm">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm">
                     <span>Amount: <strong className="text-green-600">KSH {request.amount?.toLocaleString()}</strong></span>
                     {request.reason && (
                       <span>Reason: <strong>{request.reason.replace(/_/g, ' ')}</strong></span>
