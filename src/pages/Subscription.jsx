@@ -10,7 +10,7 @@ export default function Subscription() {
   const [demoData, setDemoData] = useState({ name: '', email: '', company: '' });
   const navigate = useNavigate();
   
-  console.log('✅ Subscription component mounted, navigate available:', typeof navigate);
+  console.log(' Subscription component mounted, navigate available:', typeof navigate);
 
   const plans = [
     {

@@ -668,17 +668,21 @@ export default function CashierPOS() {
         : 0;
       
       // Calculate tax based on type
+      const TAX_RATE = 0.16; // 16% VAT
       let taxAmount = 0;
       let finalTotal = 0;
       
       if (taxType === 'inclusive') {
-        // Tax already included in total, extract it
-        taxAmount = (subtotal / 1.16) * 0.16;
-        finalTotal = subtotal - discountValue;
+        // Prices already include tax — extract tax for display/records
+        // For the discounted amount, tax is proportionally reduced
+        const afterDiscount = subtotal - discountValue;
+        taxAmount = Math.round(((afterDiscount / (1 + TAX_RATE)) * TAX_RATE) * 100) / 100;
+        finalTotal = Math.round(afterDiscount * 100) / 100;
       } else {
-        // Tax needs to be added
-        taxAmount = (subtotal - discountValue) * 0.16;
-        finalTotal = subtotal - discountValue + taxAmount;
+        // Tax added on top of (subtotal - discount)
+        const afterDiscount = subtotal - discountValue;
+        taxAmount = Math.round((afterDiscount * TAX_RATE) * 100) / 100;
+        finalTotal = Math.round((afterDiscount + taxAmount) * 100) / 100;
       }
       
       // Prepare cart items with units
@@ -1343,21 +1347,30 @@ export default function CashierPOS() {
                     <span>-KSH {(selectedDiscount.type === 'percentage' ? (total * selectedDiscount.value / 100) : selectedDiscount.value).toLocaleString()}</span>
                   </div>
                 )}
-                <div className="flex justify-between text-sm text-orange-600">
-                  <span>Tax ({taxType === 'exclusive' ? 'Added' : 'Included'}):</span>
-                  <span>{taxType === 'exclusive' ? '+' : ''}KSH {((total - (selectedDiscount ? (selectedDiscount.type === 'percentage' ? (total * selectedDiscount.value / 100) : selectedDiscount.value) : 0)) * 0.16).toLocaleString()}</span>
-                </div>
-                <div className="border-t pt-2 flex justify-between text-lg font-bold">
-                  <span>Final Total:</span>
-                  <span className="text-green-600">
-                    KSH {
-                      (taxType === 'exclusive' 
-                        ? (total - (selectedDiscount ? (selectedDiscount.type === 'percentage' ? (total * selectedDiscount.value / 100) : selectedDiscount.value) : 0) + ((total - (selectedDiscount ? (selectedDiscount.type === 'percentage' ? (total * selectedDiscount.value / 100) : selectedDiscount.value) : 0)) * 0.16))
-                        : (total - (selectedDiscount ? (selectedDiscount.type === 'percentage' ? (total * selectedDiscount.value / 100) : selectedDiscount.value) : 0))
-                      ).toLocaleString()
-                    }
-                  </span>
-                </div>
+                {(() => {
+                  const discountVal = selectedDiscount ? (selectedDiscount.type === 'percentage' ? (total * selectedDiscount.value / 100) : selectedDiscount.value) : 0;
+                  const afterDiscount = total - discountVal;
+                  const taxAmt = taxType === 'inclusive'
+                    ? Math.round(((afterDiscount / 1.16) * 0.16) * 100) / 100
+                    : Math.round((afterDiscount * 0.16) * 100) / 100;
+                  const finalTot = taxType === 'inclusive'
+                    ? Math.round(afterDiscount * 100) / 100
+                    : Math.round((afterDiscount + taxAmt) * 100) / 100;
+                  return (
+                    <>
+                      <div className="flex justify-between text-sm text-orange-600">
+                        <span>VAT 16% ({taxType === 'inclusive' ? 'Included' : 'Added'}):</span>
+                        <span>{taxType === 'inclusive' ? '' : '+'}KSH {taxAmt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      </div>
+                      <div className="border-t pt-2 flex justify-between text-lg font-bold">
+                        <span>Final Total:</span>
+                        <span className="text-green-600">
+                          KSH {finalTot.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
 
               <div>

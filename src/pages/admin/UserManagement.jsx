@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { users as usersApi, sales as salesApi, BASE_API_URL } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import { Plus, Edit2, Trash2, Mail, Shield, Eye, Monitor, X, Clock, ShoppingCart, UserCheck, UserX, Users, Lock, Trash, Building, Stethoscope, Hotel, Utensils } from 'lucide-react';
+import { Plus, Edit2, Trash2, Mail, Shield, Eye, Monitor, X, Clock, ShoppingCart, UserCheck, UserX, Users, Lock, Trash, Building, Stethoscope, Hotel, Utensils, DollarSign } from 'lucide-react';
 
 
 export default function UserManagement() {
@@ -15,6 +15,7 @@ export default function UserManagement() {
   const [liveViewUser, setLiveViewUser] = useState(null);
   const [liveViewData, setLiveViewData] = useState(null);
   const [liveViewRefresh, setLiveViewRefresh] = useState(0);
+  const [liveSalesData, setLiveSalesData] = useState({ totalToday: 0, byCashier: {} });
 
   const [newUser, setNewUser] = useState({
     name: '',
@@ -48,7 +49,31 @@ export default function UserManagement() {
 
   useEffect(() => {
     loadUsers();
+    loadLiveSales();
+    const salesInterval = setInterval(loadLiveSales, 10000);
+    return () => clearInterval(salesInterval);
   }, []);
+
+  const loadLiveSales = async () => {
+    try {
+      const sales = await salesApi.getAll();
+      const salesArray = Array.isArray(sales) ? sales : [];
+      const today = new Date().toDateString();
+      const todaySales = salesArray.filter(s => new Date(s.createdAt || s.created_at).toDateString() === today);
+      const totalToday = todaySales.reduce((sum, s) => sum + (parseFloat(s.total) || 0), 0);
+      const byCashier = {};
+      todaySales.forEach(s => {
+        const cid = s.cashierId || s.cashier_id;
+        if (!cid) return;
+        if (!byCashier[cid]) byCashier[cid] = { total: 0, count: 0 };
+        byCashier[cid].total += parseFloat(s.total) || 0;
+        byCashier[cid].count += 1;
+      });
+      setLiveSalesData({ totalToday, byCashier });
+    } catch (e) {
+      console.error('Error loading live sales:', e);
+    }
+  };
 
   const fileToBase64 = (file) => new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -470,6 +495,11 @@ export default function UserManagement() {
           <p className="text-sm text-purple-700 mb-1">Active Users</p>
           <p className="text-3xl font-bold text-purple-900">{users.filter(u => (u.active ?? u.is_active)).length}</p>
         </div>
+        <div className="card bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200 relative">
+          <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-green-500 animate-pulse" title="Live"></div>
+          <p className="text-sm text-orange-700 mb-1">Total Sales Today (Live)</p>
+          <p className="text-3xl font-bold text-orange-900">KSH {liveSalesData.totalToday.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+        </div>
       </div>
 
       <div className="card">
@@ -484,6 +514,7 @@ export default function UserManagement() {
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Role</th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Plan</th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">PIN</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Sales Today</th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
               </tr>
@@ -523,6 +554,16 @@ export default function UserManagement() {
                     )}
                   </td>
 
+                  <td className="px-4 py-3 text-sm">
+                    {user.role === 'cashier' && liveSalesData.byCashier[user.id] ? (
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-green-700">KSH {liveSalesData.byCashier[user.id].total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        <span className="text-xs text-gray-500">{liveSalesData.byCashier[user.id].count} sale(s)</span>
+                      </div>
+                    ) : (
+                      <span className="text-gray-400 text-sm">—</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-sm">
                     <div className="flex items-center gap-2">
                       <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${
