@@ -208,22 +208,22 @@ export default function AuthEnterprise() {
   const modeSubtitle = { login: 'Sign in to your account to continue', signup: 'Start your 15-day free trial today', 'forgot-password': "Enter your email and we'll send you a reset link", 'reset-password': 'Choose a strong password for your account', '2fa-setup': 'Enter the 6-digit code from your authenticator app', 'verify-email': 'Check your inbox and verify your email address' };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-white flex flex-col overflow-x-hidden">
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-100">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
           <button onClick={() => navigate('/')} className="flex items-center gap-2 group">
-            <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center group-hover:scale-105 transition-transform">
-              <span className="text-white font-bold text-sm">P</span>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 bg-primary-600 rounded-lg flex items-center justify-center group-hover:scale-105 transition-transform">
+              <span className="text-white font-bold text-xs sm:text-sm">P</span>
             </div>
-            <span className="text-lg font-bold text-slate-900 tracking-tight">POSIFY</span>
+            <span className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">POSIFY</span>
           </button>
-          <button onClick={() => navigate('/')} className="text-sm text-slate-500 hover:text-slate-900 font-medium transition-colors">
+          <button onClick={() => navigate('/')} className="text-xs sm:text-sm text-slate-500 hover:text-slate-900 font-medium transition-colors">
             Back to Home
           </button>
         </div>
       </header>
 
-      <main className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-16">
+      <main className="flex-1 flex items-center justify-center px-3 sm:px-6 lg:px-8 pt-14 sm:pt-16">
         <div className="w-full max-w-md">
           {existingSession && !switchingUser && mode === 'login' && (
             <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 p-4 rounded-2xl bg-primary-50 border border-primary-100">
@@ -240,7 +240,7 @@ export default function AuthEnterprise() {
             </motion.div>
           )}
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="bg-white rounded-3xl shadow-soft border border-slate-100 p-8 sm:p-10">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="bg-white rounded-3xl shadow-soft border border-slate-100 p-6 sm:p-10">
             <div className="text-center mb-8">
               <div className="w-14 h-14 bg-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary-500/20">
                 <span className="text-white font-bold text-xl">P</span>

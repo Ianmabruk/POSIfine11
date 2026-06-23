@@ -13,8 +13,10 @@ export default function LandingEnterprise({ onOpenDemo }) {
   return (
     <div className="font-sans bg-white text-slate-900 min-h-screen overflow-x-hidden antialiased">
       <Hero3D onOpenDemo={() => setIsModalOpen(true)} />
-      <Industries />
-      <CRMFeatures />
+      <div className="overflow-x-hidden">
+        <Industries />
+        <CRMFeatures />
+      </div>
       
       {/* Stats Section */}
       <section className="py-20 px-6 bg-slate-50 border-y border-slate-100">

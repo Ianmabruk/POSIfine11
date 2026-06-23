@@ -90,32 +90,32 @@ export default function SubscriptionEnterprise() {
     <div className="min-h-screen bg-white">
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-100">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
           <button onClick={() => navigate('/')} className="flex items-center gap-2 group">
-            <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center group-hover:scale-105 transition-transform">
-              <span className="text-white font-bold text-sm">P</span>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 bg-primary-600 rounded-lg flex items-center justify-center group-hover:scale-105 transition-transform">
+              <span className="text-white font-bold text-xs sm:text-sm">P</span>
             </div>
-            <span className="text-lg font-bold text-slate-900 tracking-tight">POSIFY</span>
+            <span className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">POSIFY</span>
           </button>
-          <button onClick={() => navigate('/')} className="text-sm text-slate-500 hover:text-slate-900 font-medium transition-colors">
+          <button onClick={() => navigate('/')} className="text-xs sm:text-sm text-slate-500 hover:text-slate-900 font-medium transition-colors">
             Back to Home
           </button>
         </div>
       </header>
 
-      <main className="pt-24 pb-16 px-4 sm:px-6">
+      <main className="pt-20 sm:pt-24 pb-12 sm:pb-16 px-3 sm:px-6">
         <div className="max-w-5xl mx-auto">
           {/* Progress */}
-          <div className="flex items-center justify-center gap-3 mb-12">
+          <div className="flex items-center justify-center gap-2 sm:gap-3 mb-10 sm:mb-12 overflow-x-auto">
             {['plan', 'payment', 'success'].map((s, i) => (
-              <div key={s} className="flex items-center gap-3">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
+              <div key={s} className="flex items-center gap-2 sm:gap-3">
+                <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
                   step === s ? 'bg-primary-600 text-white' : 
                   ['plan','payment','success'].indexOf(step) > i ? 'bg-success text-white' : 'bg-slate-100 text-slate-400'
                 }`}>
-                  {['plan','payment','success'].indexOf(step) > i ? <Check className="w-4 h-4" /> : i + 1}
+                  {['plan','payment','success'].indexOf(step) > i ? <Check className="w-3 h-3 sm:w-4 sm:h-4" /> : i + 1}
                 </div>
-                {i < 2 && <div className={`w-16 h-0.5 rounded ${['plan','payment','success'].indexOf(step) > i ? 'bg-success' : 'bg-slate-200'}`} />}
+                {i < 2 && <div className={`w-10 sm:w-16 h-0.5 rounded flex-shrink-0 ${['plan','payment','success'].indexOf(step) > i ? 'bg-success' : 'bg-slate-200'}`} />}
               </div>
             ))}
           </div>

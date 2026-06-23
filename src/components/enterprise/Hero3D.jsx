@@ -34,8 +34,8 @@ export default function Hero3D({ onOpenDemo }) {
         <div className="absolute bottom-20 right-[10%] w-96 h-96 bg-orange-500/[0.03] rounded-full blur-[120px]" />
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 md:px-12">
+        <div className="grid lg:grid-cols-2 gap-8 lg:gap-8 items-center">
           {/* Left: Text Content */}
           <motion.div
             initial={{ opacity: 0, y: 40 }}
@@ -59,7 +59,7 @@ export default function Hero3D({ onOpenDemo }) {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: 0.8 }}
-              className="text-5xl md:text-6xl lg:text-7xl font-bold text-slate-900 tracking-tight leading-[1.1] mb-6"
+              className="text-4xl md:text-5xl lg:text-6xl font-bold text-slate-900 tracking-tight leading-[1.1] mb-6"
             >
               Run Your Entire Business{" "}
               <span className="bg-gradient-to-r from-primary-600 to-primary-500 bg-clip-text text-transparent">

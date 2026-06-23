@@ -119,20 +119,20 @@ export default function SuperAdminDashboard() {
       </aside>
 
       {/* Mobile header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 bg-white border-b border-slate-100 z-40 px-4 py-3 flex items-center justify-between">
+      <div className="md:hidden fixed top-0 left-0 right-0 bg-white border-b border-slate-100 z-40 px-3 py-2.5 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 bg-primary-600 rounded-lg flex items-center justify-center">
             <span className="text-white font-bold text-xs">P</span>
           </div>
-          <span className="font-bold text-slate-900">Super Admin</span>
+          <span className="text-sm font-bold text-slate-900">Super Admin</span>
         </div>
-        <button onClick={handleLogout} className="text-slate-500 hover:text-red-600">
-          <LogOut className="w-5 h-5" />
+        <button onClick={handleLogout} className="text-slate-500 hover:text-red-600 p-1">
+          <LogOut className="w-4 h-4" />
         </button>
       </div>
 
       {/* Main content */}
-      <main className="flex-1 md:ml-64 p-6 md:p-10 mt-14 md:mt-0">
+      <main className="flex-1 md:ml-64 p-4 sm:p-6 md:p-10 mt-14 md:mt-0">
         {loading ? (
           <div className="flex items-center justify-center h-64">
             <div className="w-8 h-8 border-2 border-primary-500/30 border-t-primary-600 rounded-full animate-spin" />
@@ -140,12 +140,12 @@ export default function SuperAdminDashboard() {
         ) : (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
             {/* Mobile nav */}
-            <div className="md:hidden flex gap-2 mb-6 overflow-x-auto pb-2">
+            <div className="md:hidden flex gap-1.5 sm:gap-2 mb-4 sm:mb-6 overflow-x-auto pb-2 scrollbar-hide">
               {navItems.map((item) => (
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap ${
+                  className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap flex-shrink-0 ${
                     activeTab === item.id
                       ? 'bg-primary-600 text-white'
                       : 'bg-white text-slate-600 border border-slate-200'

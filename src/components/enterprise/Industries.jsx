@@ -39,7 +39,7 @@ export default function Industries() {
           </p>
         </motion.div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
           {industries.map((industry, index) => (
             <motion.div
               key={index}
