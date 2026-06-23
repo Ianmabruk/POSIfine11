@@ -5,8 +5,8 @@ import { Mail, Lock, Eye, EyeOff, ArrowRight, Shield } from 'lucide-react';
 
 export default function SuperAdminLogin() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('admin@posifyne.com');
-  const [password, setPassword] = useState('AdminPass@2026');
+  const [email, setEmail] = useState('superadmin@mabrixel.local');
+  const [password, setPassword] = useState('SuperAdmin@2026!');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');

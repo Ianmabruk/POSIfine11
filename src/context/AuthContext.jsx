@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { auth, users, BASE_API_URL } from '../services/api';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const AuthContext = createContext();
 
@@ -9,8 +10,10 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [subscriptionStatus, setSubscriptionStatus] = useState(null);
+  const navigate = useNavigate();
+  const location = useLocation();
   const [appSettings, setAppSettings] = useState(() => {
-    // Hydrate from localStorage for instant logo display before API call
     const cachedLogo = localStorage.getItem('appLogo');
     return cachedLogo ? { logo: cachedLogo } : {};
   });
@@ -60,6 +63,30 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.warn('Failed to load app settings', error);
+    }
+  };
+
+  const checkSubscriptionStatus = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setSubscriptionStatus(null);
+      return;
+    }
+    try {
+      const response = await fetch(`${BASE_API_URL}/subscription/status`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setSubscriptionStatus(data);
+        if (data.status === 'expired' && !location.pathname.includes('subscription-expired') && !location.pathname.includes('choose-subscription')) {
+          navigate('/subscription-expired', { replace: true });
+        }
+      } else {
+        setSubscriptionStatus(null);
+      }
+    } catch (error) {
+      setSubscriptionStatus(null);
     }
   };
 
@@ -260,6 +287,9 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
       setIsInitialized(true);
+      if (user || localStorage.getItem('token')) {
+        setTimeout(() => checkSubscriptionStatus(), 1000);
+      }
     }
   };
 
@@ -297,6 +327,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('user', JSON.stringify(normalized));
         setUser(normalized);
         loadAppSettings();
+        setTimeout(() => checkSubscriptionStatus(), 500);
         return payload;
       }
 
@@ -314,6 +345,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('user', JSON.stringify(normalized));
         setUser(normalized);
         loadAppSettings();
+        setTimeout(() => checkSubscriptionStatus(), 500);
         return response;
       }
       throw new Error('Invalid response from server');

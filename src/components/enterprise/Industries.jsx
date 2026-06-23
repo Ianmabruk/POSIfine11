@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, Play, Check, ChevronRight, Globe, ShoppingBag, Stethoscope, Hotel, Car, Shirt, Pill, Building2, Warehouse } from "lucide-react";
+import ScaleContainer from "../ScaleContainer";
 
 const industries = [
   { icon: ShoppingBag, name: "Retail Stores", desc: "Manage inventory, track sales, and serve customers faster with smart POS workflows.", color: "bg-blue-500" },
@@ -19,14 +20,14 @@ export default function Industries() {
   const navigate = useNavigate();
 
   return (
-    <section className="py-24 px-6 md:px-12 bg-slate-50" id="industries">
+    <section className="py-12 sm:py-24 px-4 sm:px-6 md:px-12 bg-slate-50" id="industries">
       <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-16"
+          className="text-center mb-10 sm:mb-16"
         >
           <span className="inline-block px-4 py-2 bg-white border border-slate-200 rounded-full text-sm font-semibold text-slate-700 mb-4 shadow-sm">
             Industries We Serve
@@ -39,7 +40,7 @@ export default function Industries() {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+        <div className="grid grid-cols-4 gap-3">
           {industries.map((industry, index) => (
             <motion.div
               key={index}

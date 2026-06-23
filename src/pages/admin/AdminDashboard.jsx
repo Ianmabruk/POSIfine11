@@ -32,7 +32,6 @@ export default function AdminDashboard() {
   const { user, logout, isCashierUserManagementEnabled, appSettings: ctxSettings } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [aiAnswer, setAiAnswer] = useState('');
@@ -234,107 +233,92 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Mobile overlay */}
-      {sidebarOpen && (
-        <div className="fixed inset-0 bg-black/40 z-30 md:hidden" onClick={() => setSidebarOpen(false)} />
-      )}
-      {/* Sidebar */}
-      <aside className={`bg-white border-r border-gray-200 transition-all duration-300 flex flex-col
+      {/* Sidebar - always visible, icon-only on mobile */}
+      <aside className="bg-white border-r border-gray-200 transition-all duration-300 flex flex-col
         fixed md:relative z-40 h-full
-        ${sidebarOpen ? 'w-64 translate-x-0' : 'w-20 -translate-x-full md:translate-x-0'}`}>
-        <div className="p-6 border-b border-gray-200">
+        w-16 md:w-64">
+        <div className="p-3 md:p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
-            {sidebarOpen && (
-              <div className="flex items-center gap-3">
-                {appSettings.logo ? (
-                  <img src={appSettings.logo} alt="Business logo" className="w-11 h-11 rounded-xl object-cover border border-gray-200" />
-                ) : null}
-                <div>
-                  <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                    Admin Panel
-                  </h2>
-                  <p className="text-xs text-gray-500">POS Management</p>
-                </div>
+            <div className="flex items-center gap-2 md:gap-3">
+              {appSettings.logo ? (
+                <img src={appSettings.logo} alt="Business logo" className="w-8 h-8 md:w-11 md:h-11 rounded-xl object-cover border border-gray-200" />
+              ) : null}
+              <div className="hidden md:block">
+                <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  Admin Panel
+                </h2>
+                <p className="text-xs text-gray-500">POS Management</p>
               </div>
-            )}
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
+            </div>
           </div>
         </div>
 
-        <nav className="flex-1 p-4 space-y-2">
+        <nav className="flex-1 p-2 md:p-4 space-y-1">
           {menuItems.map(item => {
             const Icon = item.icon;
             return (
               <button
                 key={item.id}
-                onClick={() => { navigate(item.path); if (window.innerWidth < 768) setSidebarOpen(false); }}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                onClick={() => navigate(item.path)}
+                className={`w-full flex items-center gap-3 px-3 md:px-4 py-3 rounded-lg transition-all ${
                   isActive(item.path)
                     ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
                 <Icon className="w-5 h-5 flex-shrink-0" />
-                {sidebarOpen && <span className="font-medium">{item.label}</span>}
+                <span className="hidden md:inline font-medium">{item.label}</span>
               </button>
             );
           })}
         </nav>
 
-        <div className="p-4 border-t border-gray-200 space-y-2">
+        <div className="p-2 md:p-4 border-t border-gray-200 space-y-1">
           <button
             onClick={() => window.open('/cashier', '_blank')}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+            className="w-full flex items-center gap-3 px-3 md:px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
           >
             <ExternalLink className="w-5 h-5 flex-shrink-0" />
-            {sidebarOpen && <span className="font-medium">Open POS</span>}
+            <span className="hidden md:inline font-medium">Open POS</span>
           </button>
           
           <button
             onClick={logout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+            className="w-full flex items-center gap-3 px-3 md:px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
           >
             <LogOut className="w-5 h-5 flex-shrink-0" />
-            {sidebarOpen && <span className="font-medium">Logout</span>}
+            <span className="hidden md:inline font-medium">Logout</span>
           </button>
           
           <button
             onClick={handleClearData}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-orange-600 hover:bg-orange-50 transition-colors"
+            className="w-full flex items-center gap-3 px-3 md:px-4 py-3 rounded-lg text-orange-600 hover:bg-orange-50 transition-colors"
           >
             <X className="w-5 h-5 flex-shrink-0" />
-            {sidebarOpen && <span className="font-medium">Clear Data</span>}
+            <span className="hidden md:inline font-medium">Clear Data</span>
           </button>
         </div>
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col ml-0 md:ml-0">
         {/* Top Navbar */}
         <header className="bg-white border-b border-gray-200 px-3 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between gap-2 sm:gap-6 flex-wrap">
             <div className="flex items-center gap-2">
-              <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 hover:bg-gray-100 rounded-lg md:hidden">
-                <Menu className="w-5 h-5" />
-              </button>
               <h1 className="text-lg sm:text-2xl font-bold text-gray-900">
                 {menuItems.find(item => isActive(item.path))?.label || 'Dashboard'}
               </h1>
             </div>
-            <div className="flex-1 max-w-xl hidden sm:block">
+            <div className="flex-1 max-w-xl">
               <div className="relative">
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={handleSearchKeyDown}
-                  placeholder="Search pages, reports, inventory..."
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Search..."
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 {searchQuery && filteredMenuItems.length > 0 && (
                   <div className="absolute z-10 mt-2 w-full bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
@@ -352,15 +336,6 @@ export default function AdminDashboard() {
                     ))}
                   </div>
                 )}
-              </div>
-              <div className="mt-2 flex justify-end">
-                <button
-                  onClick={askAiFromSearch}
-                  disabled={aiLoading || !searchQuery.trim()}
-                  className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                >
-                  {aiLoading ? 'Asking AI...' : 'Search with AI'}
-                </button>
               </div>
             </div>
             <div className="flex items-center gap-2 sm:gap-4">
@@ -385,12 +360,6 @@ export default function AdminDashboard() {
             </div>
           </div>
         </header>
-
-        {/* Mobile search */}
-        <div className="sm:hidden px-3 py-2 bg-white border-b border-gray-200">
-          <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={handleSearchKeyDown}
-            placeholder="Search..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-        </div>
 
         {/* Page Content */}
         <main className="flex-1 overflow-auto">

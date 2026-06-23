@@ -34,8 +34,8 @@ export default function Hero3D({ onOpenDemo }) {
         <div className="absolute bottom-20 right-[10%] w-96 h-96 bg-orange-500/[0.03] rounded-full blur-[120px]" />
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 md:px-12">
-        <div className="grid lg:grid-cols-2 gap-8 lg:gap-8 items-center">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 md:px-12 w-full">
+        <div className="grid grid-cols-2 gap-6 lg:gap-8 items-center">
           {/* Left: Text Content */}
           <motion.div
             initial={{ opacity: 0, y: 40 }}
@@ -116,21 +116,21 @@ export default function Hero3D({ onOpenDemo }) {
             </motion.div>
           </motion.div>
 
-          {/* Right: Floating 3D Dashboard Scene */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1, delay: 0.3 }}
-            className="relative hidden lg:block h-[600px]"
-            style={{ perspective: 1200 }}
-          >
+           {/* Right: Floating 3D Dashboard Scene */}
+           <motion.div
+             initial={{ opacity: 0, scale: 0.9 }}
+             animate={{ opacity: 1, scale: 1 }}
+             transition={{ duration: 1, delay: 0.3 }}
+             className="relative h-[400px] sm:h-[500px] lg:h-[600px]"
+             style={{ perspective: 1200 }}
+           >
             <motion.div
               animate={{ rotateX: [0, 5, 0], rotateY: [0, -5, 0] }}
               transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
               className="relative w-full h-full"
             >
               {/* POS Dashboard */}
-              <FloatingCard delay={0} speed={7} className="absolute top-8 left-0 w-[280px] bg-white rounded-2xl shadow-premium border border-slate-100 p-5 z-30">
+              <FloatingCard delay={0} speed={7} className="absolute top-4 left-0 w-[200px] sm:w-[240px] lg:w-[280px] bg-white rounded-2xl shadow-premium border border-slate-100 p-3 sm:p-4 lg:p-5 z-30">
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <div className="h-3 w-20 bg-slate-200 rounded mb-2" />
@@ -157,7 +157,7 @@ export default function Hero3D({ onOpenDemo }) {
               </FloatingCard>
 
               {/* CRM Card */}
-              <FloatingCard delay={1.5} speed={8} className="absolute top-4 right-4 w-[260px] bg-white rounded-2xl shadow-premium border border-slate-100 p-5 z-20">
+              <FloatingCard delay={1.5} speed={8} className="absolute top-2 right-0 w-[180px] sm:w-[220px] lg:w-[260px] bg-white rounded-2xl shadow-premium border border-slate-100 p-3 sm:p-4 lg:p-5 z-20">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center">
                     <Users className="w-5 h-5 text-orange-500" />
@@ -184,7 +184,7 @@ export default function Hero3D({ onOpenDemo }) {
               </FloatingCard>
 
               {/* Inventory / Analytics */}
-              <FloatingCard delay={0.8} speed={9} className="absolute bottom-20 left-8 w-[240px] bg-white rounded-2xl shadow-premium border border-slate-100 p-5 z-10">
+              <FloatingCard delay={0.8} speed={9} className="absolute bottom-12 left-0 w-[180px] sm:w-[200px] lg:w-[240px] bg-white rounded-2xl shadow-premium border border-slate-100 p-3 sm:p-4 lg:p-5 z-10">
                 <div className="flex items-center gap-2 mb-4">
                   <BarChart3 className="w-4 h-4 text-primary-600" />
                   <div className="h-3 w-20 bg-slate-200 rounded" />
@@ -203,7 +203,7 @@ export default function Hero3D({ onOpenDemo }) {
               </FloatingCard>
 
               {/* Mobile App */}
-              <FloatingCard delay={2.2} speed={10} className="absolute bottom-12 right-12 w-[140px] bg-white rounded-[2rem] shadow-premium border border-slate-200 p-3 z-40">
+              <FloatingCard delay={2.2} speed={10} className="absolute bottom-8 right-4 w-[100px] sm:w-[120px] lg:w-[140px] bg-white rounded-[2rem] shadow-premium border border-slate-200 p-2 sm:p-2.5 lg:p-3 z-40">
                 <div className="bg-slate-50 rounded-[1.5rem] p-2">
                   <div className="h-2 w-12 bg-slate-200 rounded mx-auto mb-3" />
                   <div className="space-y-2">
@@ -220,7 +220,7 @@ export default function Hero3D({ onOpenDemo }) {
               </FloatingCard>
 
               {/* Tablet */}
-              <FloatingCard delay={1} speed={11} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200px] bg-white rounded-3xl shadow-premium border border-slate-200 p-4 z-0 opacity-60 scale-90">
+              <FloatingCard delay={1} speed={11} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[140px] sm:w-[180px] lg:w-[200px] bg-white rounded-3xl shadow-premium border border-slate-200 p-3 sm:p-4 z-0 opacity-40 sm:opacity-60 scale-75 sm:scale-90">
                 <div className="bg-slate-50 rounded-2xl p-3">
                   <div className="flex gap-2 mb-3">
                     <div className="h-2 w-8 bg-slate-200 rounded" />

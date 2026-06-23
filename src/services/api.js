@@ -121,11 +121,23 @@ const requestWithRetry = async (endpoint, options = {}, retryCount = 0, maxRetri
       }
       
       // For other endpoints, DON'T clear tokens or redirect.
-      // The request simply failed auth — let the caller's catch handle the UI error.
-      // Clearing tokens here causes cascading failures for all subsequent requests.
       const errorData = await response.json().catch(() => ({ error: 'Request failed' }));
       const err = new Error(errorData.error || 'Request failed');
       err.status = 401;
+      throw err;
+    }
+
+    if (response.status === 403) {
+      const errorData = await response.json().catch(() => ({ error: 'Access denied' }));
+      if (errorData.code === 'TRIAL_EXPIRED' || errorData.code === 'SUBSCRIPTION_EXPIRED' || errorData.error?.includes('expired')) {
+        window.location.href = '/subscription-expired';
+        const err = new Error(errorData.error || 'Subscription expired');
+        err.status = 403;
+        err.code = errorData.code;
+        throw err;
+      }
+      const err = new Error(errorData.error || 'Access denied');
+      err.status = 403;
       throw err;
     }
 

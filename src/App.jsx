@@ -18,6 +18,7 @@ import AuthNew from './pages/AuthNew';
 import AuthEnterprise from './pages/AuthEnterprise';
 import Subscription from './pages/Subscription';
 import SubscriptionEnterprise from './pages/SubscriptionEnterprise';
+import SubscriptionExpired from './pages/SubscriptionExpired';
 import LoggedOut from './pages/LoggedOut';
 
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
@@ -128,6 +129,7 @@ function App() {
                 <Route path="/landing-old" element={<Landing />} />
                 <Route path="/get-started" element={<LandingEnterprise />} />
                 <Route path="/choose-subscription" element={<SubscriptionEnterprise />} />
+                <Route path="/subscription-expired" element={<SubscriptionExpired />} />
                 <Route path="/auth/login" element={<AuthEnterprise />} />
                 <Route path="/auth/signup" element={<AuthEnterprise />} />
                 <Route path="/logged-out" element={<LoggedOut />} />

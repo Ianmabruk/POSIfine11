@@ -111,14 +111,14 @@ export default function CRMFeatures() {
   const navigate = useNavigate();
 
   return (
-    <section className="py-24 px-6 md:px-12 bg-white" id="crm">
+    <section className="py-12 sm:py-24 px-4 sm:px-6 md:px-12 bg-white" id="crm">
       <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-16"
+          className="text-center mb-10 sm:mb-16"
         >
           <span className="inline-block px-4 py-2 bg-primary-50 text-primary-700 border border-primary-100 rounded-full text-sm font-bold mb-4">
             CRM & Customer Intelligence
@@ -131,7 +131,7 @@ export default function CRMFeatures() {
           </p>
         </motion.div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
           {crmFeatures.map((feature, index) => (
             <motion.div
               key={index}

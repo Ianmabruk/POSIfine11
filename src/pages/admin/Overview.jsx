@@ -154,13 +154,13 @@ export default function Overview() {
   return (
     <div className="p-6 space-y-6">
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* KPI Cards - horizontal row everywhere */}
+      <div className="flex flex-nowrap gap-4 overflow-x-auto pb-2 scrollbar-hide">
         {(kpis || []).map((kpi, index) => {
           const Icon = kpi?.icon;
           if (!Icon) return null;
           return (
-            <div key={index} className={`card bg-gradient-to-br ${kpi.color} text-white border-0 shadow-lg hover:shadow-xl transition-all transform hover:scale-105`}>
+            <div key={index} className={`card bg-gradient-to-br ${kpi.color} text-white border-0 shadow-lg hover:shadow-xl transition-all transform hover:scale-105 min-w-[180px] sm:min-w-[200px] flex-shrink-0`}>
               <div className="flex items-center justify-between mb-4">
                 <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
                   <Icon className="w-6 h-6" />
@@ -176,13 +176,13 @@ export default function Overview() {
         })}
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Summary Cards - horizontal row everywhere */}
+      <div className="flex flex-nowrap gap-4 overflow-x-auto pb-2 scrollbar-hide">
         {(summaryCards || []).map((card, index) => {
           const Icon = card?.icon;
           if (!Icon) return null;
           return (
-            <div key={index} className="card">
+            <div key={index} className="card min-w-[160px] sm:min-w-[180px] flex-shrink-0">
               <div className="flex items-center gap-4">
                 <div className={`w-12 h-12 rounded-xl ${card.color} flex items-center justify-center`}>
                   <Icon className="w-6 h-6" />

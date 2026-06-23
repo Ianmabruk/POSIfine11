@@ -64,14 +64,14 @@ export default function Pricing({ onGetStarted }) {
   const navigate = useNavigate();
 
   return (
-    <section id="pricing" className="py-24 px-6 md:px-12 bg-slate-50">
+    <section id="pricing" className="py-12 sm:py-24 px-4 sm:px-6 md:px-12 bg-slate-50">
       <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-16"
+          className="text-center mb-10 sm:mb-16"
         >
           <span className="inline-block px-4 py-2 bg-white border border-slate-200 rounded-full text-sm font-bold text-slate-700 mb-4 shadow-sm">
             Simple Pricing
@@ -84,7 +84,7 @@ export default function Pricing({ onGetStarted }) {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 max-w-6xl mx-auto">
+        <div className="grid grid-cols-3 gap-2 sm:gap-6 max-w-6xl mx-auto">
           {plans.map((plan, index) => (
             <motion.div
               key={plan.id}
@@ -93,7 +93,7 @@ export default function Pricing({ onGetStarted }) {
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
               whileHover={{ y: -6 }}
-              className={`relative rounded-3xl p-8 transition-all duration-300 ${
+               className={`relative rounded-2xl p-3 sm:p-6 lg:p-8 transition-all duration-300 ${
                 plan.popular
                   ? "bg-white shadow-premium border-2 border-primary-500 scale-[1.02] z-10"
                   : "bg-white shadow-card border border-slate-100 hover:shadow-card-hover"

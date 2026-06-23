@@ -141,4 +141,21 @@
     background-image: radial-gradient(circle, rgba(0,0,0,0.08) 1px, transparent 1px);
     background-size: 24px 24px;
   }
+
+  /* Identical layout across all devices - fixed width container with scale */
+  .identical-layout {
+    width: 1280px;
+    max-width: none;
+    margin-left: auto;
+    margin-right: auto;
+    transform-origin: top center;
+  }
+
+  @media (max-width: 1280px) {
+    .identical-layout {
+      transform: scale(calc(100vw / 1280));
+      transform-origin: top center;
+      margin-bottom: calc(-1 * (100vh - 100vw * (100vh / 1280)) / 2);
+    }
+  }
 }
