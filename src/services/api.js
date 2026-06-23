@@ -23,6 +23,8 @@ const getToken = () => localStorage.getItem('token') || localStorage.getItem('ow
 const getRefreshToken = () => localStorage.getItem('refreshToken');
 const getCsrfToken = () => localStorage.getItem('csrfToken');
 
+export { getToken, getRefreshToken, getCsrfToken };
+
 const toQueryString = (params = {}) => {
   const entries = Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== '');
   if (!entries.length) return '';

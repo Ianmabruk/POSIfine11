@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Check } from 'lucide-react';
 
 const CONSENT_KEY = 'cookieConsent';
 
@@ -20,20 +22,31 @@ export default function CookieConsent() {
   if (!visible) return null;
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50">
-      <div className="mx-auto max-w-4xl bg-gray-900 text-white px-4 py-4 shadow-2xl border-t border-gray-800">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div className="text-sm text-gray-200">
-            We use cookies and local storage to keep you signed in and preserve your data between sessions.
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 20 }}
+          className="fixed bottom-0 inset-x-0 z-50 p-4 sm:p-6"
+        >
+          <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-premium border border-slate-100 p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex-1">
+              <h3 className="text-sm font-bold text-slate-900 mb-1">Cookie Preferences</h3>
+              <p className="text-sm text-slate-500 leading-relaxed">
+                We use cookies and local storage to keep you signed in and preserve your data between sessions. By continuing, you agree to our use of cookies.
+              </p>
+            </div>
+            <button
+              onClick={acceptCookies}
+              className="btn-primary flex items-center gap-2 px-5 py-2.5 text-sm whitespace-nowrap"
+            >
+              <Check className="w-4 h-4" />
+              Accept All
+            </button>
           </div>
-          <button
-            onClick={acceptCookies}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold"
-          >
-            Accept cookies
-          </button>
-        </div>
-      </div>
-    </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

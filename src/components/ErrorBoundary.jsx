@@ -19,18 +19,12 @@ class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    this.setState({
-      error,
-      errorInfo
-    });
-
-    // Log error to monitoring service
+    this.setState({ error, errorInfo });
     this.logError(error, errorInfo);
   }
 
   logError = (error, errorInfo) => {
     try {
-      // Send to monitoring service
       if (window.frontendMonitor) {
         window.frontendMonitor.trackError('error_boundary', {
           error: error.message,
@@ -39,8 +33,6 @@ class ErrorBoundary extends React.Component {
           retryCount: this.state.retryCount
         });
       }
-
-      // Log to console in development
       if (isDev) {
         console.error('Error Boundary caught an error:', error, errorInfo);
       }
@@ -65,36 +57,36 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center p-4">
-          <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <AlertTriangle className="w-8 h-8 text-red-600" />
+        <div className="min-h-screen bg-white flex items-center justify-center p-4">
+          <div className="max-w-md w-full text-center">
+            <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <AlertTriangle className="w-8 h-8 text-red-500" />
             </div>
             
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">
+            <h1 className="text-2xl font-bold text-slate-900 mb-3">
               Oops! Something went wrong
             </h1>
             
-            <p className="text-gray-600 mb-6">
-              We encountered an unexpected error. Don't worry, our team has been notified.
+            <p className="text-slate-500 mb-8 leading-relaxed">
+              We encountered an unexpected error. Don't worry, our team has been notified and we're working on it.
             </p>
 
             {isDev && this.state.error && (
               <details className="mb-6 text-left">
-                <summary className="cursor-pointer text-sm text-gray-500 mb-2">
+                <summary className="cursor-pointer text-sm text-slate-400 mb-2">
                   Error Details (Development)
                 </summary>
-                <div className="bg-gray-100 p-3 rounded text-xs font-mono overflow-auto max-h-32">
+                <div className="bg-slate-50 p-4 rounded-xl text-xs font-mono overflow-auto max-h-32 border border-slate-100">
                   <div className="text-red-600 mb-2">{this.state.error.message}</div>
-                  <div className="text-gray-600">{this.state.error.stack}</div>
+                  <div className="text-slate-500">{this.state.error.stack}</div>
                 </div>
               </details>
             )}
 
-            <div className="flex gap-3">
+            <div className="flex gap-3 justify-center">
               <button
                 onClick={this.handleRetry}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="btn-primary flex items-center justify-center gap-2 px-6 py-3"
                 disabled={this.state.retryCount >= 3}
               >
                 <RefreshCw className="w-4 h-4" />
@@ -103,14 +95,14 @@ class ErrorBoundary extends React.Component {
               
               <button
                 onClick={this.handleGoHome}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                className="btn-secondary flex items-center justify-center gap-2 px-6 py-3"
               >
                 <Home className="w-4 h-4" />
                 Go Home
               </button>
             </div>
 
-            <p className="text-xs text-gray-500 mt-4">
+            <p className="text-xs text-slate-400 mt-6">
               Error ID: {Date.now().toString(36)}
             </p>
           </div>
