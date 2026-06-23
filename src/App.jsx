@@ -115,13 +115,13 @@ function App() {
   }, []);
 
   return (
-    <ErrorBoundary>
-      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-primary-600 focus:text-white focus:rounded-lg focus:text-sm focus:font-medium">
-        Skip to main content
-      </a>
-      <AuthProvider>
-        <ProductsProvider>
-            <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <ErrorBoundary>
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-primary-600 focus:text-white focus:rounded-lg focus:text-sm focus:font-medium">
+          Skip to main content
+        </a>
+        <AuthProvider>
+          <ProductsProvider>
               <Suspense fallback={<LogoPreloader text="Loading..." />}>
                 <div id="main-content">
                 <Routes>
@@ -194,14 +194,14 @@ function App() {
                     </div>
                   </div>
                  } />
-                </Routes>
-                </div>
-              </Suspense>
-            <CookieConsent />
-          </BrowserRouter>
-        </ProductsProvider>
-      </AuthProvider>
-    </ErrorBoundary>
+                 </Routes>
+                 </div>
+               </Suspense>
+             </ProductsProvider>
+           </AuthProvider>
+           <CookieConsent />
+         </ErrorBoundary>
+       </BrowserRouter>
   );
 }
 

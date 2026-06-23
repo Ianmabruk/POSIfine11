@@ -23,7 +23,6 @@ const PosifyLogo = ({ className = "w-8 h-8", showText = true, textClassName = "t
           </filter>
         </defs>
         
-        {/* Outer hexagon - dark */}
         <path
           d="M20 2L36 11V29L20 38L4 29V11L20 2Z"
           fill="url(#logoGradientDark)"
@@ -31,12 +30,9 @@ const PosifyLogo = ({ className = "w-8 h-8", showText = true, textClassName = "t
           strokeWidth="2"
         />
         
-        {/* Inner geometric shape - abstract nodes */}
         <g filter="url(#glow)">
-          {/* Central node */}
           <circle cx="20" cy="20" r="4" fill="url(#logoGradient)" />
           
-          {/* Orbiting nodes connected by lines */}
           <line x1="20" y1="20" x2="12" y2="10" stroke="url(#logoGradient)" strokeWidth="1.5" opacity="0.8" />
           <line x1="20" y1="20" x2="28" y2="10" stroke="url(#logoGradient)" strokeWidth="1.5" opacity="0.8" />
           <line x1="20" y1="20" x2="32" y2="20" stroke="url(#logoGradient)" strokeWidth="1.5" opacity="0.8" />
@@ -44,7 +40,6 @@ const PosifyLogo = ({ className = "w-8 h-8", showText = true, textClassName = "t
           <line x1="20" y1="20" x2="12" y2="30" stroke="url(#logoGradient)" strokeWidth="1.5" opacity="0.8" />
           <line x1="20" y1="20" x2="8" y2="20" stroke="url(#logoGradient)" strokeWidth="1.5" opacity="0.8" />
           
-          {/* Orbiting nodes */}
           <circle cx="12" cy="10" r="2.5" fill="white" />
           <circle cx="28" cy="10" r="2.5" fill="white" />
           <circle cx="32" cy="20" r="2.5" fill="white" />
@@ -53,7 +48,6 @@ const PosifyLogo = ({ className = "w-8 h-8", showText = true, textClassName = "t
           <circle cx="8" cy="20" r="2.5" fill="white" />
         </g>
         
-        {/* Accent dot */}
         <circle cx="20" cy="20" r="1.5" fill="white" />
       </svg>
       
