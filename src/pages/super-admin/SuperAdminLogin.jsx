@@ -18,10 +18,10 @@ export default function SuperAdminLogin() {
 
     try {
       const baseUrl = (import.meta.env.VITE_API_BASE || 'http://localhost:5000/api').replace(/\/$/, '');
-      const resp = await fetch(`${baseUrl}/main-admin/auth/login`, {
+      const resp = await fetch(`${baseUrl}/v1/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, deviceId: 'web' }),
       });
 
       const data = await resp.json();

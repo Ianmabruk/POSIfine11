@@ -2,35 +2,46 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, ArrowLeft, CreditCard, Smartphone, Building2, Globe, Lock, Sparkles, Crown, Zap, ArrowRight } from 'lucide-react';
+import CustomRequestForm from '../components/modern-landing/CustomRequestForm';
 
 const plans = [
   {
     id: 'starter',
-    name: 'Starter',
+    name: 'STARTER',
     price: 999,
     icon: Zap,
     color: 'from-slate-500 to-slate-600',
-    description: 'Perfect for small shops getting started',
+    description: 'Small businesses. Limited users. Core modules. 15-Day Trial.',
     features: ['Single user access', 'Basic inventory tracking', 'Sales & order management', 'Daily reports & insights', 'Email support', 'Cashier POS dashboard'],
   },
   {
     id: 'business',
-    name: 'Business',
+    name: 'BUSINESS',
     price: 2499,
-    icon: Sparkles,
+    icon: Zap,
     color: 'from-primary-500 to-primary-600',
-    description: 'For growing teams that need more power',
-    features: ['Up to 5 users', 'Advanced inventory & recipes', 'Full admin dashboard', 'CRM & customer profiles', 'Advanced analytics', 'Priority support', 'Expense tracking', 'Service fees & discounts'],
+    description: 'Growing companies. More users. Multi-branch. Advanced reports. 15-Day Trial.',
+    features: ['Up to 10 users', 'Advanced inventory & recipes', 'Full admin dashboard', 'CRM & customer profiles', 'Advanced analytics', 'Priority support', 'Expense tracking', 'Service fees & discounts'],
     popular: true,
   },
   {
     id: 'enterprise',
-    name: 'Enterprise',
+    name: 'ENTERPRISE',
     price: 4999,
     icon: Crown,
-    color: 'from-orange-500 to-orange-600',
-    description: 'For organizations that need complete control',
+    color: 'from-amber-500 to-amber-600',
+    description: 'Unlimited users. Unlimited branches. Priority support. Advanced analytics. 15-Day Trial.',
     features: ['Unlimited users', 'Multi-location support', 'Full CRM suite', 'AI-powered insights', 'Custom integrations', 'Dedicated account manager', '99.9% uptime SLA', 'White-label options'],
+  },
+  {
+    id: 'custom',
+    name: 'CUSTOM',
+    price: null,
+    icon: Sparkles,
+    color: 'from-success to-emerald-600',
+    description: 'Specialized workflows for hospitals, schools, manufacturers, and warehouses.',
+    features: ['Custom business type setup', 'Specialized modules', 'Industry-specific features', 'Custom reporting', 'Priority support', 'Custom invoice generation'],
+    custom: true,
   },
 ];
 
@@ -50,6 +61,7 @@ export default function SubscriptionEnterprise() {
   const [paymentDetails, setPaymentDetails] = useState({ phone: '', cardNumber: '', expiry: '', cvv: '', accountName: '', bankName: '' });
   const [processing, setProcessing] = useState(false);
   const [trialStarted, setTrialStarted] = useState(false);
+  const [showCustomForm, setShowCustomForm] = useState(false);
 
   const selected = plans.find(p => p.id === selectedPlan);
 
@@ -152,8 +164,14 @@ export default function SubscriptionEnterprise() {
                         <h3 className="text-xl font-bold text-slate-900 mb-1">{plan.name}</h3>
                         <p className="text-sm text-slate-500 mb-4 leading-relaxed">{plan.description}</p>
                         <div className="mb-5">
-                          <span className="text-3xl font-bold text-slate-900">KES {plan.price.toLocaleString()}</span>
-                          <span className="text-slate-400 text-sm">/month</span>
+                          {plan.price ? (
+                            <>
+                              <span className="text-3xl font-bold text-slate-900">KES {plan.price.toLocaleString()}</span>
+                              <span className="text-slate-400 text-sm">/month</span>
+                            </>
+                          ) : (
+                            <span className="text-xl font-bold text-success">15-Day Free Trial</span>
+                          )}
                         </div>
                         <ul className="space-y-2.5">
                           {plan.features.map((f) => (
@@ -169,8 +187,14 @@ export default function SubscriptionEnterprise() {
                 </div>
 
                 <div className="flex justify-center">
-                  <button onClick={handleStartTrial} className="btn-primary inline-flex items-center gap-2 px-10 py-4 text-base">
-                    Start 15-Day Free Trial
+                  <button onClick={() => {
+                    if (selected?.custom) {
+                      setShowCustomForm(true);
+                    } else {
+                      handleStartTrial();
+                    }
+                  }} className="btn-primary inline-flex items-center gap-2 px-10 py-4 text-base">
+                    {selected?.custom ? "Request Custom Solution" : "Start 15-Day Free Trial"}
                     <ArrowRight className="w-5 h-5" />
                   </button>
                 </div>
@@ -352,7 +376,7 @@ export default function SubscriptionEnterprise() {
               </motion.div>
             )}
 
-            {step === 'success' && (
+            {step === 'success' && !showCustomForm && (
               <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-16">
                 <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6">
                   <Check className="w-10 h-10 text-success" />
@@ -366,7 +390,9 @@ export default function SubscriptionEnterprise() {
                 <div className="bg-slate-50 rounded-2xl p-6 max-w-sm mx-auto mb-8 border border-slate-100">
                   <div className="text-sm text-slate-500 mb-1">Current Plan</div>
                   <div className="text-xl font-bold text-slate-900 capitalize">{selected?.name}</div>
-                  <div className="text-sm text-slate-500 mt-1">KES {selected?.price?.toLocaleString()}/month</div>
+                  {selected?.price && (
+                    <div className="text-sm text-slate-500 mt-1">KES {selected?.price?.toLocaleString()}/month</div>
+                  )}
                 </div>
                 <button onClick={() => navigate('/auth/signup')} className="btn-primary inline-flex items-center gap-2 px-8 py-4">
                   Get Started <ArrowRight className="w-5 h-5" />
@@ -374,6 +400,17 @@ export default function SubscriptionEnterprise() {
               </motion.div>
             )}
           </AnimatePresence>
+
+          <CustomRequestForm 
+            isOpen={showCustomForm} 
+            onClose={() => {
+              setShowCustomForm(false);
+              setStep('success');
+            }}
+            onSubmit={(data) => {
+              console.log('Custom request submitted:', data);
+            }}
+          />
         </div>
       </main>
     </div>

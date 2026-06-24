@@ -156,6 +156,12 @@ function App() {
                 <Route path="/main.admin" element={
                   <ProtectedRoute ownerOnly><SuperAdminDashboard /></ProtectedRoute>
                 } />
+                
+                {/* Super Admin API routes - use SuperAdminLogin for auth */}
+                <Route path="/super-admin/login" element={<SuperAdminLogin />} />
+                <Route path="/super-admin/dashboard" element={
+                  <ProtectedRoute ownerOnly><SuperAdminDashboard /></ProtectedRoute>
+                } />
 
                 {/* Legacy redirects */}
                 <Route path="/login" element={<Navigate to="/auth/login" />} />
