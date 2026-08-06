@@ -31,7 +31,7 @@ const steps = [
 export default function HowItWorks() {
   return (
     <section id="how-it-works" className="relative py-24 bg-white overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-white via-primary-50/20 to-white pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-b from-white via-cream-50/50 to-white pointer-events-none" />
       <div className="section-container relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -40,12 +40,14 @@ export default function HowItWorks() {
           transition={{ duration: 0.6 }}
           className="text-center max-w-3xl mx-auto mb-16"
         >
-          <span className="inline-block px-4 py-1.5 bg-brand-50 text-brand-600 font-semibold text-sm rounded-full mb-4">
+          <span className="inline-block px-4 py-1.5 bg-accent-50 text-accent-600 font-semibold text-sm rounded-full mb-4">
             How It Works
           </span>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 mb-6">
             Get up and running in{" "}
-            <span className="gradient-text">minutes</span>
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-accent-600 via-orange-500 to-sage-500">
+              minutes
+            </span>
           </h2>
           <p className="text-lg text-slate-500 leading-relaxed">
             Four simple steps to transform your business operations with Posify.
@@ -54,13 +56,13 @@ export default function HowItWorks() {
 
         <div className="relative">
           <div className="hidden lg:block absolute left-0 right-0 top-[4.5rem] h-1 mx-auto max-w-5xl">
-            <div className="relative h-full bg-slate-100 rounded-full overflow-hidden">
+            <div className="relative h-full bg-cream-200 rounded-full overflow-hidden">
               <motion.div
                 initial={{ scaleX: 0 }}
                 whileInView={{ scaleX: 1 }}
                 viewport={{ once: true }}
                 transition={{ duration: 1.5, ease: "easeInOut" }}
-                className="absolute inset-y-0 left-0 bg-gradient-to-r from-primary-500 via-brand-500 to-accent-500 rounded-full origin-left"
+                className="absolute inset-y-0 left-0 bg-gradient-to-r from-accent-500 via-orange-500 to-sage-500 rounded-full origin-left"
                 style={{ transformOrigin: "left" }}
               />
             </div>
@@ -82,12 +84,12 @@ export default function HowItWorks() {
                     <motion.div
                       whileHover={{ scale: 1.1, rotate: [0, -5, 5, 0] }}
                       transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                      className="relative z-10 w-20 h-20 bg-white rounded-3xl flex items-center justify-center shadow-lg shadow-primary-500/10 border border-slate-100 mb-6"
+                      className="relative z-10 w-20 h-20 bg-white rounded-3xl flex items-center justify-center shadow-lg shadow-accent-500/10 border border-cream-200 mb-6"
                     >
-                      <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-primary-500 to-brand-500 text-white text-xs font-bold rounded-xl flex items-center justify-center shadow-md">
+                      <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-accent-500 to-orange-600 text-white text-xs font-bold rounded-xl flex items-center justify-center shadow-md">
                         {step.number}
                       </div>
-                      <Icon className="w-8 h-8 bg-gradient-to-br from-primary-500 to-brand-500 text-transparent bg-clip-text" />
+                      <Icon className="w-8 h-8 text-accent-600" />
                     </motion.div>
                     <h3 className="text-xl font-bold text-slate-900 mb-3 tracking-tight">
                       {step.title}
@@ -103,7 +105,7 @@ export default function HowItWorks() {
                         whileInView={{ scale: 1 }}
                         viewport={{ once: true }}
                         transition={{ duration: 0.4, delay: index * 0.15 + 0.3 }}
-                        className="w-3 h-3 bg-gradient-to-br from-primary-500 to-brand-500 rounded-full mx-auto shadow-md shadow-brand-500/40"
+                        className="w-3 h-3 bg-gradient-to-br from-accent-500 to-orange-600 rounded-full mx-auto shadow-md shadow-accent-500/40"
                       />
                     </div>
                   )}

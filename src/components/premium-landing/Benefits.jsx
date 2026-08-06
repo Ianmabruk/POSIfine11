@@ -7,29 +7,29 @@ const benefits = [
     icon: TrendingUp,
     title: "Business Growth",
     description: "Scale your operations with confidence using tools designed to support expansion across multiple locations.",
-    gradient: "from-primary-500 to-brand-500",
-    light: "bg-primary-50",
+    gradient: "from-accent-500 to-orange-600",
+    light: "bg-accent-50",
   },
   {
     icon: Clock,
     title: "Time Saving",
     description: "Automate repetitive tasks and streamline workflows so you can focus on what matters most — growing your business.",
-    gradient: "from-accent-500 to-accent-600",
-    light: "bg-accent-50",
+    gradient: "from-sage-500 to-green-600",
+    light: "bg-sage-50",
   },
   {
     icon: BarChart3,
     title: "Profit Tracking",
     description: "Monitor margins, expenses, and profitability in real-time with intelligent financial dashboards and reports.",
-    gradient: "from-brand-500 to-brand-600",
-    light: "bg-brand-50",
+    gradient: "from-primary-500 to-brand-600",
+    light: "bg-primary-50",
   },
   {
     icon: Users,
     title: "Multi-User Access",
     description: "Give your team secure role-based access with granular permissions and complete audit trails.",
-    gradient: "from-primary-500 to-brand-500",
-    light: "bg-primary-50",
+    gradient: "from-accent-500 to-orange-600",
+    light: "bg-accent-50",
   },
 ];
 
@@ -73,8 +73,8 @@ function TiltCard({ children, className = "" }) {
 
 export default function Benefits() {
   return (
-    <section id="benefits" className="relative py-24 bg-slate-50 overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-primary-50/40 via-transparent to-brand-50/40 pointer-events-none" />
+    <section id="benefits" className="relative py-24 bg-cream-50 overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-sage-100/40 via-transparent to-accent-50/30 pointer-events-none" />
       <div className="section-container relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -88,7 +88,9 @@ export default function Benefits() {
           </span>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 mb-6">
             Why businesses choose{" "}
-            <span className="gradient-text">Posify</span>
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-accent-600 via-orange-500 to-sage-500">
+              Posify
+            </span>
           </h2>
           <p className="text-lg text-slate-500 leading-relaxed">
             Built with modern businesses in mind. Experience the advantages that set Posify apart.
@@ -107,7 +109,7 @@ export default function Benefits() {
                 transition={{ duration: 0.5, delay: index * 0.1 }}
               >
                 <TiltCard>
-                  <div className="glass-card-premium p-8 h-full tilt-card cursor-pointer transition-all duration-300 hover:shadow-premium border-shimmer">
+                  <div className="bg-white rounded-3xl border border-cream-200 p-8 h-full tilt-card cursor-pointer transition-all duration-300 hover:shadow-xl hover:shadow-cream-300/50">
                     <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${benefit.gradient} flex items-center justify-center mb-6 shadow-lg`}>
                       <Icon className="w-7 h-7 text-white" />
                     </div>

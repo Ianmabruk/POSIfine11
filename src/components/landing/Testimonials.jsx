@@ -6,65 +6,61 @@ const testimonials = [
     business: "Johnson Retail",
     rating: 5,
     text: "Posify transformed our operations. The inventory tracking alone saved us hours every week. Highly recommended for any growing business.",
-    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face",
+    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face",
   },
   {
     name: "Michael Chen",
     business: "Chen Supermarket",
     rating: 5,
     text: "The multi-branch support is incredible. We manage 5 locations from a single dashboard. The analytics help us make better decisions daily.",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
   },
   {
     name: "Emily Rodriguez",
     business: "Rodriguez Restaurant",
     rating: 5,
     text: "Switching to Posify was the best decision. The offline mode ensures we never miss a sale, even during internet outages.",
-    avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
+    avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face",
   },
   {
     name: "David Ochieng",
     business: "Ochieng Pharmacy",
     rating: 5,
     text: "The barcode scanning and expiry tracking features are exactly what we needed. Customer management has never been easier.",
-    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face",
+    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face",
   },
   {
     name: "Grace Wanjiku",
     business: "Wanjiku Fashion",
     rating: 5,
     text: "Managing variants and seasonal collections is so simple now. The reporting features give us insights we never had before.",
-    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face",
+    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=face",
   },
   {
     name: "James Kipchoge",
     business: "Kipchoge Electronics",
     rating: 5,
     text: "Professional, reliable, and easy to use. Our staff learned Posify in one day. The support team is fantastic too.",
-    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
+    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face",
   },
 ];
 
 export default function Testimonials() {
   return (
-    <section id="testimonials" className="relative py-24 bg-cream-50 overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-white/50 via-cream-50 to-cream-50 pointer-events-none" />
-      <div className="section-container relative z-10 mb-12">
+    <section id="testimonials" className="py-24 bg-slate-50 overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center max-w-3xl mx-auto"
+          className="text-center max-w-3xl mx-auto mb-16"
         >
-          <span className="inline-block px-4 py-1.5 bg-accent-50 text-accent-600 font-semibold text-sm rounded-full mb-4">
+          <span className="inline-block px-4 py-1.5 bg-orange-50 text-orange-600 font-semibold text-sm rounded-full mb-4">
             Testimonials
           </span>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 mb-6">
-            Loved by{" "}
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-accent-600 via-orange-500 to-sage-500">
-              businesses everywhere
-            </span>
+            Loved by businesses everywhere
           </h2>
           <p className="text-lg text-slate-500 leading-relaxed">
             See what our customers have to say about how Posify has transformed their operations.
@@ -80,23 +76,17 @@ export default function Testimonials() {
           style={{ width: "max-content" }}
         >
           {[...testimonials, ...testimonials].map((testimonial, index) => (
-            <motion.div
+            <div
               key={index}
-              whileHover={{ scale: 1.02 }}
-              transition={{ duration: 0.3 }}
-              className="w-[350px] flex-shrink-0 bg-white rounded-3xl border border-cream-200 p-6 hover:shadow-xl hover:shadow-cream-300/50 transition-all duration-300"
+              className="w-[350px] flex-shrink-0 bg-white rounded-2xl p-6 border border-slate-100 shadow-sm hover:shadow-lg transition-shadow duration-300"
             >
               <div className="flex items-center gap-3 mb-4">
-                <div className="relative">
-                  <div className="absolute -inset-1 bg-gradient-to-br from-accent-500 to-orange-600 rounded-full opacity-60" />
-                  <img
-                    src={testimonial.avatar}
-                    alt={testimonial.name}
-                    loading="lazy"
-                    decoding="async"
-                    className="w-12 h-12 rounded-full object-cover border-2 border-white relative z-10"
-                  />
-                </div>
+                <img
+                  src={testimonial.avatar}
+                  alt={testimonial.name}
+                  loading="lazy"
+                  className="w-12 h-12 rounded-full object-cover"
+                />
                 <div>
                   <h4 className="font-semibold text-slate-900 text-sm">{testimonial.name}</h4>
                   <p className="text-xs text-slate-500">{testimonial.business}</p>
@@ -109,8 +99,8 @@ export default function Testimonials() {
                   </svg>
                 ))}
               </div>
-              <p className="text-slate-600 text-sm leading-relaxed line-clamp-3">{testimonial.text}</p>
-            </motion.div>
+              <p className="text-slate-600 text-sm leading-relaxed">{testimonial.text}</p>
+            </div>
           ))}
         </motion.div>
       </div>

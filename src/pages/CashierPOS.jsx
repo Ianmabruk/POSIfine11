@@ -1180,10 +1180,10 @@ export default function CashierPOS() {
       </div>
 
       {activeView === 'pos' && (
-        <div className="flex-1 flex">
-          <div className="flex-1 p-6 overflow-y-auto">
+        <div className="flex-1 flex flex-col lg:flex-row">
+          <div className="flex-1 p-4 sm:p-6 overflow-y-auto">
             <div className="mb-6">
-              <div className="relative max-w-md">
+              <div className="relative max-w-md mx-auto lg:mx-0">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
@@ -1194,7 +1194,7 @@ export default function CashierPOS() {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
               {productList.filter(p => p.name?.toLowerCase().includes(searchTerm.toLowerCase())).map(product => {
                 const stock = getProductStock(product.id);
                 const lowStockThreshold = getLowStockThreshold(product);
@@ -1257,8 +1257,8 @@ export default function CashierPOS() {
             </div>
           </div>
 
-          <div className="w-96 bg-white border-l border-gray-200 p-6 flex flex-col shadow-xl">
-            <div className="flex items-center gap-2 mb-6">
+          <div className="w-full lg:w-96 bg-white border-t lg:border-t-0 lg:border-l border-gray-200 p-4 sm:p-6 flex flex-col shadow-xl lg:max-h-none max-h-[60vh]">
+            <div className="flex items-center gap-2 mb-4 sm:mb-6">
               <div className="w-10 h-10 bg-gradient-to-br from-green-600 to-teal-600 rounded-xl flex items-center justify-center">
                 <ShoppingCart className="w-5 h-5 text-white" />
               </div>

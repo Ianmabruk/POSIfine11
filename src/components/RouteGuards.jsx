@@ -153,7 +153,7 @@ export function BusinessTypeGuard({ children, requiredType }) {
  */
 export function AdminGuard({ children }) {
   return (
-    <RoleGuard allowedRoles={['admin']}>
+    <RoleGuard allowedRoles={['admin', 'main_admin']}>
       {children}
     </RoleGuard>
   );

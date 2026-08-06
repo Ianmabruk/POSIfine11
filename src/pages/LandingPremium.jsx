@@ -18,7 +18,7 @@ export default function LandingPremium() {
   }, []);
 
   return (
-    <div className="font-sans bg-white text-slate-900 antialiased">
+    <div className="font-sans bg-cream-50 text-slate-900 antialiased">
       <Navbar />
       <main>
         <Hero />

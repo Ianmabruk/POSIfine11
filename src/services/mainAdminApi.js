@@ -31,7 +31,7 @@ const request = async (endpoint, options = {}) => {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: 'Request failed' }));
-      throw new Error(errorData.error || `HTTP ${response.status}`);
+      throw new Error(errorData.error || errorData.message || `HTTP ${response.status}`);
     }
 
     if (response.status === 204) {
@@ -48,72 +48,25 @@ const request = async (endpoint, options = {}) => {
 };
 
 export const mainAdminApi = {
-  // Super Admin Auth
-  login: (credentials) => request('/super-admin/auth/login', {
+  login: (credentials) => request('/main-admin/auth/login', {
     method: 'POST',
     body: JSON.stringify(credentials),
   }),
 
-  // Dashboard Stats
-  getStats: () => request('/super-admin/stats'),
+  getDashboardMetrics: () => request('/main-admin/metrics'),
 
-  // Business Management
-  getBusinesses: (params = {}) => request(`/super-admin/businesses?${new URLSearchParams(params).toString()}`),
-  getBusinessDetails: (accountId) => request(`/super-admin/businesses/${accountId}`),
+  getBusinesses: (params = {}) => request(`/main-admin/businesses?${new URLSearchParams(params).toString()}`),
+  getBusinessDetails: (id) => request(`/main-admin/businesses/${id}`),
+  suspendBusiness: (id) => request(`/main-admin/users/${id}/lock`, { method: 'POST', body: JSON.stringify({ locked: true }) }),
+  activateBusiness: (id) => request(`/main-admin/users/${id}/lock`, { method: 'POST', body: JSON.stringify({ locked: false }) }),
 
-  // User Management
-  getUsers: (params = {}) => request(`/super-admin/users?${new URLSearchParams(params).toString()}`),
-  getUserDetails: (userId) => request(`/super-admin/users/${userId}`),
+  getActiveTrials: () => request('/main-admin/trials/active'),
+  getExpiredTrials: () => request('/main-admin/trials/expired'),
 
-  // Subscription Management
-  getSubscriptions: (params = {}) => request(`/super-admin/subscriptions?${new URLSearchParams(params).toString()}`),
-  getSubscriptionDetails: (subId) => request(`/super-admin/subscriptions/${subId}`),
+  getAllSubscriptions: () => request('/main-admin/subscriptions/all'),
 
-  // Revenue Reports
-  getRevenue: () => request('/super-admin/revenue'),
-
-  // System Health
-  getSystemHealth: () => request('/super-admin/health'),
-
-  // Support Tickets
-  getSupportTickets: (params = {}) => request(`/super-admin/tickets?${new URLSearchParams(params).toString()}`),
-  updateTicketStatus: (ticketId, status) => request(`/super-admin/tickets/${ticketId}`, {
-    method: 'PATCH',
-    body: JSON.stringify({ status }),
-  }),
-
-  // Audit Logs
-  getAuditLogs: (params = {}) => request(`/super-admin/logs?${new URLSearchParams(params).toString()}`),
-
-  // Email Logs
-  getEmailLogs: (params = {}) => request(`/super-admin/email-logs?${new URLSearchParams(params).toString()}`),
-
-  // Feature Flags
-  getFeatureFlags: () => request('/super-admin/feature-flags'),
-  updateFeatureFlag: (flagId, enabled) => request(`/super-admin/feature-flags/${flagId}`, {
-    method: 'PATCH',
-    body: JSON.stringify({ enabled }),
-  }),
-
-  // Notifications
-  getNotifications: () => request('/super-admin/notifications'),
-  markNotificationRead: (notificationId) => request(`/super-admin/notifications/${notificationId}/read`, {
-    method: 'PATCH',
-  }),
-
-  // Analytics
-  getAnalytics: () => request('/super-admin/analytics'),
-
-  // Custom Package Requests
-  getCustomRequests: () => request('/super-admin/custom-requests'),
-  createCustomRequest: (data) => request('/super-admin/custom-requests', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  }),
-  updateCustomRequest: (requestId, status) => request(`/super-admin/custom-requests/${requestId}`, {
-    method: 'PATCH',
-    body: JSON.stringify({ status }),
-  }),
+  getPaymentHistory: () => request('/main-admin/payments'),
+  getRevenueAnalytics: () => request('/main-admin/revenue'),
 };
 
 export default mainAdminApi;

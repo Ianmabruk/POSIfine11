@@ -65,7 +65,7 @@ export default function ProPlanRouter() {
     // Check if user has Pro subscription (check both subscription and plan fields)
     if (!isProUser(user)) {
       // Redirect Basic/Ultra users to their standard dashboards
-      if (user.role === 'admin') {
+      if (user.role === 'admin' || user.role === 'main_admin') {
         console.log('[PRO ROUTER] Not a Pro user - redirecting admin to /admin');
         navigate('/admin');
       } else if (user.role === 'cashier') {
@@ -79,7 +79,7 @@ export default function ProPlanRouter() {
     }
 
     // Pro user without business type → redirect to business selector
-    if (!hasBusinessType(user) && user.role === 'admin') {
+    if (!hasBusinessType(user) && (user.role === 'admin' || user.role === 'main_admin')) {
       console.log('[PRO ROUTER] Pro admin without business type - redirecting to /select-business-type');
       navigate('/select-business-type');
       return;

@@ -134,22 +134,22 @@
     background-size: 24px 24px;
   }
 
-  /* Identical layout across all devices - fixed width container with scale */
-  .identical-layout {
-    width: 1280px;
-    max-width: none;
-    margin-left: auto;
-    margin-right: auto;
-    transform-origin: top center;
-  }
+  /* Fluid typography utilities */
+  .text-fluid-xs { font-size: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem); }
+  .text-fluid-sm { font-size: clamp(0.875rem, 0.8rem + 0.375vw, 1rem); }
+  .text-fluid-base { font-size: clamp(1rem, 0.9rem + 0.5vw, 1.125rem); }
+  .text-fluid-lg { font-size: clamp(1.125rem, 1rem + 0.625vw, 1.25rem); }
+  .text-fluid-xl { font-size: clamp(1.25rem, 1.1rem + 0.75vw, 1.5rem); }
+  .text-fluid-2xl { font-size: clamp(1.5rem, 1.2rem + 1.5vw, 2.25rem); }
+  .text-fluid-3xl { font-size: clamp(1.875rem, 1.5rem + 2vw, 3rem); }
+  .text-fluid-4xl { font-size: clamp(2.25rem, 1.8rem + 2.25vw, 3.75rem); }
+  .text-fluid-5xl { font-size: clamp(3rem, 2rem + 3vw, 4.5rem); }
+  .text-fluid-6xl { font-size: clamp(3.75rem, 2.5rem + 3.5vw, 6rem); }
 
-  @media (max-width: 1280px) {
-    .identical-layout {
-      transform: scale(calc(100vw / 1280));
-      transform-origin: top center;
-      margin-bottom: calc(-1 * (100vh - 100vw * (100vh / 1280)) / 2);
-    }
-  }
+  /* Responsive spacing utilities */
+  .space-fluid-y { @apply py-8 sm:py-12 md:py-16 lg:py-24; }
+  .space-fluid-x { @apply px-4 sm:px-6 md:px-8 lg:px-12; }
+  .gap-fluid { @apply gap-4 sm:gap-6 md:gap-8; }
 
   /* Premium parallax utilities */
   .parallax-layer {
@@ -268,28 +268,17 @@
     padding-bottom: env(safe-area-inset-bottom);
   }
 
-  /* Container query support fallback */
+  /* Responsive container utilities */
+  .section-container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
   .container-fluid {
-    width: 100%;
-    max-width: 1280px;
-    margin-left: auto;
-    margin-right: auto;
-    padding-left: 1rem;
-    padding-right: 1rem;
+    @apply w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
   }
 
-  @media (min-width: 640px) {
-    .container-fluid {
-      padding-left: 1.5rem;
-      padding-right: 1.5rem;
-    }
-  }
-
-  @media (min-width: 1024px) {
-    .container-fluid {
-      padding-left: 2rem;
-      padding-right: 2rem;
-    }
+  .full-width-section {
+    @apply w-full min-h-screen;
   }
 
   /* Soft overlay for hero backgrounds */

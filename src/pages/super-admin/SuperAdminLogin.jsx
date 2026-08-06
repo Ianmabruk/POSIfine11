@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, ArrowRight, Shield } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Shield, AlertCircle } from 'lucide-react';
+import mainAdminApi from '../../services/mainAdminApi';
 
 export default function SuperAdminLogin() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('superadmin@mabrixel.local');
-  const [password, setPassword] = useState('SuperAdmin@2026!');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -17,23 +18,12 @@ export default function SuperAdminLogin() {
     setError('');
 
     try {
-      const baseUrl = (import.meta.env.VITE_API_BASE || 'http://localhost:5000/api').replace(/\/$/, '');
-      const resp = await fetch(`${baseUrl}/v1/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, deviceId: 'web' }),
-      });
+      const response = await mainAdminApi.login({ email, password });
 
-      const data = await resp.json();
-
-      if (!resp.ok) {
-        throw new Error(data.error || 'Login failed');
-      }
-
-      if (data.token) {
-        localStorage.setItem('mainAdminToken', data.token);
-        if (data.user) {
-          localStorage.setItem('mainAdminUser', JSON.stringify(data.user));
+      if (response.token) {
+        localStorage.setItem('mainAdminToken', response.token);
+        if (response.user) {
+          localStorage.setItem('mainAdminUser', JSON.stringify(response.user));
         }
         navigate('/main.admin');
       } else {
@@ -70,8 +60,9 @@ export default function SuperAdminLogin() {
           className="bg-white rounded-3xl shadow-soft border border-slate-100 p-8"
         >
           {error && (
-            <div className="mb-6 p-3.5 rounded-xl bg-red-50 border border-red-100 text-sm text-red-700">
-              {error}
+            <div className="mb-6 p-3.5 rounded-xl bg-red-50 border border-red-100 text-sm text-red-700 flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <span>{error}</span>
             </div>
           )}
 
@@ -86,6 +77,7 @@ export default function SuperAdminLogin() {
                   onChange={(e) => setEmail(e.target.value)}
                   className="input pl-10"
                   required
+                  autoComplete="email"
                 />
               </div>
             </div>
@@ -100,6 +92,7 @@ export default function SuperAdminLogin() {
                   onChange={(e) => setPassword(e.target.value)}
                   className="input pl-10 pr-10"
                   required
+                  autoComplete="current-password"
                 />
                 <button
                   type="button"

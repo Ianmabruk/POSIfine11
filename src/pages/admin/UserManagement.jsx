@@ -526,7 +526,7 @@ export default function UserManagement() {
                   <td className="px-4 py-3 text-sm font-medium">{user.name}</td>
                   <td className="px-4 py-3 text-sm">{user.email}</td>
                   <td className="px-4 py-3 text-sm">
-                    <span className={`badge ${user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'badge-success'}`}>
+                    <span className={`badge ${user.role === 'admin' || user.role === 'main_admin' ? 'bg-purple-100 text-purple-800' : 'badge-success'}`}>
                       {user.role}
                     </span>
                   </td>

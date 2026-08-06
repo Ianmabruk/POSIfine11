@@ -5,7 +5,7 @@ import { ChevronDown } from "lucide-react";
 const faqs = [
   {
     question: "How much does Posify cost?",
-    answer: "Posify offers flexible pricing starting with a free Starter plan for small businesses. Our Business plan is KES 2,499/month and Enterprise is KES 4,999/month. All plans include a 15-day free trial with no credit card required.",
+    answer: "Posify offers flexible pricing starting with a free Starter plan for small businesses. Our Professional plan is KES 2,499/month and Enterprise is KES 4,999/month. All plans include a 15-day free trial with no credit card required.",
   },
   {
     question: "How does MPESA integration work?",
@@ -13,7 +13,7 @@ const faqs = [
   },
   {
     question: "Can I manage multiple branches?",
-    answer: "Yes, the Business plan supports up to 10 branches while the Enterprise plan offers unlimited branches. You get centralized control, consolidated reporting, and the ability to transfer stock between locations instantly.",
+    answer: "Yes, the Professional plan supports up to 10 branches while the Enterprise plan offers unlimited branches. You get centralized control, consolidated reporting, and the ability to transfer stock between locations instantly.",
   },
   {
     question: "Does Posify work offline?",
@@ -21,7 +21,7 @@ const faqs = [
   },
   {
     question: "What kind of support do you offer?",
-    answer: "We offer email support for all plans, priority support for Business customers, and a dedicated account manager for Enterprise clients. Our average response time is under 2 hours during business hours.",
+    answer: "We offer email support for all plans, priority support for Professional customers, and a dedicated account manager for Enterprise clients. Our average response time is under 2 hours during business hours.",
   },
   {
     question: "How secure is my business data?",
@@ -29,7 +29,7 @@ const faqs = [
   },
   {
     question: "How long is the free trial?",
-    answer: "Our free trial lasts for 15 days and gives you full access to all Business plan features. No credit card is required to sign up, and you won't be charged unless you choose to subscribe.",
+    answer: "Our free trial lasts for 15 days and gives you full access to all Professional plan features. No credit card is required to sign up, and you won't be charged unless you choose to subscribe.",
   },
   {
     question: "Can I customize the POS for my business?",
@@ -45,7 +45,7 @@ export default function FAQ() {
   };
 
   return (
-    <section id="faq" className="py-24 bg-white">
+    <section id="faq" className="py-24 bg-cream-50">
       <div className="section-container">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -54,10 +54,10 @@ export default function FAQ() {
           transition={{ duration: 0.6 }}
           className="text-center max-w-3xl mx-auto mb-16"
         >
-          <span className="inline-block px-4 py-1.5 bg-orange-50 text-orange-600 font-semibold text-sm rounded-full mb-4">
+          <span className="inline-block px-4 py-1.5 bg-accent-50 text-accent-600 font-semibold text-sm rounded-full mb-4">
             FAQ
           </span>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-primary-600 via-brand-600 to-orange-500 bg-clip-text text-transparent mb-6">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-accent-600 via-orange-500 to-sage-500 bg-clip-text text-transparent mb-6">
             Frequently asked questions
           </h2>
           <p className="text-lg text-slate-500 leading-relaxed">
@@ -70,13 +70,13 @@ export default function FAQ() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="max-w-3xl mx-auto glass-card divide-y divide-slate-100"
+          className="max-w-3xl mx-auto bg-white rounded-3xl border border-cream-200 divide-y divide-cream-100"
         >
           {faqs.map((faq, index) => (
             <div key={index}>
               <button
                 onClick={() => toggle(index)}
-                className="w-full flex items-center justify-between py-5 px-6 text-left transition-colors duration-300 hover:bg-white/50 focus:outline-none focus-visible-ring rounded-xl"
+                className="w-full flex items-center justify-between py-5 px-6 text-left transition-colors duration-300 hover:bg-cream-50 focus:outline-none focus-visible-ring rounded-xl"
                 aria-expanded={openIndex === index}
               >
                 <span className="font-semibold text-slate-900 pr-4">{faq.question}</span>

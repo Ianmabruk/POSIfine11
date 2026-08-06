@@ -11,15 +11,15 @@ import LogoPreloader from './components/LogoPreloader';
 import performanceMonitor from './services/performanceMonitor';
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 
-import Landing from './pages/Landing';
-import LandingModern from './components/modern-landing/LandingModern';
-import LandingEnterprise from './components/enterprise/LandingEnterprise';
+import LandingSaaS from './pages/LandingSaaS';
+import LandingPremium from './pages/LandingPremium';
 import AuthNew from './pages/AuthNew';
 import AuthEnterprise from './pages/AuthEnterprise';
 import Subscription from './pages/Subscription';
 import SubscriptionEnterprise from './pages/SubscriptionEnterprise';
 import SubscriptionExpired from './pages/SubscriptionExpired';
 import LoggedOut from './pages/LoggedOut';
+import PosifyControlCenter from './pages/super-admin/PosifyControlCenter';
 
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const BuildPOS = lazy(() => import('./pages/BuildPOS'));
@@ -32,8 +32,8 @@ const ShopStaffDashboard = lazy(() => import('./pages/cashier/ShopStaffDashboard
 const WindataWindAuth = lazy(() => import('./pages/windatawind/AuthPage'));
 const WindataWind = lazy(() => import('./pages/windatawind/WindataWind'));
 const WWProtectedRoute = lazy(() => import('./pages/windatawind/ProtectedRoute'));
-const SuperAdminLogin = lazy(() => import('./pages/super-admin/SuperAdminLogin'));
-const SuperAdminDashboard = lazy(() => import('./pages/super-admin/SuperAdminDashboard'));
+const SuperAdminLogin = lazy(() => import('./pages/super-admin/ControlCenterLogin'));
+const SuperAdminDashboard = lazy(() => import('./pages/super-admin/PosifyControlCenter'));
 
 function ProtectedRoute({ children, adminOnly = false, ultraOnly = false, ownerOnly = false }) {
   const { user, loading } = useAuth();
@@ -76,7 +76,7 @@ function ProtectedRoute({ children, adminOnly = false, ultraOnly = false, ownerO
     // Regular route protection — MUST have both user object AND a valid token
     if (!user || !hasToken) return <Navigate to="/auth/login" replace />;
     if (!user.active) return <Navigate to="/choose-subscription" replace />;
-    if (adminOnly && user.role !== 'admin') return <Navigate to="/dashboard/cashier" replace />;
+    if (adminOnly && !['admin', 'main_admin'].includes(user.role)) return <Navigate to="/dashboard/cashier" replace />;
     if (ultraOnly && (user.role !== 'admin' || user.plan !== 'ultra')) return <Navigate to="/dashboard/cashier" replace />;
   }
   
@@ -97,7 +97,7 @@ function DashboardRouter() {
   if (!user || !user.active) return <Navigate to="/choose-subscription" />;
   
   // Route based on ROLE
-  if (user.role === 'admin') {
+  if (user.role === 'admin' || user.role === 'main_admin') {
     return <Navigate to="/admin" />;
   }
   
@@ -125,9 +125,8 @@ function App() {
               <Suspense fallback={<LogoPreloader text="Loading..." />}>
                 <div id="main-content">
                 <Routes>
-                <Route path="/" element={<LandingEnterprise />} />
-                <Route path="/landing-old" element={<Landing />} />
-                <Route path="/get-started" element={<LandingEnterprise />} />
+                <Route path="/" element={<LandingPremium />} />
+                <Route path="/get-started" element={<LandingPremium />} />
                 <Route path="/choose-subscription" element={<SubscriptionEnterprise />} />
                 <Route path="/subscription-expired" element={<SubscriptionExpired />} />
                 <Route path="/auth/login" element={<AuthEnterprise />} />
@@ -154,13 +153,19 @@ function App() {
                 {/* WindataWind Subscription Management */}
                 <Route path="/windatawind" element={<SuperAdminLogin />} />
                 <Route path="/main.admin" element={
-                  <ProtectedRoute ownerOnly><SuperAdminDashboard /></ProtectedRoute>
+                  <ProtectedRoute ownerOnly><PosifyControlCenter /></ProtectedRoute>
                 } />
                 
                 {/* Super Admin API routes - use SuperAdminLogin for auth */}
                 <Route path="/super-admin/login" element={<SuperAdminLogin />} />
                 <Route path="/super-admin/dashboard" element={
-                  <ProtectedRoute ownerOnly><SuperAdminDashboard /></ProtectedRoute>
+                  <ProtectedRoute ownerOnly><PosifyControlCenter /></ProtectedRoute>
+                } />
+                
+                {/* Posify Control Center */}
+                <Route path="/control-center" element={<SuperAdminLogin />} />
+                <Route path="/control-center/dashboard" element={
+                  <ProtectedRoute ownerOnly><PosifyControlCenter /></ProtectedRoute>
                 } />
 
                 {/* Legacy redirects */}

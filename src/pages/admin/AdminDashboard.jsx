@@ -37,6 +37,7 @@ export default function AdminDashboard() {
   const [aiAnswer, setAiAnswer] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   // Seed appSettings from context (which reads localStorage + backend on login)
   const [appSettings, setAppSettings] = useState(() => {
     try {
@@ -233,33 +234,49 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar - always visible, icon-only on mobile */}
-      <aside className="bg-white border-r border-gray-200 transition-all duration-300 flex flex-col
-        fixed md:relative z-40 h-full
-        w-16 md:w-64">
-        <div className="p-3 md:p-6 border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 md:gap-3">
-              {appSettings.logo ? (
-                <img src={appSettings.logo} alt="Business logo" className="w-8 h-8 md:w-11 md:h-11 rounded-xl object-cover border border-gray-200" />
-              ) : null}
-              <div className="hidden md:block">
-                <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  Admin Panel
-                </h2>
-                <p className="text-xs text-gray-500">POS Management</p>
-              </div>
+      {/* Mobile sidebar backdrop */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside className={`
+        bg-white border-r border-gray-200 transition-all duration-300 flex flex-col
+        fixed inset-y-0 left-0 z-50
+        w-64 transform
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        lg:relative lg:translate-x-0
+      `}>
+        <div className="p-3 md:p-6 border-b border-gray-200 flex items-center justify-between">
+          <div className="flex items-center gap-2 md:gap-3">
+            {appSettings.logo ? (
+              <img src={appSettings.logo} alt="Business logo" className="w-8 h-8 md:w-11 md:h-11 rounded-xl object-cover border border-gray-200" />
+            ) : null}
+            <div className="hidden md:block">
+              <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Admin Panel
+              </h2>
+              <p className="text-xs text-gray-500">POS Management</p>
             </div>
           </div>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="lg:hidden p-2 text-gray-500 hover:text-gray-700"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
-        <nav className="flex-1 p-2 md:p-4 space-y-1">
+        <nav className="flex-1 p-2 md:p-4 space-y-1 overflow-y-auto">
           {menuItems.map(item => {
             const Icon = item.icon;
             return (
               <button
                 key={item.id}
-                onClick={() => navigate(item.path)}
+                onClick={() => { navigate(item.path); setSidebarOpen(false); }}
                 className={`w-full flex items-center gap-3 px-3 md:px-4 py-3 rounded-lg transition-all ${
                   isActive(item.path)
                     ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md'
@@ -267,7 +284,7 @@ export default function AdminDashboard() {
                 }`}
               >
                 <Icon className="w-5 h-5 flex-shrink-0" />
-                <span className="hidden md:inline font-medium">{item.label}</span>
+                <span className="font-medium">{item.label}</span>
               </button>
             );
           })}
@@ -275,36 +292,42 @@ export default function AdminDashboard() {
 
         <div className="p-2 md:p-4 border-t border-gray-200 space-y-1">
           <button
-            onClick={() => window.open('/cashier', '_blank')}
+            onClick={() => { window.open('/cashier', '_blank'); setSidebarOpen(false); }}
             className="w-full flex items-center gap-3 px-3 md:px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
           >
             <ExternalLink className="w-5 h-5 flex-shrink-0" />
-            <span className="hidden md:inline font-medium">Open POS</span>
+            <span className="font-medium">Open POS</span>
           </button>
-          
+
           <button
             onClick={logout}
             className="w-full flex items-center gap-3 px-3 md:px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
           >
             <LogOut className="w-5 h-5 flex-shrink-0" />
-            <span className="hidden md:inline font-medium">Logout</span>
+            <span className="font-medium">Logout</span>
           </button>
-          
+
           <button
             onClick={handleClearData}
             className="w-full flex items-center gap-3 px-3 md:px-4 py-3 rounded-lg text-orange-600 hover:bg-orange-50 transition-colors"
           >
             <X className="w-5 h-5 flex-shrink-0" />
-            <span className="hidden md:inline font-medium">Clear Data</span>
+            <span className="font-medium">Clear Data</span>
           </button>
         </div>
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col ml-0 md:ml-0">
+      <div className="flex-1 flex flex-col min-w-0">
         {/* Top Navbar */}
-        <header className="bg-white border-b border-gray-200 px-3 sm:px-6 py-3 sm:py-4">
-          <div className="flex items-center justify-between gap-2 sm:gap-6 flex-wrap">
+        <header className="bg-white border-b border-gray-200 px-3 sm:px-6 py-3 sm:py-4 flex items-center gap-4">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="lg:hidden p-2 text-gray-600 hover:text-gray-900"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+          <div className="flex items-center justify-between gap-2 sm:gap-6 flex-wrap flex-1">
             <div className="flex items-center gap-2">
               <h1 className="text-lg sm:text-2xl font-bold text-gray-900">
                 {menuItems.find(item => isActive(item.path))?.label || 'Dashboard'}

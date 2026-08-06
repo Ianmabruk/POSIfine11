@@ -11,7 +11,7 @@ const parallaxLayers = [
 
 export default function ParallaxBackground() {
   return (
-    <section className="relative py-24 bg-white overflow-hidden">
+    <section className="relative py-24 bg-cream-50 overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-16">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -20,10 +20,10 @@ export default function ParallaxBackground() {
           transition={{ duration: 0.6 }}
           className="text-center"
         >
-          <span className="inline-block px-4 py-1.5 bg-gradient-to-r from-primary-50 to-brand-50 text-primary-600 font-semibold text-sm rounded-full mb-4">
+          <span className="inline-block px-4 py-1.5 bg-accent-50 text-accent-600 font-semibold text-sm rounded-full mb-4">
             Industries
           </span>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-slate-900 via-primary-900 to-slate-900 bg-clip-text text-transparent mb-6">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-accent-600 via-orange-500 to-sage-500 bg-clip-text text-transparent mb-6">
             Powering businesses across every sector
           </h2>
           <p className="text-lg text-slate-500 leading-relaxed max-w-3xl mx-auto">
@@ -44,7 +44,7 @@ export default function ParallaxBackground() {
             style={{ top: `${Math.min(index * 12, 40)}%` }}
           >
             <div
-              className="relative h-64 mx-4 sm:mx-6 lg:mx-8 rounded-3xl overflow-hidden shadow-lg gpu-accelerated border border-white/10"
+              className="relative h-64 mx-4 sm:mx-6 lg:mx-8 rounded-3xl overflow-hidden shadow-lg border border-cream-200"
               style={{
                 transform: `translateY(${index * 8}px)`,
               }}
@@ -58,8 +58,8 @@ export default function ParallaxBackground() {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/30 to-transparent" />
               <div className="absolute inset-x-0 bottom-0 p-6">
-                <div className="glass-card inline-block px-5 py-2.5">
-                  <h3 className="text-white font-bold text-lg tracking-tight">{layer.alt}</h3>
+                <div className="bg-white/90 backdrop-blur-xl inline-block px-5 py-2.5 rounded-xl border border-cream-200">
+                  <h3 className="text-slate-900 font-bold text-lg tracking-tight">{layer.alt}</h3>
                 </div>
               </div>
             </div>

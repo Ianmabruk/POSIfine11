@@ -506,9 +506,9 @@ export const AuthProvider = ({ children }) => {
   // Package-related helper functions
   const isUltraPackage = useCallback(() => user && (user.plan === 'ultra'), [user]);
   const isBasicPackage = useCallback(() => user && (user.plan === 'basic'), [user]);
-  const canEditStock = useCallback(() => user && (user.role === 'admin' || user.role === 'cashier'), [user]);
-  const canManageUsers = useCallback(() => user && (user.role === 'admin' && user.plan === 'ultra'), [user]);
-  const canViewAnalytics = useCallback(() => user && (user.role === 'admin'), [user]);
+  const canEditStock = useCallback(() => user && (user.role === 'admin' || user.role === 'main_admin' || user.role === 'cashier'), [user]);
+  const canManageUsers = useCallback(() => user && (user.role === 'admin' || user.role === 'main_admin'), [user]);
+  const canViewAnalytics = useCallback(() => user && (user.role === 'admin' || user.role === 'main_admin'), [user]);
   const isRealTimeProductSyncEnabled = () => true;
   const isCashierUserManagementEnabled = () => true;
 
