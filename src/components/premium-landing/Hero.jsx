@@ -24,7 +24,7 @@ export default function Hero() {
   return (
     <section
       id="home"
-      className="relative min-h-screen flex items-center pt-20 overflow-hidden gpu-accelerated"
+      className="relative min-h-screen flex items-center pt-20 overflow-x-hidden gpu-accelerated"
       onMouseMove={handleMouseMove}
     >
       <div
@@ -46,7 +46,7 @@ export default function Hero() {
             transition={{ duration: 0.8 }}
             className="space-y-8"
           >
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.1] tracking-tight text-white">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold leading-[1.1] tracking-tight text-white">
               Run Your Business{" "}
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-accent-400 via-orange-300 to-sage-400">
                 Smarter

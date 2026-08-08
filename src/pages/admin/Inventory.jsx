@@ -805,7 +805,97 @@ export default function Inventory() {
 
       {/* Products Table */}
       <div className="card">
-        <div className="overflow-x-auto">
+        {/* Mobile Cards */}
+        <div className="md:hidden space-y-3">
+          {(filteredProducts || []).map((product) => {
+            if (!product) return null;
+            const cogs = calculateCOGS(product);
+            const margin = product.price ? (((product.price - cogs) / product.price) * 100).toFixed(1) : 0;
+            const maxUnits = calculateMaxProducible(product);
+            const isExpanded = expandedRow === product.id;
+            return (
+              <div key={product.id} className="border border-gray-200 rounded-lg p-4 space-y-3 bg-white">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    {product.image ? (
+                      <img src={product.image} alt={product.name} className="w-10 h-10 object-cover rounded-lg flex-shrink-0" />
+                    ) : (
+                      <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Package className="w-5 h-5 text-gray-400" />
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm text-gray-900 truncate">{product.name}</p>
+                      <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
+                        product.expenseOnly ? 'bg-yellow-100 text-yellow-800' :
+                        hasRecipe(product) ? 'bg-green-100 text-green-800' : 
+                        'bg-blue-100 text-blue-800'
+                      }`}>
+                        {product.expenseOnly ? 'Expense' : hasRecipe(product) ? 'Composite' : 'Raw'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <button onClick={() => openWeightPricingModal(product)} className="p-2 hover:bg-purple-50 rounded-lg text-purple-600 min-h-[44px] min-w-[44px] flex items-center justify-center" title="Edit weight-based pricing">
+                      <Package className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => { setImagePreview(''); setEditProduct({...product, image: product.image || '', price: String(product.price ?? ''), cost: String(product.cost_per_unit || product.cost || 0), reorder_level: String(product.reorder_level ?? ''), quantity: String(product.quantity ?? 0)}); setShowEditModal(true); }} className="p-2 hover:bg-blue-50 rounded-lg text-blue-600 min-h-[44px] min-w-[44px] flex items-center justify-center" title="Edit">
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => handleDelete(product.id)} className="p-2 hover:bg-red-50 rounded-lg text-red-600 min-h-[44px] min-w-[44px] flex items-center justify-center" title="Delete">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div><span className="text-xs text-gray-500 block">Price</span><span className="font-semibold text-green-600">KSH {product.price?.toLocaleString()}</span></div>
+                  <div><span className="text-xs text-gray-500 block">Cost/COGS</span><span className="text-orange-600">{cogs > 0 ? `KSH ${cogs.toLocaleString()}` : <span className="text-xs text-gray-400 italic">No cost</span>}</span></div>
+                  <div><span className="text-xs text-gray-500 block">Stock</span><span className={`font-medium ${(product.quantity || 0) === 0 ? 'text-red-600' : ((product.reorder_level || 0) > 0 && (product.quantity || 0) <= (product.reorder_level || 0)) ? 'text-yellow-600' : 'text-gray-900'}`}>{product.quantity || 0} {product.unit}</span></div>
+                  <div><span className="text-xs text-gray-500 block">Margin</span><span className={`font-semibold ${margin > 30 ? 'text-green-600' : margin > 15 ? 'text-yellow-600' : 'text-red-600'}`}>{margin}%</span></div>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-gray-600">Batches: {getProductBatches(product.id).length} active</span>
+                  <button onClick={() => { setSelectedProduct(product); const defaultCost = product.cost_per_unit || product.cost || 0; setNewStock(prev => ({...prev, cost: String(defaultCost)})); setShowAddStock(true); }} className="px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-medium min-h-[44px] flex items-center gap-1">
+                    <Plus className="w-3 h-3" /> Add Stock
+                  </button>
+                </div>
+                {hasRecipe(product) && (
+                  <button onClick={() => setExpandedRow(isExpanded ? null : product.id)} className="w-full flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg text-sm font-medium text-gray-700 min-h-[44px]">
+                    <span>Recipe Breakdown ({product.recipe.length} ingredients)</span>
+                    {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  </button>
+                )}
+                {isExpanded && hasRecipe(product) && (
+                  <div className="mt-2 space-y-2 border border-blue-100 rounded-lg p-3 bg-blue-50/50">
+                    {(product.recipe || []).map((ingredient, idx) => {
+                      if (!ingredient) return null;
+                      const ingProductId = ingredient.productId || ingredient.product_id;
+                      const raw = (productList || []).find(p => p && p.id === ingProductId);
+                      if (!raw) return null;
+                      const unitCost = Number(raw.cost_per_unit || raw.costPerUnit || raw.cost || 0);
+                      const totalCost = unitCost * (ingredient.quantity || 0);
+                      return (
+                        <div key={idx} className="flex items-center justify-between text-sm border-b border-blue-100 last:border-0 pb-2 last:pb-0">
+                          <span className="font-medium text-gray-700">{raw.name || 'Unknown'}</span>
+                          <div className="text-right text-xs">
+                            <p className="text-gray-600">{ingredient.quantity || 0} {raw.unit || 'pcs'} needed</p>
+                            <p className="text-gray-500">Available: {raw.quantity || 0} {raw.unit || 'pcs'}</p>
+                            <p className="font-semibold text-orange-600">KSH {totalCost.toFixed(2)}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <div className="text-right text-sm font-semibold text-orange-700 pt-2 border-t border-blue-200">
+                      Total COGS per unit: KSH {cogs.toFixed(2)}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        {/* Desktop Table */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full">
 
             <thead className="bg-gray-50">

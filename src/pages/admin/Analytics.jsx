@@ -22,6 +22,7 @@ export default function Analytics() {
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState('7days');
   const [chartType, setChartType] = useState('bar');
+  const [exportOpen, setExportOpen] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -178,19 +179,24 @@ export default function Analytics() {
             <option value="90days">Last 90 Days</option>
             <option value="all">All Time</option>
           </select>
-          <div className="relative group">
-            <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+          <div className="relative">
+            <button 
+              onClick={() => setExportOpen(!exportOpen)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
               <Download className="w-4 h-4" />
               Export
             </button>
-            <div className="hidden group-hover:block absolute right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[200px]">
-              <button
-                onClick={() => exportAnalyticsPDF(productStats, stats)}
-                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 rounded-lg"
-              >
-                Export PDF
-              </button>
-            </div>
+            {exportOpen && (
+              <div className="absolute right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[200px]">
+                <button
+                  onClick={() => { exportAnalyticsPDF(productStats, stats); setExportOpen(false); }}
+                  className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 rounded-lg"
+                >
+                  Export PDF
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -418,7 +424,49 @@ export default function Analytics() {
             <p>No product sales data available</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+            {/* Mobile Cards */}
+            <div className="md:hidden space-y-3">
+              {productStats.slice(0, 10).map((product, idx) => (
+                <div key={idx} className="border border-gray-200 rounded-lg p-4 space-y-2 bg-white">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                        idx === 0 ? 'bg-yellow-100 text-yellow-700' :
+                        idx === 1 ? 'bg-gray-100 text-gray-700' :
+                        idx === 2 ? 'bg-orange-100 text-orange-700' :
+                        'bg-gray-50 text-gray-600'
+                      }`}>
+                        {idx + 1}
+                      </div>
+                      <p className="font-medium text-gray-900">{product.name}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-sm pl-11">
+                    <div>
+                      <span className="text-xs text-gray-500 block">Qty Sold</span>
+                      <span className="font-medium">{product.quantity}</span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-gray-500 block">Revenue</span>
+                      <span className="font-medium">KES {product.revenue.toLocaleString()}</span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-gray-500 block">Profit</span>
+                      <span className={`font-medium ${product.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        KES {product.profit.toLocaleString()}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-gray-500 block">Sales Count</span>
+                      <span className="text-gray-600">{product.count}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Desktop Table */}
+            <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-200">
@@ -464,7 +512,8 @@ export default function Analytics() {
                 ))}
               </tbody>
             </table>
-          </div>
+            </div>
+          </>
         )}
       </motion.div>
 

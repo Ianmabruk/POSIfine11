@@ -32,7 +32,7 @@ export default function Navbar() {
         borderBottom: scrolled ? "1px solid rgba(0, 0, 0, 0.06)" : "1px solid transparent",
       }}
       transition={{ duration: 0.4, ease: "easeInOut" }}
-      className={`fixed top-0 left-0 right-0 z-50 ${scrolled ? "shadow-sm" : ""}`}
+      className={`fixed top-0 left-0 right-0 z-50 safe-top ${scrolled ? "shadow-sm" : ""}`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 lg:h-20">
@@ -79,7 +79,7 @@ export default function Navbar() {
 
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className={`lg:hidden p-2 transition-colors duration-300 ${
+            className={`lg:hidden p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors duration-300 ${
               scrolled ? "text-slate-600" : "text-white"
             }`}
             aria-label="Toggle menu"
@@ -100,15 +100,15 @@ export default function Navbar() {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="lg:hidden bg-cream-100/95 backdrop-blur-xl overflow-hidden border-b border-cream-200/60"
+            className="lg:hidden bg-cream-100/95 backdrop-blur-xl overflow-hidden border-b border-cream-200/60 safe-bottom"
           >
-            <div className="px-4 py-6 space-y-4">
+            <div className="px-4 py-6 space-y-1">
               {navLinks.map((link) => (
                 <a
                   key={link.name}
                   href={link.href}
                   onClick={() => setMobileOpen(false)}
-                  className="block text-slate-600 hover:text-slate-900 font-medium py-2 transition-colors duration-300"
+                  className="block text-slate-600 hover:text-slate-900 font-medium py-3 min-h-[44px] transition-colors duration-300"
                 >
                   {link.name}
                 </a>
@@ -116,14 +116,14 @@ export default function Navbar() {
               <div className="pt-4 border-t border-cream-300 space-y-3">
                 <button
                   onClick={() => { navigate("/auth/login"); setMobileOpen(false); }}
-                  className="w-full text-left text-slate-600 hover:text-slate-900 font-medium py-2 transition-colors duration-300"
+                  className="w-full text-left text-slate-600 hover:text-slate-900 font-medium py-3 min-h-[44px] transition-colors duration-300"
                 >
                   Login
                 </button>
                 <motion.button
                   onClick={() => { navigate("/choose-subscription"); setMobileOpen(false); }}
                   whileTap={{ scale: 0.98 }}
-                  className="w-full px-5 py-3 text-center font-semibold rounded-xl bg-gradient-to-r from-accent-500 to-orange-600 text-white shadow-lg shadow-accent-500/25"
+                  className="w-full px-5 py-3.5 text-center font-semibold rounded-xl bg-gradient-to-r from-accent-500 to-orange-600 text-white shadow-lg shadow-accent-500/25 min-h-[44px]"
                 >
                   Start Free Demo
                 </motion.button>

@@ -3,8 +3,8 @@ import { motion } from "framer-motion";
 export default function Footer() {
   return (
     <footer className="bg-slate-900 border-t border-slate-800">
-      <div className="section-container py-16">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
+      <div className="section-container py-12 sm:py-16">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 sm:gap-12">
           <div className="md:col-span-2">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-8 h-8 bg-gradient-to-br from-accent-500 to-orange-600 rounded-lg flex items-center justify-center">

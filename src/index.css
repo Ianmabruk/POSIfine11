@@ -294,6 +294,21 @@
     @apply w-full min-h-screen;
   }
 
+  /* Testimonials responsive switch */
+  @media (max-width: 639px) {
+    .testimonials-marquee { display: none !important; }
+    .testimonials-grid { display: grid !important; }
+  }
+  @media (min-width: 640px) {
+    .testimonials-marquee { display: flex !important; }
+    .testimonials-grid { display: none !important; }
+  }
+
+  /* Prevent horizontal overflow globally */
+  body {
+    overflow-x: hidden;
+  }
+
   /* Soft overlay for hero backgrounds */
   .soft-overlay {
     background: linear-gradient(180deg, rgba(15,23,42,0.4) 0%, rgba(15,23,42,0.8) 100%);

@@ -504,7 +504,85 @@ export default function UserManagement() {
 
       <div className="card">
         <h3 className="text-lg font-semibold mb-4">Users</h3>
-        <div className="overflow-x-auto">
+        {/* Mobile Cards */}
+        <div className="md:hidden space-y-3">
+          {(users || []).map((user) => (
+            <div key={user.id} className="border border-gray-200 rounded-lg p-4 space-y-3 bg-white">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-medium text-sm text-gray-900 truncate">{user.name}</p>
+                  <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    <span className={`badge text-xs ${user.role === 'admin' || user.role === 'main_admin' ? 'bg-purple-100 text-purple-800' : 'badge-success'}`}>
+                      {user.role}
+                    </span>
+                    <span className="badge badge-warning text-xs">{user.plan || 'N/A'}</span>
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
+                      (user.active ?? user.is_active) ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
+                    }`}>
+                      {(user.active ?? user.is_active) ? 'Active' : 'Inactive'}
+                    </span>
+                    {user.locked && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+                        Locked
+                      </span>
+                    )}
+                  </div>
+                </div>
+                {user.role === 'cashier' && (
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <span className="font-mono text-lg font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                      {user.pin || user.cashier_pin || user.cashierPIN || '----'}
+                    </span>
+                    <button onClick={() => handleResetPIN(user)} className="p-2 hover:bg-yellow-50 rounded-lg text-yellow-600 min-h-[44px] min-w-[44px] flex items-center justify-center" title="Reset PIN" disabled={loading}>
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+              {user.role === 'cashier' && liveSalesData.byCashier[user.id] && (
+                <div className="text-sm bg-gray-50 rounded-lg p-2">
+                  <span className="font-semibold text-green-700">KSH {liveSalesData.byCashier[user.id].total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span className="text-xs text-gray-500 ml-2">{liveSalesData.byCashier[user.id].count} sale(s)</span>
+                </div>
+              )}
+              <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100">
+                {isCashierUserManagementEnabled() && (
+                  <>
+                    <button onClick={() => handleToggleUserStatus(user.id, user.active)} className={`p-2 rounded-lg transition min-h-[44px] min-w-[44px] flex items-center justify-center ${user.active ? 'hover:bg-red-50 text-red-600' : 'hover:bg-green-50 text-green-600'}`} title={user.active ? 'Deactivate User' : 'Activate User'} disabled={loading}>
+                      {user.active ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
+                    </button>
+                    <button onClick={() => handleLockUnlockUser(user.id, user.locked || false)} className={`p-2 rounded-lg transition min-h-[44px] min-w-[44px] flex items-center justify-center ${user.locked ? 'hover:bg-green-50 text-green-600' : 'hover:bg-red-50 text-red-600'}`} title={user.locked ? 'Unlock User' : 'Lock User'} disabled={loading}>
+                      <Shield className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
+                {user.role === 'cashier' && (
+                  <>
+                    <button onClick={() => { localStorage.setItem('adminViewingCashier', user.id); window.location.href = '/cashier'; }} className="p-2 hover:bg-blue-50 rounded-lg text-blue-600 min-h-[44px] min-w-[44px] flex items-center justify-center" title="Access Cashier POS">
+                      <Eye className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => startLiveView(user)} className="p-2 hover:bg-green-50 rounded-lg text-green-600 min-h-[44px] min-w-[44px] flex items-center justify-center" title="Live View">
+                      <Monitor className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
+                {isCashierUserManagementEnabled() && (
+                  <>
+                    <button onClick={() => setEditingUser(user)} className="p-2 hover:bg-purple-50 rounded-lg text-purple-600 min-h-[44px] min-w-[44px] flex items-center justify-center" title="Edit Permissions">
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => handleDeleteUser(user.id)} className="p-2 hover:bg-red-50 rounded-lg text-red-600 min-h-[44px] min-w-[44px] flex items-center justify-center" title="Delete User" disabled={loading}>
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+        {/* Desktop Table */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50">
 

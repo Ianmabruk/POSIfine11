@@ -153,6 +153,13 @@ export default function AdminDashboard() {
     { id: 'settings', label: 'Settings', icon: Settings, path: '/admin/settings' }
   ];
 
+  const menuGroups = [
+    { key: 'main', label: 'Main', items: menuItems.filter(i => ['overview','analytics','sales','inventory','stock'].includes(i.id)) },
+    { key: 'management', label: 'Management', items: menuItems.filter(i => ['recipes','expenses','vendors','users','time','reminders'].includes(i.id)) },
+    { key: 'financial', label: 'Financial', items: menuItems.filter(i => ['service-fees','discounts','credit-requests'].includes(i.id)) },
+    { key: 'system', label: 'System', items: menuItems.filter(i => ['support','settings'].includes(i.id)) },
+  ];
+
   const isActive = (path) => {
     if (path === '/admin') return location.pathname === '/admin';
     return location.pathname.startsWith(path);
@@ -245,23 +252,28 @@ export default function AdminDashboard() {
         </div>
 
         <nav className="flex-1 p-2 md:p-4 space-y-1 overflow-y-auto">
-          {menuItems.map(item => {
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.id}
-                onClick={() => { navigate(item.path); setSidebarOpen(false); }}
-                className={`w-full flex items-center gap-3 px-3 md:px-4 py-3 rounded-lg transition-all ${
-                  isActive(item.path)
-                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
-              >
-                <Icon className="w-5 h-5 flex-shrink-0" />
-                <span className="font-medium">{item.label}</span>
-              </button>
-            );
-          })}
+          {menuGroups.map(group => (
+            <div key={group.key} className="mb-2">
+              <p className="hidden md:block px-3 md:px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">{group.label}</p>
+              {group.items.map(item => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => { navigate(item.path); setSidebarOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-3 md:px-4 py-3 rounded-lg transition-all ${
+                      isActive(item.path)
+                        ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    <Icon className="w-5 h-5 flex-shrink-0" />
+                    <span className="font-medium">{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          ))}
         </nav>
 
         <div className="p-2 md:p-4 border-t border-gray-200 space-y-1">

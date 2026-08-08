@@ -45,7 +45,7 @@ export default function FAQ() {
   };
 
   return (
-    <section id="faq" className="py-24 bg-cream-50">
+    <section id="faq" className="py-16 sm:py-24 bg-cream-50">
       <div className="section-container">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -74,9 +74,9 @@ export default function FAQ() {
         >
           {faqs.map((faq, index) => (
             <div key={index}>
-              <button
+               <button
                 onClick={() => toggle(index)}
-                className="w-full flex items-center justify-between py-5 px-6 text-left transition-colors duration-300 hover:bg-cream-50 focus:outline-none focus-visible-ring rounded-xl"
+                className="w-full flex items-center justify-between py-4 sm:py-5 px-4 sm:px-6 text-left min-h-[44px] transition-colors duration-300 hover:bg-cream-50 focus:outline-none focus-visible-ring rounded-xl"
                 aria-expanded={openIndex === index}
               >
                 <span className="font-semibold text-slate-900 pr-4">{faq.question}</span>
@@ -97,7 +97,7 @@ export default function FAQ() {
                     transition={{ duration: 0.3 }}
                     className="overflow-hidden"
                   >
-                    <div className="px-6 pb-5 text-slate-500 leading-relaxed">
+                     <div className="px-4 sm:px-6 pb-4 sm:pb-5 text-slate-500 leading-relaxed">
                       {faq.answer}
                     </div>
                   </motion.div>

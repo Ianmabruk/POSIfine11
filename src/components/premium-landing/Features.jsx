@@ -54,7 +54,7 @@ const features = [
 
 export default function Features() {
   return (
-    <section id="features" className="relative py-24 bg-cream-50 overflow-hidden">
+    <section id="features" className="relative py-16 sm:py-24 bg-cream-50 overflow-hidden">
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-gradient-to-r from-sage-200/30 via-primary-200/20 to-accent-200/30 rounded-full blur-3xl pointer-events-none" />
       <div className="section-container relative z-10">
         <motion.div
@@ -89,7 +89,7 @@ export default function Features() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: index * 0.08 }}
                 whileHover={{ y: -8, transition: { duration: 0.2 } }}
-                className="group relative bg-white rounded-3xl border border-cream-200 p-8 transition-all duration-300 hover:shadow-xl hover:shadow-cream-300/50 hover:border-accent-200"
+                className="group relative bg-white rounded-3xl border border-cream-200 p-6 sm:p-8 transition-all duration-300 hover:shadow-xl hover:shadow-cream-300/50 hover:border-accent-200"
               >
                 <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg`}>
                   <Icon className="w-7 h-7 text-white" />

@@ -63,6 +63,7 @@ export default function CashierPOS() {
   const [mpesaPolling, setMpesaPolling] = useState(false);
   const [pendingMpesaSaleId, setPendingMpesaSaleId] = useState(null);
   const mpesaPollingRef = useRef(null);
+  const [cartSheetOpen, setCartSheetOpen] = useState(false);
 
   // Show a non-blocking toast notification (auto-dismisses after `ms` ms)
   const showToast = useCallback((type, message, ms = 3500) => {
@@ -2199,6 +2200,115 @@ export default function CashierPOS() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Mobile Cart Bottom Sheet */}
+      {cart.length > 0 && (
+        <>
+          {/* Mini cart bar */}
+          <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] z-40 safe-bottom">
+            <button
+              onClick={() => setCartSheetOpen(true)}
+              className="w-full flex items-center justify-between px-4 py-3 touch-manipulation"
+            >
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <ShoppingCart className="w-6 h-6 text-gray-700" />
+                  <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {cart.length}
+                  </span>
+                </div>
+                <span className="font-semibold text-gray-900">View Cart</span>
+              </div>
+              <span className="font-bold text-green-600 text-lg">KSH {total.toLocaleString()}</span>
+            </button>
+          </div>
+
+          {/* Bottom sheet overlay */}
+          {cartSheetOpen && (
+            <div className="lg:hidden fixed inset-0 z-50">
+              <div className="absolute inset-0 bg-black/50" onClick={() => setCartSheetOpen(false)} />
+              <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl max-h-[85vh] flex flex-col safe-bottom">
+                <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                  <div className="flex items-center gap-2">
+                    <ShoppingCart className="w-5 h-5 text-gray-700" />
+                    <h3 className="text-lg font-semibold">Cart ({cart.length} items)</h3>
+                  </div>
+                  <button onClick={() => setCartSheetOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg min-h-[44px] min-w-[44px] flex items-center justify-center">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                  {cart.map(item => (
+                    <div key={item.id} className="flex items-center justify-between bg-gray-50 rounded-xl p-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm text-gray-900 truncate">{item.name}</p>
+                        <p className="text-sm text-green-600 font-semibold">KSH {(item.price * item.quantity).toLocaleString()}</p>
+                      </div>
+                      <div className="flex items-center gap-2 ml-3">
+                        <button onClick={() => updateQuantity(item.id, -1)} className="w-9 h-9 rounded-lg bg-white shadow-sm flex items-center justify-center hover:bg-gray-100 min-h-[44px] min-w-[44px]">
+                          <Minus className="w-4 h-4" />
+                        </button>
+                        <span className="w-8 text-center font-semibold">{item.quantity}</span>
+                        <button onClick={() => updateQuantity(item.id, 1)} className="w-9 h-9 rounded-lg bg-white shadow-sm flex items-center justify-center hover:bg-gray-100 min-h-[44px] min-w-[44px]">
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="border-t border-gray-200 p-4 space-y-3 bg-white">
+                  <div className="space-y-2 bg-gray-50 p-3 rounded-lg">
+                    <div className="flex justify-between text-sm">
+                      <span>Subtotal:</span>
+                      <span className="text-gray-700">KSH {total.toLocaleString()}</span>
+                    </div>
+                    {selectedDiscount && (
+                      <div className="flex justify-between text-sm text-green-600">
+                        <span>Discount:</span>
+                        <span>-KSH {(selectedDiscount.type === 'percentage' ? (total * selectedDiscount.value / 100) : selectedDiscount.value).toLocaleString()}</span>
+                      </div>
+                    )}
+                    {(() => {
+                      const discountVal = selectedDiscount ? (selectedDiscount.type === 'percentage' ? (total * selectedDiscount.value / 100) : selectedDiscount.value) : 0;
+                      const afterDiscount = total - discountVal;
+                      const taxAmt = taxType === 'inclusive'
+                        ? Math.round(((afterDiscount / 1.16) * 0.16) * 100) / 100
+                        : Math.round((afterDiscount * 0.16) * 100) / 100;
+                      const finalTot = taxType === 'inclusive'
+                        ? Math.round(afterDiscount * 100) / 100
+                        : Math.round((afterDiscount + taxAmt) * 100) / 100;
+                      return (
+                        <>
+                          <div className="flex justify-between text-sm text-orange-600">
+                            <span>VAT 16% ({taxType === 'inclusive' ? 'Included' : 'Added'}):</span>
+                            <span>{taxType === 'inclusive' ? '' : '+'}KSH {taxAmt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          </div>
+                          <div className="border-t pt-2 flex justify-between text-lg font-bold">
+                            <span>Final Total:</span>
+                            <span className="text-green-600">
+                              KSH {finalTot.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                  <button
+                    onClick={() => {
+                      setCartSheetOpen(false);
+                      handleCheckout();
+                    }}
+                    disabled={cart.length === 0 || checkoutLoading}
+                    className="btn-primary w-full py-4 min-h-[52px] text-base bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+                  >
+                    {checkoutLoading ? '⏳ Processing...' : 'Checkout'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

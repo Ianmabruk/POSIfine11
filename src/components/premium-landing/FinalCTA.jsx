@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 
 export default function FinalCTA() {
   return (
-    <section className="relative py-24 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-hidden">
+    <section className="relative py-16 sm:py-24 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-hidden">
       <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-accent-500/15 rounded-full blur-[120px]" />
       <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-sage-500/10 rounded-full blur-[100px]" />
       <div className="section-container relative z-10 text-center">

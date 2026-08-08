@@ -32,7 +32,7 @@ export default function ParallaxBackground() {
         </motion.div>
       </div>
 
-      <div className="relative h-[600px] w-full">
+      <div className="relative h-[400px] sm:h-[600px] w-full">
         {parallaxLayers.map((layer, index) => (
           <motion.div
             key={index}
@@ -44,7 +44,7 @@ export default function ParallaxBackground() {
             style={{ top: `${Math.min(index * 12, 40)}%` }}
           >
             <div
-              className="relative h-64 mx-4 sm:mx-6 lg:mx-8 rounded-3xl overflow-hidden shadow-lg border border-cream-200"
+              className="relative h-48 sm:h-64 mx-4 sm:mx-6 lg:mx-8 rounded-3xl overflow-hidden shadow-lg border border-cream-200"
               style={{
                 transform: `translateY(${index * 8}px)`,
               }}
@@ -57,9 +57,9 @@ export default function ParallaxBackground() {
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/30 to-transparent" />
-              <div className="absolute inset-x-0 bottom-0 p-6">
-                <div className="bg-white/90 backdrop-blur-xl inline-block px-5 py-2.5 rounded-xl border border-cream-200">
-                  <h3 className="text-slate-900 font-bold text-lg tracking-tight">{layer.alt}</h3>
+              <div className="absolute inset-x-0 bottom-0 p-4 sm:p-6">
+                <div className="bg-white/90 backdrop-blur-xl inline-block px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl border border-cream-200">
+                  <h3 className="text-slate-900 font-bold text-base sm:text-lg tracking-tight">{layer.alt}</h3>
                 </div>
               </div>
             </div>

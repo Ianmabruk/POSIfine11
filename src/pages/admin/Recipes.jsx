@@ -341,9 +341,9 @@ export default function Recipes() {
                     </div>
                   </div>
 
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <p className="text-xs font-semibold text-gray-600 mb-2">INGREDIENTS:</p>
-                    <div className="grid grid-cols-2 gap-2">
+                   <div className="bg-gray-50 rounded-lg p-3">
+                     <p className="text-xs font-semibold text-gray-600 mb-2">INGREDIENTS:</p>
+                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {product.recipe.map((ing, idx) => {
                         // Handle both old format (productId) and new format (name)
                         let ingredientName = '';

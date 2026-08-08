@@ -3,7 +3,7 @@ import { BarChart3, TrendingUp, ShoppingCart, Users } from "lucide-react";
 
 export default function DashboardPreview() {
   return (
-    <section className="py-24 bg-cream-50">
+    <section className="py-16 sm:py-24 bg-cream-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -35,8 +35,8 @@ export default function DashboardPreview() {
           className="relative mx-auto max-w-5xl"
         >
           <div className="bg-slate-900 rounded-3xl p-2 shadow-2xl">
-            <div className="bg-slate-800 rounded-[1.8rem] overflow-hidden">
-              <div className="bg-cream-50 p-4 sm:p-6">
+              <div className="bg-slate-800 rounded-[1.8rem] overflow-hidden">
+                <div className="bg-cream-50 p-3 sm:p-4 md:p-6">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-gradient-to-br from-accent-500 to-orange-600 rounded-lg flex items-center justify-center">

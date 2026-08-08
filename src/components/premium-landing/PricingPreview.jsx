@@ -69,7 +69,7 @@ export default function PricingPreview() {
   const navigate = useNavigate();
 
   return (
-    <section id="pricing" className="relative py-24 bg-cream-50 overflow-hidden">
+    <section id="pricing" className="relative py-16 sm:py-24 bg-cream-50 overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-cream-200/60 via-cream-50 to-cream-50 opacity-70" />
       <div className="section-container relative z-10">
         <motion.div
@@ -99,14 +99,14 @@ export default function PricingPreview() {
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: index * 0.15 }}
               whileHover={{ y: -8, transition: { duration: 0.3 } }}
-              className={`relative ${
-                plan.popular
-                  ? "rounded-3xl bg-gradient-to-br from-accent-500 to-orange-600 p-[1px]"
-                  : ""
-              }`}
+                className={`relative ${
+                  plan.popular
+                    ? "rounded-3xl bg-gradient-to-br from-accent-500 to-orange-600 p-[1px]"
+                    : ""
+                }`}
             >
               <div
-                className={`relative rounded-3xl p-8 border transition-all duration-300 ${
+                className={`relative rounded-3xl p-6 sm:p-8 border transition-all duration-300 ${
                   plan.popular
                     ? "bg-white shadow-xl scale-105 z-10 border-transparent"
                     : "bg-white shadow-md hover:shadow-xl border-cream-200"
@@ -151,7 +151,7 @@ export default function PricingPreview() {
 
                 <button
                   onClick={() => navigate("/choose-subscription")}
-                  className={`w-full py-3.5 rounded-2xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${
+                  className={`w-full py-3.5 min-h-[44px] rounded-2xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${
                     plan.popular
                       ? "bg-gradient-to-r from-accent-600 to-orange-600 text-white shadow-lg shadow-accent-500/25 hover:shadow-accent-500/40"
                       : "bg-white text-slate-700 border border-cream-300 hover:bg-cream-100 hover:border-accent-300"

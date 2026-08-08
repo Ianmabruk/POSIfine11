@@ -335,7 +335,100 @@ export default function StockDashboard() {
         ) : filteredProducts.length === 0 ? (
           <div className="text-center py-12 text-gray-400">No products found</div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+            {/* Mobile Cards */}
+            <div className="md:hidden space-y-3">
+              {filteredProducts.map(product => {
+                const entityKey = getProductEntityKey(product);
+                const isIngredient = ingredientIds.has(entityKey);
+                const totalDeducted = productDeductionTotals[entityKey] || 0;
+                const isExpanded = expandedProduct === entityKey;
+                const productDeductionHistory = deductions.filter(
+                  d => getDeductionEntityKey(d) === entityKey
+                ).slice(0, 10);
+                return (
+                  <div key={entityKey} className="border border-gray-200 rounded-lg p-4 space-y-3 bg-white">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        {product.image ? (
+                          <img src={product.image} alt={product.name} className="w-10 h-10 object-cover rounded-lg flex-shrink-0" />
+                        ) : (
+                          <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center flex-shrink-0">
+                            <Package className="w-5 h-5 text-gray-400" />
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <p className="font-medium text-sm text-gray-900 truncate">{product.name}</p>
+                          <span className="text-xs text-gray-500 capitalize">{product.category || 'general'}</span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setExpandedProduct(isExpanded ? null : entityKey)}
+                        className="p-2 rounded hover:bg-gray-200 text-gray-500 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                        title="View deduction history"
+                      >
+                        {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <span className="text-xs text-gray-500 block">Current Stock</span>
+                        <span className={`font-semibold ${getStockStatusColor(product)}`}>
+                          {Number(product.quantity || 0).toFixed(3)} {product.unit || 'pcs'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-gray-500 block">Reorder Level</span>
+                        <span className="text-gray-700">
+                          {Number(product.reorder_level || product.reorderLevel || 0) > 0
+                            ? `${Number(product.reorder_level || product.reorderLevel || 0)} ${product.unit || 'pcs'}`
+                            : '—'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-gray-500 block">Total Deducted</span>
+                        <span className="text-red-600 font-medium">
+                          {totalDeducted > 0 ? `−${totalDeducted.toFixed(3)} ${product.unit || 'pcs'}` : '—'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-gray-500 block">Status</span>
+                        {getStockBadge(product)}
+                      </div>
+                    </div>
+                    {isExpanded && (
+                      <div className="mt-2 space-y-2 border border-blue-100 rounded-lg p-3 bg-blue-50/50">
+                        <h4 className="text-xs font-semibold text-gray-600 uppercase">
+                          Deduction History for {product.name}
+                        </h4>
+                        {productDeductionHistory.length === 0 ? (
+                          <p className="text-xs text-gray-400">No deductions recorded yet.</p>
+                        ) : (
+                          <div className="space-y-2">
+                            {productDeductionHistory.slice(0, 5).map((d, idx) => (
+                              <div key={idx} className="text-xs border-b border-blue-100 last:border-0 pb-2 last:pb-0">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">{d.created_at ? new Date(d.created_at).toLocaleString() : '—'}</span>
+                                  {paymentBadge(d.payment_method)}
+                                </div>
+                                <div className="flex justify-between mt-1">
+                                  <span className="text-gray-500">Before: {Number(d.quantity_before || 0).toFixed(3)} {d.unit}</span>
+                                  <span className="text-red-600 font-semibold">−{Number(d.quantity_deducted || 0).toFixed(3)} {d.unit}</span>
+                                  <span className="text-green-700 font-semibold">After: {Number(d.quantity_after || 0).toFixed(3)} {d.unit}</span>
+                                </div>
+                                <p className="text-gray-500 mt-1">{d.cashier_name || '—'} • {d.deduction_reason || d.parent_product || 'Direct sale'}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            {/* Desktop Table */}
+            <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 text-xs uppercase text-gray-500">
                 <tr>

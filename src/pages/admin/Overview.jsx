@@ -221,45 +221,81 @@ export default function Overview() {
             <p className="text-gray-500">No sales yet</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Date & Time</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Items</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Payment</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Total</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">COGS</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Profit</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(data.recentSales || []).map((sale) => {
-                  if (!sale) return null;
-                  const cogs = sale.cogs ?? sale.total_cost ?? 0;
-                  const profit = sale.profit ?? sale.gross_profit ?? (sale.total || 0) - cogs;
-                  return (
-                    <tr key={sale.id || Math.random()} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3 text-sm">{sale.createdAt ? new Date(sale.createdAt).toLocaleString() : 'N/A'}</td>
-                      <td className="px-4 py-3 text-sm">{Array.isArray(sale.items) ? sale.items.length : 0} items</td>
-                      <td className="px-4 py-3 text-sm">
-                        <span className="badge badge-success">{sale.paymentMethod || 'N/A'}</span>
-                      </td>
-                      <td className="px-4 py-3 text-sm font-semibold text-green-600">
-                        KSH {sale.total?.toLocaleString() || 0}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-orange-600">
-                        KSH {cogs?.toLocaleString() || 0}
-                      </td>
-                      <td className="px-4 py-3 text-sm font-semibold text-blue-600">
-                        KSH {profit?.toLocaleString() || 0}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <>
+            {/* Mobile cards */}
+            <div className="md:hidden space-y-3">
+              {(data.recentSales || []).map((sale) => {
+                if (!sale) return null;
+                const cogs = sale.cogs ?? sale.total_cost ?? 0;
+                const profit = sale.profit ?? sale.gross_profit ?? (sale.total || 0) - cogs;
+                return (
+                  <div key={sale.id || Math.random()} className="card p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-900">
+                        {sale.createdAt ? new Date(sale.createdAt).toLocaleString() : 'N/A'}
+                      </span>
+                      <span className="badge badge-success text-xs">{sale.paymentMethod || 'N/A'}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">{Array.isArray(sale.items) ? sale.items.length : 0} items</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-100">
+                      <span className="text-gray-600">Total</span>
+                      <span className="font-semibold text-green-600">KSH {sale.total?.toLocaleString() || 0}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">COGS</span>
+                      <span className="text-orange-600">KSH {cogs?.toLocaleString() || 0}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Profit</span>
+                      <span className="font-semibold text-blue-600">KSH {profit?.toLocaleString() || 0}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {/* Desktop table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Date & Time</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Items</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Payment</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Total</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">COGS</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Profit</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(data.recentSales || []).map((sale) => {
+                    if (!sale) return null;
+                    const cogs = sale.cogs ?? sale.total_cost ?? 0;
+                    const profit = sale.profit ?? sale.gross_profit ?? (sale.total || 0) - cogs;
+                    return (
+                      <tr key={sale.id || Math.random()} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-3 text-sm">{sale.createdAt ? new Date(sale.createdAt).toLocaleString() : 'N/A'}</td>
+                        <td className="px-4 py-3 text-sm">{Array.isArray(sale.items) ? sale.items.length : 0} items</td>
+                        <td className="px-4 py-3 text-sm">
+                          <span className="badge badge-success">{sale.paymentMethod || 'N/A'}</span>
+                        </td>
+                        <td className="px-4 py-3 text-sm font-semibold text-green-600">
+                          KSH {sale.total?.toLocaleString() || 0}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-orange-600">
+                          KSH {cogs?.toLocaleString() || 0}
+                        </td>
+                        <td className="px-4 py-3 text-sm font-semibold text-blue-600">
+                          KSH {profit?.toLocaleString() || 0}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
       {/* AI Sales Forecast Section */}

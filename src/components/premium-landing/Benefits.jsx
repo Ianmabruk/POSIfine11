@@ -73,7 +73,7 @@ function TiltCard({ children, className = "" }) {
 
 export default function Benefits() {
   return (
-    <section id="benefits" className="relative py-24 bg-cream-50 overflow-hidden">
+    <section id="benefits" className="relative py-16 sm:py-24 bg-cream-50 overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-sage-100/40 via-transparent to-accent-50/30 pointer-events-none" />
       <div className="section-container relative z-10">
         <motion.div
@@ -109,7 +109,7 @@ export default function Benefits() {
                 transition={{ duration: 0.5, delay: index * 0.1 }}
               >
                 <TiltCard>
-                  <div className="bg-white rounded-3xl border border-cream-200 p-8 h-full tilt-card cursor-pointer transition-all duration-300 hover:shadow-xl hover:shadow-cream-300/50">
+                  <div className="bg-white rounded-3xl border border-cream-200 p-6 sm:p-8 h-full tilt-card cursor-pointer transition-all duration-300 hover:shadow-xl hover:shadow-cream-300/50">
                     <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${benefit.gradient} flex items-center justify-center mb-6 shadow-lg`}>
                       <Icon className="w-7 h-7 text-white" />
                     </div>

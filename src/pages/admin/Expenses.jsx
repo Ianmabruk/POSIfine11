@@ -18,6 +18,7 @@ export default function Expenses() {
   });
   const [notification, setNotification] = useState(null);
   const [activeTab, setActiveTab] = useState('all'); // 'all' | 'ingredients'
+  const [exportOpen, setExportOpen] = useState(false);
 
   useEffect(() => {
     loadExpenses();
@@ -143,19 +144,25 @@ export default function Expenses() {
           <p className="text-sm text-gray-600 mt-1">Track manual expenses and automatic ingredient deductions from sales</p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="relative group">
-            <button className="btn-secondary flex items-center gap-2">
+          <div className="relative">
+            <button 
+              onClick={() => setExportOpen(!exportOpen)}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+            >
               <Download className="w-4 h-4" />
               Export
             </button>
-            <div className="hidden group-hover:block absolute right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[200px]">
-              <button
-                onClick={() => exportExpensesPDF(expenses)}
-                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 rounded-lg"
-              >
-                Export PDF
-              </button>
-            </div>
+            {exportOpen && (
+              <div className="absolute right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[200px]">
+                <button
+                  onClick={() => { exportExpensesPDF(expenses); setExportOpen(false); }}
+                  className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 rounded-lg"
+                >
+                  Export PDF
+                </button>
+              </div>
+            )}
+          </div>
           </div>
           <button 
             onClick={() => setShowAddModal(true)}
@@ -235,7 +242,46 @@ export default function Expenses() {
           {activeTab === 'ingredients' ? 'Ingredient Expense History' : 'Expense History'}
         </h3>
         <div className="overflow-x-auto">
-          <table className="w-full">
+          {/* Mobile Cards */}
+          <div className="md:hidden space-y-3">
+            {displayedExpenses.length === 0 && (
+              <div className="text-center py-8 text-gray-400">No expenses found</div>
+            )}
+            {displayedExpenses.map((expense) => {
+              const createdAt = expense.createdAt || expense.created_at || expense.date || expense.timestamp;
+              const expenseType = expenseTypeBadge(expense);
+              return (
+                <div key={expense.id} className="border border-gray-200 rounded-lg p-4 space-y-2 bg-white">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-sm text-gray-900">{expense.name || expense.description || 'Expense'}</span>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${expenseType.cls}`}>{expenseType.label}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <span className="text-xs text-gray-500 block">Date</span>
+                      <span className="font-medium">{createdAt ? new Date(createdAt).toLocaleDateString() : 'N/A'}</span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-gray-500 block">Category</span>
+                      <span className="badge badge-warning text-xs">{expense.category}</span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-gray-500 block">Qty Used</span>
+                      <span className="font-medium">
+                        {expense.quantity && expense.quantity !== 1 ? `${Number(expense.quantity).toLocaleString(undefined, { maximumFractionDigits: 4 })} ${expense.unit || ''}` : '-'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-gray-500 block">Amount</span>
+                      <span className="font-semibold text-red-600">KSH {expense.amount?.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {/* Desktop Table */}
+          <table className="w-full hidden md:table">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Date</th>
