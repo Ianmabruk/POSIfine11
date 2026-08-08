@@ -97,7 +97,10 @@ function DashboardRouter() {
   if (!user || !user.active) return <Navigate to="/choose-subscription" />;
   
   // Route based on ROLE
-  if (user.role === 'admin' || user.role === 'main_admin') {
+  if (user.role === 'main_admin') {
+    return <Navigate to="/main.admin" />;
+  }
+  if (user.role === 'admin') {
     return <Navigate to="/admin" />;
   }
   

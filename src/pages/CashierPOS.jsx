@@ -56,6 +56,13 @@ export default function CashierPOS() {
   const [saleToast, setSaleToast] = useState(null); // { type: 'success'|'error'|'warning', message, id }
   const toastTimerRef = useRef(null);
   const productRefreshTimeoutRef = useRef(null);
+  const [showMpesaModal, setShowMpesaModal] = useState(false);
+  const [mpesaPhone, setMpesaPhone] = useState('');
+  const [mpesaLoading, setMpesaLoading] = useState(false);
+  const [mpesaPaymentStatus, setMpesaPaymentStatus] = useState(null);
+  const [mpesaPolling, setMpesaPolling] = useState(false);
+  const [pendingMpesaSaleId, setPendingMpesaSaleId] = useState(null);
+  const mpesaPollingRef = useRef(null);
 
   // Show a non-blocking toast notification (auto-dismisses after `ms` ms)
   const showToast = useCallback((type, message, ms = 3500) => {
@@ -627,7 +634,169 @@ export default function CashierPOS() {
     setCart(prev => prev.filter(item => item.id !== id));
   }, []);
 
-  const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const normalizePhone = (phone) => {
+    const cleaned = (phone || '').replace(/\s+/g, '').replace(/-/g, '');
+    if (!cleaned) return '';
+    if (cleaned.startsWith('+')) return cleaned.slice(1);
+    if (cleaned.startsWith('254')) return cleaned;
+    if (cleaned.startsWith('0') && cleaned.length === 10) return '254' + cleaned.slice(1);
+    return cleaned;
+  };
+
+  const initiateMpesaPayment = useCallback(async (saleId, phone) => {
+    const token = localStorage.getItem('token');
+    const resp = await fetch(`${BASE_API_URL}/payments/mpesa/stk-push`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ saleId, phone })
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || 'Failed to initiate M-Pesa payment');
+    return data;
+  }, []);
+
+  const pollMpesaStatus = useCallback(async (paymentId) => {
+    const token = localStorage.getItem('token');
+    const resp = await fetch(`${BASE_API_URL}/payments/${paymentId}/status`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!resp.ok) throw new Error('Failed to fetch payment status');
+    return await resp.json();
+  }, []);
+
+  const startMpesaPolling = useCallback((paymentId) => {
+    setMpesaPolling(true);
+    let attempts = 0;
+    const maxAttempts = 60;
+    const interval = setInterval(async () => {
+      attempts += 1;
+      try {
+        const status = await pollMpesaStatus(paymentId);
+        setMpesaPaymentStatus(status);
+        if (status.status === 'success') {
+          clearInterval(interval);
+          setMpesaPolling(false);
+          setMpesaLoading(false);
+          showToast('success', `M-Pesa payment confirmed! KSh ${status.amount?.toLocaleString()}`, 5000);
+          setTimeout(() => {
+            setShowMpesaModal(false);
+            setMpesaPaymentStatus(null);
+            setPendingMpesaSaleId(null);
+            setMpesaPhone('');
+          }, 3000);
+        } else if (status.status === 'failed' || status.status === 'cancelled' || status.status === 'expired') {
+          clearInterval(interval);
+          setMpesaPolling(false);
+          setMpesaLoading(false);
+          const reason = status.failure_reason || 'Payment was not completed.';
+          showToast('error', `M-Pesa ${status.status}: ${reason}`, 5000);
+        } else if (attempts >= maxAttempts) {
+          clearInterval(interval);
+          setMpesaPolling(false);
+          setMpesaLoading(false);
+          showToast('warning', 'Payment is taking longer than expected. Please check with customer.', 5000);
+        }
+      } catch (err) {
+        if (attempts >= maxAttempts) {
+          clearInterval(interval);
+          setMpesaPolling(false);
+          setMpesaLoading(false);
+        }
+      }
+    }, 3000);
+    mpesaPollingRef.current = interval;
+  }, [pollMpesaStatus, showToast]);
+
+  const handleSendMpesaPrompt = useCallback(async () => {
+    if (!mpesaPhone) {
+      alert('Please enter a valid phone number');
+      return;
+    }
+
+    setMpesaLoading(true);
+    setMpesaPaymentStatus({ status: 'pending' });
+
+    try {
+      const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const discountValue = selectedDiscount
+        ? (selectedDiscount.type === 'percentage' ? (subtotal * selectedDiscount.value / 100) : selectedDiscount.value)
+        : 0;
+      const TAX_RATE = 0.16;
+      let taxAmount = 0;
+      let finalTotal = 0;
+      if (taxType === 'inclusive') {
+        const afterDiscount = subtotal - discountValue;
+        taxAmount = Math.round(((afterDiscount / (1 + TAX_RATE)) * TAX_RATE) * 100) / 100;
+        finalTotal = Math.round(afterDiscount * 100) / 100;
+      } else {
+        const afterDiscount = subtotal - discountValue;
+        taxAmount = Math.round((afterDiscount * TAX_RATE) * 100) / 100;
+        finalTotal = Math.round((afterDiscount + taxAmount) * 100) / 100;
+      }
+
+      const cartItems = cart.map(item => ({
+        productId: item.id,
+        quantity: item.quantity,
+        unit: cartItemUnits[item.id] || item.unit || 'piece',
+        price: item.price,
+        name: item.name
+      }));
+
+      const token = localStorage.getItem('token');
+      const saleResp = await fetch(`${BASE_API_URL}/v2/sales/complete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          items: cartItems,
+          total: finalTotal,
+          discount: discountValue,
+          tax: taxAmount,
+          taxType: taxType,
+          paymentMethod: 'mpesa',
+          shiftId: currentTimeEntry?.id
+        })
+      });
+
+      const saleData = await saleResp.json();
+      if (!saleResp.ok || !saleData.success) {
+        throw new Error(saleData.error || 'Failed to create sale');
+      }
+
+      const createdSaleId = saleData.saleId;
+      setPendingMpesaSaleId(createdSaleId);
+
+      const stkResult = await initiateMpesaPayment(createdSaleId, normalizePhone(mpesaPhone));
+      if (stkResult.payment?.payment_id) {
+        startMpesaPolling(stkResult.payment.payment_id);
+      } else {
+        setMpesaLoading(false);
+        setMpesaPaymentStatus({ status: 'failed', failure_reason: stkResult.error || 'Failed to send M-Pesa prompt' });
+        showToast('error', stkResult.error || 'Failed to send M-Pesa prompt', 5000);
+      }
+    } catch (err) {
+      setMpesaLoading(false);
+      setMpesaPaymentStatus(null);
+      showToast('error', err.message || 'Failed to process M-Pesa payment', 5000);
+    }
+  }, [cart, cartItemUnits, currentTimeEntry?.id, discountValue, finalTotal, initiateMpesaPayment, mpesaPhone, normalizePhone, selectedDiscount, showToast, startMpesaPolling, taxAmount, taxType]);
+
+  const handleCloseMpesaModal = useCallback(() => {
+    if (mpesaPollingRef.current) clearInterval(mpesaPollingRef.current);
+    setShowMpesaModal(false);
+    setMpesaLoading(false);
+    setMpesaPolling(false);
+    setMpesaPaymentStatus(null);
+    setPendingMpesaSaleId(null);
+    setMpesaPhone('');
+    setCheckoutLoading(false);
+    setIsProcessingSale(false);
+  }, []);
 
   const handleCheckout = useCallback(async () => {
     console.log('🛒 [Checkout] Starting optimized checkout flow');
@@ -649,6 +818,14 @@ export default function CashierPOS() {
       if (proceed) {
         await handleClockIn();
       }
+    }
+    
+    // M-Pesa flow: show phone modal first, do NOT create sale yet
+    if (paymentMethod === 'mpesa') {
+      setShowMpesaModal(true);
+      setCheckoutLoading(false);
+      setIsProcessingSale(false);
+      return;
     }
     
     setCheckoutLoading(true);
@@ -1438,6 +1615,140 @@ export default function CashierPOS() {
               >
                 {checkoutLoading ? '⏳ Processing...' : 'Checkout'}
               </button>
+
+              {showMpesaModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+                    <div className="flex justify-between items-center mb-6">
+                      <h3 className="text-xl font-bold text-gray-900">M-Pesa Payment</h3>
+                      {!mpesaLoading && !mpesaPolling && (
+                        <button onClick={handleCloseMpesaModal} className="text-gray-400 hover:text-gray-600">
+                          <X className="w-6 h-6" />
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="bg-gray-50 rounded-xl p-4">
+                        <p className="text-sm text-gray-500 mb-1">Amount</p>
+                        <p className="text-2xl font-bold text-gray-900">
+                          KSH {total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
+                      </div>
+
+                      {!pendingMpesaSaleId ? (
+                        <div>
+                          <label className="block text-sm font-semibold mb-2">Customer Phone Number</label>
+                          <input
+                            type="tel"
+                            value={mpesaPhone}
+                            onChange={(e) => setMpesaPhone(e.target.value)}
+                            placeholder="0712 345 678"
+                            className="input h-12 text-base touch-manipulation"
+                            disabled={mpesaLoading}
+                          />
+                          <p className="text-xs text-gray-500 mt-1">Enter the customer's M-Pesa registered number</p>
+                        </div>
+                      ) : (
+                        <div>
+                          <label className="block text-sm font-semibold mb-2">Customer Phone Number</label>
+                          <input
+                            type="text"
+                            value={mpesaPhone}
+                            disabled
+                            className="input h-12 text-base bg-gray-100"
+                          />
+                        </div>
+                      )}
+
+                      {mpesaPaymentStatus?.status === 'pending' && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                            <p className="font-semibold text-blue-900">Payment prompt sent</p>
+                          </div>
+                          <p className="text-sm text-blue-700">
+                            A payment request has been sent to:<br />
+                            <span className="font-mono font-bold">{normalizePhone(mpesaPhone)}</span>
+                          </p>
+                          <p className="text-sm text-blue-600 mt-2">
+                            Please ask the customer to check their phone and enter their M-Pesa PIN.
+                          </p>
+                          {mpesaPolling && (
+                            <p className="text-xs text-blue-500 mt-2">Waiting for payment confirmation...</p>
+                          )}
+                        </div>
+                      )}
+
+                      {mpesaPaymentStatus?.status === 'success' && (
+                        <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white font-bold">✓</div>
+                            <p className="font-semibold text-green-900">Payment Successful</p>
+                          </div>
+                          <p className="text-sm text-green-700">M-Pesa payment confirmed</p>
+                          {mpesaPaymentStatus.provider_reference && (
+                            <p className="text-xs text-green-600 mt-1">Transaction: {mpesaPaymentStatus.provider_reference}</p>
+                          )}
+                        </div>
+                      )}
+
+                      {mpesaPaymentStatus?.status === 'failed' && (
+                        <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                          <p className="font-semibold text-red-900">Payment Failed</p>
+                          <p className="text-sm text-red-700">{mpesaPaymentStatus.failure_reason || 'The M-Pesa payment could not be completed.'}</p>
+                        </div>
+                      )}
+
+                      {mpesaPaymentStatus?.status === 'cancelled' && (
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                          <p className="font-semibold text-yellow-900">Payment Cancelled</p>
+                          <p className="text-sm text-yellow-700">The customer cancelled the M-Pesa payment.</p>
+                        </div>
+                      )}
+
+                      <div className="flex gap-3">
+                        {!pendingMpesaSaleId && !mpesaPaymentStatus?.status && (
+                          <button
+                            onClick={handleSendMpesaPrompt}
+                            disabled={!mpesaPhone || mpesaLoading}
+                            className="btn-primary flex-1 py-3 bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 disabled:opacity-50"
+                          >
+                            {mpesaLoading ? '⏳ Sending...' : 'SEND PAYMENT PROMPT'}
+                          </button>
+                        )}
+
+                        {(mpesaPaymentStatus?.status === 'failed' || mpesaPaymentStatus?.status === 'cancelled') && (
+                          <>
+                            <button
+                              onClick={handleSendMpesaPrompt}
+                              disabled={!mpesaPhone || mpesaLoading}
+                              className="btn-primary flex-1 py-3 bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 disabled:opacity-50"
+                            >
+                              {mpesaLoading ? '⏳ Sending...' : 'TRY AGAIN'}
+                            </button>
+                            <button
+                              onClick={handleCloseMpesaModal}
+                              className="btn-secondary flex-1 py-3"
+                            >
+                              CHANGE PAYMENT METHOD
+                            </button>
+                          </>
+                        )}
+
+                        {mpesaPaymentStatus?.status === 'success' && (
+                          <button
+                            onClick={handleCloseMpesaModal}
+                            className="btn-primary flex-1 py-3 bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700"
+                          >
+                            COMPLETE SALE
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

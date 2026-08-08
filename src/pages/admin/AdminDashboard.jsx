@@ -61,19 +61,11 @@ export default function AdminDashboard() {
         const userData = JSON.parse(storedUser);
         let needsUpdate = false;
         
-        // If user has ultra plan or admin role, ensure they stay here
-        if (userData.plan === 'ultra' || userData.role === 'admin') {
-          // Ensure active flag is set
+        if (userData.plan === 'ultra' || userData.role === 'admin' || userData.role === 'main_admin') {
           if (!userData.active) {
             userData.active = true;
             needsUpdate = true;
           }
-          // Ensure role matches plan
-          if (userData.plan === 'ultra' && userData.role !== 'admin') {
-            userData.role = 'admin';
-            needsUpdate = true;
-          }
-          // Ensure price is set
           if (userData.plan === 'ultra' && (!userData.price || userData.price !== 1600)) {
             userData.price = 1600;
             needsUpdate = true;
@@ -81,7 +73,6 @@ export default function AdminDashboard() {
           
           if (needsUpdate) {
             localStorage.setItem('user', JSON.stringify(userData));
-            // Force context to update by dispatching storage event
             window.dispatchEvent(new Event('storage'));
             window.dispatchEvent(new Event('localStorageUpdated'));
           }
