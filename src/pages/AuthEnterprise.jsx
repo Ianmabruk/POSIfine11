@@ -338,21 +338,21 @@ export default function AuthEnterprise() {
                       <p className="text-sm text-slate-400">{modeSubtitle[mode] || ""}</p>
                     </div>
 
-                    {mode === "signup" && (
-                      <div>
-                        <label className="block text-sm font-medium text-slate-300 mb-1.5">Full Name</label>
-                        <div className="relative">
-                          <User className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${focusedField === "name" ? "text-primary-400" : "text-slate-500"}`} />
-                          <input type="text" placeholder="John Doe" className="input bg-white/5 border-white/10 text-white placeholder:text-slate-500 focus:border-primary-500 focus:ring-primary-500/20" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} onFocus={() => setFocusedField("name")} onBlur={() => setFocusedField(null)} required />
+                      {mode === "signup" && (
+                        <div>
+                          <label className="block text-sm font-medium text-slate-300 mb-1.5">Full Name</label>
+                          <div className="relative">
+                            <User className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${focusedField === "name" ? "text-primary-400" : "text-slate-500"}`} />
+                            <input type="text" placeholder="John Doe" className="input focus:border-primary-500 focus:ring-primary-500/20" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} onFocus={() => setFocusedField("name")} onBlur={() => setFocusedField(null)} required />
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
                     <div>
                       <label className="block text-sm font-medium text-slate-300 mb-1.5">Email Address</label>
                       <div className="relative">
                         <Mail className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${focusedField === "email" ? "text-primary-400" : "text-slate-500"}`} />
-                        <input type="email" placeholder="you@company.com" className="input bg-white/5 border-white/10 text-white placeholder:text-slate-500 focus:border-primary-500 focus:ring-primary-500/20" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} onFocus={() => setFocusedField("email")} onBlur={() => setFocusedField(null)} required />
+                        <input type="email" placeholder="you@company.com" className="input focus:border-primary-500 focus:ring-primary-500/20" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} onFocus={() => setFocusedField("email")} onBlur={() => setFocusedField(null)} required />
                       </div>
                     </div>
 
@@ -376,7 +376,7 @@ export default function AuthEnterprise() {
                             <label className="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
                             <div className="relative">
                               <Lock className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${focusedField === "password" ? "text-primary-400" : "text-slate-500"}`} />
-                              <input type={showPassword ? "text" : "password"} placeholder="Enter your password" className="input pl-10 pr-10 bg-white/5 border-white/10 text-white placeholder:text-slate-500 focus:border-primary-500 focus:ring-primary-500/20" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} onFocus={() => setFocusedField("password")} onBlur={() => setFocusedField(null)} required />
+                              <input type={showPassword ? "text" : "password"} placeholder="Enter your password" className="input pl-10 pr-10 focus:border-primary-500 focus:ring-primary-500/20" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} onFocus={() => setFocusedField("password")} onBlur={() => setFocusedField(null)} required />
                               <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
                                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                               </button>
@@ -387,7 +387,7 @@ export default function AuthEnterprise() {
                         {mode === "login" && loginMethod === "pin" && (
                           <div>
                             <label className="block text-sm font-medium text-slate-300 mb-1.5">4-digit PIN</label>
-                            <input type="text" inputMode="numeric" placeholder="••••" className="input text-center text-2xl tracking-[0.5em] font-mono bg-white/5 border-white/10 text-white placeholder:text-slate-500 focus:border-primary-500 focus:ring-primary-500/20" value={formData.pin} onChange={(e) => setFormData({ ...formData, pin: e.target.value.replace(/\D/g, "").slice(0, 4) })} maxLength={4} required />
+                            <input type="text" inputMode="numeric" placeholder="••••" className="input text-center text-2xl tracking-[0.5em] font-mono focus:border-primary-500 focus:ring-primary-500/20" value={formData.pin} onChange={(e) => setFormData({ ...formData, pin: e.target.value.replace(/\D/g, "").slice(0, 4) })} maxLength={4} required />
                           </div>
                         )}
 
@@ -396,7 +396,7 @@ export default function AuthEnterprise() {
                             <label className="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
                             <div className="relative">
                               <Lock className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${focusedField === "password" ? "text-primary-400" : "text-slate-500"}`} />
-                              <input type={showPassword ? "text" : "password"} placeholder={mode === "signup" ? "Create a strong password" : "New password"} className="input pl-10 pr-10 bg-white/5 border-white/10 text-white placeholder:text-slate-500 focus:border-primary-500 focus:ring-primary-500/20" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} onFocus={() => setFocusedField("password")} onBlur={() => setFocusedField(null)} required />
+                              <input type={showPassword ? "text" : "password"} placeholder={mode === "signup" ? "Create a strong password" : "New password"} className="input pl-10 pr-10 focus:border-primary-500 focus:ring-primary-500/20" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} onFocus={() => setFocusedField("password")} onBlur={() => setFocusedField(null)} required />
                               <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
                                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                               </button>
@@ -409,7 +409,7 @@ export default function AuthEnterprise() {
                             <label className="block text-sm font-medium text-slate-300 mb-1.5">Confirm Password</label>
                             <div className="relative">
                               <Lock className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${focusedField === "confirmPassword" ? "text-primary-400" : "text-slate-500"}`} />
-                              <input type={showPassword ? "text" : "password"} placeholder="Confirm your password" className="input pl-10 bg-white/5 border-white/10 text-white placeholder:text-slate-500 focus:border-primary-500 focus:ring-primary-500/20" value={formData.confirmPassword} onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })} onFocus={() => setFocusedField("confirmPassword")} onBlur={() => setFocusedField(null)} required />
+                              <input type={showPassword ? "text" : "password"} placeholder="Confirm your password" className="input pl-10 focus:border-primary-500 focus:ring-primary-500/20" value={formData.confirmPassword} onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })} onFocus={() => setFocusedField("confirmPassword")} onBlur={() => setFocusedField(null)} required />
                             </div>
                           </div>
                         )}
@@ -419,7 +419,7 @@ export default function AuthEnterprise() {
                             <label className="block text-sm font-medium text-slate-300 mb-1.5">Authenticator Code</label>
                             <div className="relative">
                               <Smartphone className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${focusedField === "totpCode" ? "text-primary-400" : "text-slate-500"}`} />
-                              <input type="text" inputMode="numeric" placeholder="000000" className="input pl-10 text-center text-2xl tracking-[0.3em] font-mono bg-white/5 border-white/10 text-white placeholder:text-slate-500 focus:border-primary-500 focus:ring-primary-500/20" value={formData.totpCode} onChange={(e) => setFormData({ ...formData, totpCode: e.target.value.replace(/\D/g, "").slice(0, 6) })} maxLength={6} onFocus={() => setFocusedField("totpCode")} onBlur={() => setFocusedField(null)} required />
+                              <input type="text" inputMode="numeric" placeholder="000000" className="input pl-10 text-center text-2xl tracking-[0.3em] font-mono focus:border-primary-500 focus:ring-primary-500/20" value={formData.totpCode} onChange={(e) => setFormData({ ...formData, totpCode: e.target.value.replace(/\D/g, "").slice(0, 6) })} maxLength={6} onFocus={() => setFocusedField("totpCode")} onBlur={() => setFocusedField(null)} required />
                             </div>
                           </div>
                         )}

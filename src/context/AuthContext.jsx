@@ -509,8 +509,8 @@ export const AuthProvider = ({ children }) => {
   const canEditStock = useCallback(() => user && (user.role === 'admin' || user.role === 'main_admin' || user.role === 'cashier'), [user]);
   const canManageUsers = useCallback(() => user && (user.role === 'admin' || user.role === 'main_admin'), [user]);
   const canViewAnalytics = useCallback(() => user && (user.role === 'admin' || user.role === 'main_admin'), [user]);
-  const isRealTimeProductSyncEnabled = () => true;
-  const isCashierUserManagementEnabled = () => true;
+  const isRealTimeProductSyncEnabled = useCallback(() => true, []);
+  const isCashierUserManagementEnabled = useCallback(() => true, []);
 
   // Show locked account screen if user is locked
   if (user?.locked) {
@@ -539,7 +539,7 @@ export const AuthProvider = ({ children }) => {
     canViewAnalytics,
     isRealTimeProductSyncEnabled,
     isCashierUserManagementEnabled
-  }), [user, loading, isInitialized, appSettings, login, signup, updateUser, logout, isAuthenticated, hasRole, isOwner, isAdmin, isCashier, getDashboardUrl, isUltraPackage, isBasicPackage, canEditStock, canManageUsers, canViewAnalytics]);
+  }), [user, loading, isInitialized, appSettings, isAuthenticated, hasRole, isOwner, isAdmin, isCashier, getDashboardUrl, isUltraPackage, isBasicPackage, canEditStock, canManageUsers, canViewAnalytics]);
 
   return (
     <AuthContext.Provider value={contextValue}>

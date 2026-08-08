@@ -8,7 +8,6 @@ import {
   Users, Settings, LogOut, Menu, X, ExternalLink, Clock, Bell, DollarSign, Tag, CreditCard, Truck, MessageSquare, BarChart3
 } from 'lucide-react';
 import ReminderModal from '../../components/ReminderModal';
-import { settings as settingsApi } from '../../services/api';
 
 const Overview = lazy(() => import('./Overview'));
 const Analytics = lazy(() => import('./Analytics'));
@@ -54,7 +53,6 @@ export default function AdminDashboard() {
   }, [ctxSettings]);
 
   useEffect(() => {
-    // CRITICAL: Ensure user data is correct and prevent unnecessary redirects
     const ensureUserData = () => {
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
@@ -80,11 +78,9 @@ export default function AdminDashboard() {
       }
     };
     
-    // Run immediately and also after a short delay to catch any async updates
     ensureUserData();
-    setTimeout(ensureUserData, 100);
     
-    // Show reminder modal once per session (not every mount)
+    // Show reminder modal once per session
     const reminderAlreadyShown = sessionStorage.getItem('adminReminderShown');
     let timer;
     if (!reminderAlreadyShown) {
@@ -93,15 +89,12 @@ export default function AdminDashboard() {
         sessionStorage.setItem('adminReminderShown', 'true');
       }, 1500);
     }
-    
-    loadSettings();
 
     const handleSettingsChanged = (event) => {
       if (event?.detail) {
         setAppSettings((prev) => ({ ...prev, ...event.detail }));
         return;
       }
-      loadSettings();
     };
 
     window.addEventListener('settingsChanged', handleSettingsChanged);
@@ -111,16 +104,6 @@ export default function AdminDashboard() {
       window.removeEventListener('settingsChanged', handleSettingsChanged);
     };
   }, []);
-
-  const loadSettings = async () => {
-    try {
-      const data = await settingsApi.get();
-      setAppSettings(data);
-    } catch (error) {
-      console.error('Failed to load settings:', error);
-    }
-  };
-
 
   const handleClearData = async () => {
     if (window.confirm('Are you sure you want to clear all sales and expenses data? This action cannot be undone.')) {
@@ -385,7 +368,19 @@ export default function AdminDashboard() {
             </div>
           )}
           <Suspense fallback={
-            <div className="p-6 text-sm text-gray-500">Loading dashboard section...</div>
+            <div className="p-6 space-y-6">
+              <div className="flex gap-4 overflow-x-auto pb-2">
+                {[1,2,3,4].map(i => (
+                  <div key={i} className="min-w-[180px] sm:min-w-[200px] h-32 bg-gray-200 rounded-2xl animate-pulse"></div>
+                ))}
+              </div>
+              <div className="flex gap-4 overflow-x-auto pb-2">
+                {[1,2,3,4].map(i => (
+                  <div key={i} className="min-w-[160px] sm:min-w-[180px] h-24 bg-gray-100 rounded-2xl animate-pulse"></div>
+                ))}
+              </div>
+              <div className="h-96 bg-gray-100 rounded-3xl animate-pulse"></div>
+            </div>
           }>
             <Routes>
               <Route path="/analytics" element={<Analytics />} />

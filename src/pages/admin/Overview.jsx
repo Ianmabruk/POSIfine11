@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { stats, sales as salesApi } from '../../services/api';
 import { DollarSign, TrendingUp, TrendingDown, ShoppingBag, Package, AlertCircle, BrainCircuit, Sparkles } from 'lucide-react';
-import AICharts from '../../components/AICharts';
+
+const AICharts = lazy(() => import('../../components/AICharts'));
 
 
 export default function Overview() {
@@ -275,7 +276,13 @@ export default function Overview() {
             <p>Recent sales, cost of goods, and margin trend.</p>
           </div>
         </div>
-        <AICharts periods={4} />
+        <Suspense fallback={
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sky-600"></div>
+          </div>
+        }>
+          <AICharts periods={4} />
+        </Suspense>
       </div>    </div>
   );
 }
