@@ -15,7 +15,7 @@ export default function Overview() {
 
   useEffect(() => {
     loadData();
-    const intervalId = window.setInterval(loadData, 15000);
+    const intervalId = window.setInterval(loadData, 30000);
     const handleFocus = () => loadData();
     window.addEventListener('focus', handleFocus);
 
@@ -28,12 +28,12 @@ export default function Overview() {
   const loadData = async () => {
     try {
       setError(null);
+      // Fetch stats and recent sales (limit=20) concurrently
       const [statsData, salesData] = await Promise.all([
         stats.get(),
-        salesApi.getAll()
+        salesApi.getAll({ limit: 20, sort: '-created_at' })
       ]);
       
-      // Ensure we have valid data structures with comprehensive defaults
       const validStats = {
         totalSales: statsData?.totalSales || 0,
         totalExpenses: statsData?.totalExpenses || 0,
@@ -46,17 +46,15 @@ export default function Overview() {
         productCount: statsData?.productCount ?? statsData?.productsCount ?? 0
       };
       
-      // Ensure sales data is always an array
       const validSales = Array.isArray(salesData) ? salesData : [];
       
       setData({ 
         stats: validStats, 
-        recentSales: validSales.slice(-10).reverse() 
+        recentSales: validSales.slice(0, 10)
       });
     } catch (error) {
       console.error('Failed to load data:', error);
       setError(error.message);
-      // Set empty data on error
       setData({ 
         stats: { totalSales: 0, totalExpenses: 0, profit: 0, grossProfit: 0, netProfit: 0, totalCOGS: 0, dailySales: 0, weeklySales: 0, productCount: 0 }, 
         recentSales: [] 
@@ -69,8 +67,18 @@ export default function Overview() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="p-6 space-y-6">
+        <div className="flex gap-4 overflow-x-auto pb-2">
+          {[1,2,3,4].map(i => (
+            <div key={i} className="min-w-[180px] sm:min-w-[200px] h-32 bg-gray-200 rounded-2xl animate-pulse flex-shrink-0"></div>
+          ))}
+        </div>
+        <div className="flex gap-4 overflow-x-auto pb-2">
+          {[1,2,3,4].map(i => (
+            <div key={i} className="min-w-[160px] sm:min-w-[180px] h-24 bg-gray-100 rounded-2xl animate-pulse flex-shrink-0"></div>
+          ))}
+        </div>
+        <div className="h-64 bg-gray-100 rounded-3xl animate-pulse"></div>
       </div>
     );
   }

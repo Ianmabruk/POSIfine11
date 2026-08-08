@@ -1,0 +1,1 @@
+import{j as o,N as s}from"./vendor-CrWktnVK.js";import"./charts-BH8G8R1v.js";const e="ww_session";function n(){try{const t=localStorage.getItem(e);return t?JSON.parse(t):null}catch{return null}}function c(){localStorage.removeItem(e)}function u({children:t}){return n()?t:o.jsx(s,{to:"/windatawind",replace:!0})}export{c as clearWWSession,u as default,n as getWWSession};

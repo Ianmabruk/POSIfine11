@@ -143,91 +143,43 @@ export const AuthProvider = ({ children }) => {
       const token = localStorage.getItem('token');
       const refreshToken = localStorage.getItem('refreshToken');
       const savedUser = localStorage.getItem('user');
-      
-      if (token) {
-        // First verify with backend using a direct fetch so that the
-        // global API layer's 401 redirect behavior doesn't navigate away
-        // from public pages (like the landing page) during initialization.
+
+      if (!token) {
+        if (savedUser) {
+          localStorage.removeItem('user');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('csrfToken');
+        }
+        return;
+      }
+
+      // Immediately restore cached user so the UI is usable while we verify
+      if (savedUser) {
         try {
-          const resp = await fetch(`${BASE_API_URL}/auth/me`, {
+          setUser(normalizeUser(JSON.parse(savedUser)));
+        } catch (e) { /* ignore */ }
+      }
+
+      try {
+        // Run /auth/me and /settings in parallel to cut serial latency in half
+        const [meResp, settingsResp] = await Promise.allSettled([
+          fetch(`${BASE_API_URL}/auth/me`, {
             credentials: 'include',
             headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
-          });
-          if (resp.ok) {
-            const data = await resp.json();
-            const normalized = normalizeUser(data);
-            setUser(normalized);
-            localStorage.setItem('user', JSON.stringify(normalized));
-            loadAppSettings();
-          } else if (resp.status === 401) {
-            // Actual 401 — token is explicitly rejected by the server
-            // Try refresh before giving up
-            localStorage.removeItem('token');
-            if (refreshToken) {
-              try {
-                const refreshResp = await fetch(`${BASE_API_URL}/auth/refresh`, {
-                  method: 'POST',
-                  credentials: 'include',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ refreshToken })
-                });
-                if (refreshResp.ok) {
-                  const refreshed = await refreshResp.json();
-                  if (refreshed?.token && refreshed?.user) {
-                    const normalized = normalizeUser(refreshed.user);
-                    localStorage.setItem('token', refreshed.token);
-                    if (refreshed.refreshToken) {
-                      localStorage.setItem('refreshToken', refreshed.refreshToken);
-                    }
-                    if (refreshed.csrfToken) {
-                      localStorage.setItem('csrfToken', refreshed.csrfToken);
-                    }
-                    localStorage.setItem('user', JSON.stringify(normalized));
-                    setUser(normalized);
-                    loadAppSettings();
-                    return; // success via refresh
-                  }
-                } else {
-                  localStorage.removeItem('refreshToken');
-                  localStorage.removeItem('csrfToken');
-                }
-              } catch (refreshErr) {
-                console.warn('Refresh failed:', refreshErr);
-                localStorage.removeItem('refreshToken');
-                localStorage.removeItem('csrfToken');
-              }
-            }
-            // Only remove user data when server explicitly rejects AND refresh also failed
-            localStorage.removeItem('user');
-          } else {
-            // Server error (5xx) or network issue — keep the cached user data so
-            // data is not lost. Restore from localStorage so dashboard still works.
-            if (savedUser) {
-              try {
-                const parsed = JSON.parse(savedUser);
-                const normalized = normalizeUser(parsed);
-                setUser(normalized);
-                console.warn('Backend unreachable during auth init — using cached user data');
-              } catch (e) {
-                console.warn('Failed to parse cached user:', e);
-              }
-            }
-          }
-        } catch (err) {
-          // Network error (offline, CORS, connection refused) — DO NOT clear user data
-          // Restore from localStorage so the user's dashboard remains usable offline/on slow networks
-          console.warn('Auth check failed (network error):', err.message);
-          if (savedUser) {
-            try {
-              const parsed = JSON.parse(savedUser);
-              const normalized = normalizeUser(parsed);
-              setUser(normalized);
-              console.info('Restored user from localStorage after network error');
-            } catch (parseErr) {
-              console.warn('Failed to parse cached user during network error recovery:', parseErr);
-            }
-          }
-          // Try refresh as a last resort if we couldn't reach the server
+          }),
+          fetch(`${BASE_API_URL}/settings`, {
+            credentials: 'include',
+            headers: { Authorization: `Bearer ${token}` }
+          })
+        ]);
+
+        if (meResp.status === 'fulfilled' && meResp.value.ok) {
+          const data = await meResp.value.json();
+          const normalized = normalizeUser(data);
+          setUser(normalized);
+          localStorage.setItem('user', JSON.stringify(normalized));
+        } else if (meResp.status === 'fulfilled' && meResp.value.status === 401) {
+          localStorage.removeItem('token');
           if (refreshToken) {
             try {
               const refreshResp = await fetch(`${BASE_API_URL}/auth/refresh`, {
@@ -241,54 +193,58 @@ export const AuthProvider = ({ children }) => {
                 if (refreshed?.token && refreshed?.user) {
                   const normalized = normalizeUser(refreshed.user);
                   localStorage.setItem('token', refreshed.token);
-                  if (refreshed.refreshToken) {
-                    localStorage.setItem('refreshToken', refreshed.refreshToken);
-                  }
-                  if (refreshed.csrfToken) {
-                    localStorage.setItem('csrfToken', refreshed.csrfToken);
-                  }
+                  if (refreshed.refreshToken) localStorage.setItem('refreshToken', refreshed.refreshToken);
+                  if (refreshed.csrfToken) localStorage.setItem('csrfToken', refreshed.csrfToken);
                   localStorage.setItem('user', JSON.stringify(normalized));
                   setUser(normalized);
-                  loadAppSettings();
+                  return;
                 }
+              } else {
+                localStorage.removeItem('refreshToken');
+                localStorage.removeItem('csrfToken');
               }
-            } catch (_) {
-              // ignore - already using cached user
+            } catch (refreshErr) {
+              console.warn('Refresh failed:', refreshErr);
+              localStorage.removeItem('refreshToken');
+              localStorage.removeItem('csrfToken');
             }
           }
+          localStorage.removeItem('user');
+          setUser(null);
         }
-      } else if (savedUser) {
-        // No token but savedUser present — clear stale user data so login page is shown
-        localStorage.removeItem('user');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('csrfToken');
+        // On 5xx or network error, keep the cached user already set above
+
+        if (settingsResp.status === 'fulfilled' && settingsResp.value.ok) {
+          try {
+            const data = await settingsResp.value.json();
+            setAppSettings(data || {});
+            if (data?.logo) localStorage.setItem('appLogo', data.logo);
+          } catch (e) { /* ignore */ }
+        }
+      } catch (err) {
+        console.warn('Auth check failed (network error):', err.message);
+        // Cached user already restored above — nothing more to do
       }
     } catch (error) {
       console.error('Error initializing auth:', error);
-      // Only preserve user state if a token actually exists
       const token = localStorage.getItem('token');
       if (token) {
         const savedUser = localStorage.getItem('user');
         if (savedUser) {
-          try {
-            const parsed = JSON.parse(savedUser);
-            setUser(normalizeUser(parsed));
-          } catch (e) {
-            setUser(null);
-          }
+          try { setUser(normalizeUser(JSON.parse(savedUser))); } catch (e) { setUser(null); }
         } else {
           setUser(null);
         }
       } else {
-        // No token — always clear stale user data
         localStorage.removeItem('user');
         setUser(null);
       }
     } finally {
       setLoading(false);
       setIsInitialized(true);
-      if (user || localStorage.getItem('token')) {
-        setTimeout(() => checkSubscriptionStatus(), 1000);
+      // Defer subscription check — non-critical, don't block render
+      if (localStorage.getItem('token')) {
+        setTimeout(() => checkSubscriptionStatus(), 2000);
       }
     }
   };
@@ -326,7 +282,8 @@ export const AuthProvider = ({ children }) => {
         }
         localStorage.setItem('user', JSON.stringify(normalized));
         setUser(normalized);
-        loadAppSettings();
+        // Fetch settings in background — non-blocking
+        setTimeout(() => loadAppSettings(), 0);
         setTimeout(() => checkSubscriptionStatus(), 500);
         return payload;
       }
@@ -344,7 +301,8 @@ export const AuthProvider = ({ children }) => {
         }
         localStorage.setItem('user', JSON.stringify(normalized));
         setUser(normalized);
-        loadAppSettings();
+        // Fetch settings in background — non-blocking
+        setTimeout(() => loadAppSettings(), 0);
         setTimeout(() => checkSubscriptionStatus(), 500);
         return response;
       }

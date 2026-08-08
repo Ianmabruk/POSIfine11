@@ -7,17 +7,26 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
+    target: 'es2020',
+    minify: 'esbuild',
     chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-          motion: ['framer-motion'],
-          icons: ['lucide-react'],
-          utils: ['axios', 'jsonwebtoken'],
+        manualChunks(id) {
+          if (id.includes('node_modules/react-dom') || id.includes('node_modules/react/') || id.includes('node_modules/react-router-dom')) {
+            return 'vendor';
+          }
+          if (id.includes('node_modules/framer-motion')) return 'motion';
+          if (id.includes('node_modules/lucide-react')) return 'icons';
+          if (id.includes('node_modules/recharts')) return 'charts';
+          if (id.includes('node_modules/axios') || id.includes('node_modules/jsonwebtoken')) return 'utils';
+          if (id.includes('exportData') || id.includes('html2canvas') || id.includes('jspdf')) return 'export';
         },
       },
     },
+  },
+  esbuild: {
+    drop: ['console', 'debugger'],
   },
   server: {
     port: 3000,

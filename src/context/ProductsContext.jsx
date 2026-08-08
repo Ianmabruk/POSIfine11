@@ -65,22 +65,15 @@ export const ProductsProvider = ({ children }) => {
 
       persistProductsCache(visibleProducts);
       
+      
       setProducts(visibleProducts);
       setError(null);
       
-      // Dispatch sync event for real-time updates
       window.dispatchEvent(new CustomEvent('productsSync', { 
         detail: { products: visibleProducts, timestamp: Date.now() }
       }));
+      window.dispatchEvent(new Event('productUpdated'));
       
-      // Also emit event that other components can listen to
-      if (typeof window !== 'undefined') {
-        setTimeout(() => {
-          window.dispatchEvent(new Event('productUpdated'));
-        }, 100);
-      }
-      
-      // CRITICAL: Return the products so callers can use them immediately
       return visibleProducts;
       
     } catch (err) {

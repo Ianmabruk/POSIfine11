@@ -8,18 +8,14 @@ import StockUpdateListener from './components/StockUpdateListener';
 import ErrorBoundary from './components/ErrorBoundary';
 import CookieConsent from './components/CookieConsent';
 import LogoPreloader from './components/LogoPreloader';
-import performanceMonitor from './services/performanceMonitor';
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 
-import LandingSaaS from './pages/LandingSaaS';
-import LandingPremium from './pages/LandingPremium';
-import AuthNew from './pages/AuthNew';
-import AuthEnterprise from './pages/AuthEnterprise';
-import Subscription from './pages/Subscription';
-import SubscriptionEnterprise from './pages/SubscriptionEnterprise';
-import SubscriptionExpired from './pages/SubscriptionExpired';
-import LoggedOut from './pages/LoggedOut';
-import PosifyControlCenter from './pages/super-admin/PosifyControlCenter';
+const LandingPremium = lazy(() => import('./pages/LandingPremium'));
+const AuthEnterprise = lazy(() => import('./pages/AuthEnterprise'));
+const SubscriptionEnterprise = lazy(() => import('./pages/SubscriptionEnterprise'));
+const SubscriptionExpired = lazy(() => import('./pages/SubscriptionExpired'));
+const LoggedOut = lazy(() => import('./pages/LoggedOut'));
+const PosifyControlCenter = lazy(() => import('./pages/super-admin/PosifyControlCenter'));
 
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const BuildPOS = lazy(() => import('./pages/BuildPOS'));
@@ -109,14 +105,6 @@ function DashboardRouter() {
 }
 
 function App() {
-  // Initialize performance monitoring
-  useEffect(() => {
-    performanceMonitor.trackUserAction('app_loaded', {
-      timestamp: Date.now(),
-      userAgent: navigator.userAgent
-    });
-  }, []);
-
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <ErrorBoundary>
