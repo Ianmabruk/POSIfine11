@@ -18,7 +18,6 @@ export default defineConfig({
           }
           if (id.includes('node_modules/framer-motion')) return 'motion';
           if (id.includes('node_modules/lucide-react')) return 'icons';
-          if (id.includes('node_modules/recharts')) return 'charts';
           if (id.includes('node_modules/axios') || id.includes('node_modules/jsonwebtoken')) return 'utils';
           if (id.includes('exportData') || id.includes('html2canvas') || id.includes('jspdf')) return 'export';
         },
