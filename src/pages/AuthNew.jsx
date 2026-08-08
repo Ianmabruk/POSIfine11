@@ -242,7 +242,7 @@ export default function AuthNew() {
                 <input
                   type="password"
                   placeholder="New Password"
-                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:border-[#2d4cff] focus:ring-2 focus:ring-[#2d4cff]/20 outline-none transition-all"
+                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 bg-white text-gray-900 placeholder-gray-400 focus:border-[#2d4cff] focus:ring-2 focus:ring-[#2d4cff]/20 outline-none transition-all"
                   value={formData.newPassword}
                   onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
                   required
@@ -253,7 +253,7 @@ export default function AuthNew() {
                 <input
                   type="password"
                   placeholder="Confirm Password"
-                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:border-[#2d4cff] focus:ring-2 focus:ring-[#2d4cff]/20 outline-none transition-all"
+                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 bg-white text-gray-900 placeholder-gray-400 focus:border-[#2d4cff] focus:ring-2 focus:ring-[#2d4cff]/20 outline-none transition-all"
                   value={formData.confirmPassword}
                   onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                   required
@@ -268,7 +268,7 @@ export default function AuthNew() {
                   <input
                     type="text"
                     placeholder="Full Name"
-                    className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:border-[#2d4cff] focus:ring-2 focus:ring-[#2d4cff]/20 outline-none transition-all"
+                    className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 bg-white text-gray-900 placeholder-gray-400 focus:border-[#2d4cff] focus:ring-2 focus:ring-[#2d4cff]/20 outline-none transition-all"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     required
@@ -281,7 +281,7 @@ export default function AuthNew() {
                 <input
                   type="email"
                   placeholder="Email"
-                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:border-[#2d4cff] focus:ring-2 focus:ring-[#2d4cff]/20 outline-none transition-all"
+                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 bg-white text-gray-900 placeholder-gray-400 focus:border-[#2d4cff] focus:ring-2 focus:ring-[#2d4cff]/20 outline-none transition-all"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   required
@@ -323,7 +323,7 @@ export default function AuthNew() {
                   <input
                     type="password"
                     placeholder="Password"
-                    className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:border-[#2d4cff] focus:ring-2 focus:ring-[#2d4cff]/20 outline-none transition-all"
+                    className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 bg-white text-gray-900 placeholder-gray-400 focus:border-[#2d4cff] focus:ring-2 focus:ring-[#2d4cff]/20 outline-none transition-all"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     required
@@ -338,7 +338,7 @@ export default function AuthNew() {
                     type="text"
                     inputMode="numeric"
                     placeholder="4-digit PIN"
-                    className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:border-[#2d4cff] focus:ring-2 focus:ring-[#2d4cff]/20 outline-none transition-all text-center text-2xl tracking-widest"
+                    className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 bg-white text-gray-900 placeholder-gray-400 focus:border-[#2d4cff] focus:ring-2 focus:ring-[#2d4cff]/20 outline-none transition-all text-center text-2xl tracking-widest"
                     value={formData.pin}
                     onChange={(e) => setFormData({ ...formData, pin: e.target.value.replace(/\D/g, '').slice(0, 4) })}
                     maxLength={4}
@@ -352,8 +352,8 @@ export default function AuthNew() {
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                   <input
                     type="password"
-                    placeholder="Password (min 6 characters)"
-                    className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:border-[#2d4cff] focus:ring-2 focus:ring-[#2d4cff]/20 outline-none transition-all"
+                    placeholder="Password (min 8 chars, 1 uppercase, 1 number)"
+                    className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 bg-white text-gray-900 placeholder-gray-400 focus:border-[#2d4cff] focus:ring-2 focus:ring-[#2d4cff]/20 outline-none transition-all"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     required
