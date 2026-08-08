@@ -5,7 +5,7 @@ import { ChevronDown } from "lucide-react";
 const faqs = [
   {
     question: "How much does Posify cost?",
-    answer: "Posify offers flexible pricing starting with a free Starter plan for small businesses. Our Professional plan is KES 2,499/month and Enterprise is KES 4,999/month. All plans include a 15-day free trial with no credit card required.",
+    answer: "Posify offers flexible pricing starting with a free Starter plan for small businesses. Our Professional plan is KES 2,499/month and Enterprise is KES 4,999/month. All plans include a 30-day free trial with no credit card required.",
   },
   {
     question: "How does MPESA integration work?",
@@ -29,7 +29,7 @@ const faqs = [
   },
   {
     question: "How long is the free trial?",
-    answer: "Our free trial lasts for 15 days and gives you full access to all Professional plan features. No credit card is required to sign up, and you won't be charged unless you choose to subscribe.",
+    answer: "Our free trial lasts for 30 days and gives you full access to all Professional plan features. No credit card is required to sign up, and you won't be charged unless you choose to subscribe.",
   },
   {
     question: "Can I customize the POS for my business?",

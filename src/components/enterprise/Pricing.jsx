@@ -80,7 +80,7 @@ export default function Pricing({ onGetStarted }) {
             Start free, scale when ready
           </h2>
           <p className="text-lg text-slate-500 max-w-2xl mx-auto text-balance">
-            Every plan includes a 15-day free trial. No credit card required. Cancel anytime.
+            Every plan includes a 30-day free trial. No credit card required. Cancel anytime.
           </p>
         </motion.div>
 

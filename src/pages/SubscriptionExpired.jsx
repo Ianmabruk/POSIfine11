@@ -22,7 +22,7 @@ export default function SubscriptionExpired() {
           </h1>
           
           <p className="text-slate-500 mb-8 leading-relaxed">
-            Your 15-day free trial has ended. Subscribe now to continue accessing all features and keep your data safe.
+            Your 30-day free trial has ended. Subscribe now to continue accessing all features and keep your data safe.
           </p>
 
           <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 mb-8">

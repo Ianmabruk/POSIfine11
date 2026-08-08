@@ -13,7 +13,7 @@ const plans = [
     icon: Zap,
     gradient: 'from-slate-500 to-slate-600',
     light: 'bg-slate-50',
-    description: 'Small businesses. Limited users. Core modules. 15-Day Trial.',
+     description: 'Small businesses. Limited users. Core modules. 30-Day Trial.',
     features: ['Single user access', 'Basic inventory tracking', 'Sales & order management', 'Daily reports & insights', 'Email support', 'Cashier POS dashboard'],
   },
   {
@@ -23,7 +23,7 @@ const plans = [
     icon: Zap,
     gradient: 'from-primary-500 to-brand-500',
     light: 'bg-primary-50',
-    description: 'Growing companies. More users. Multi-branch. Advanced reports. 15-Day Trial.',
+     description: 'Growing companies. More users. Multi-branch. Advanced reports. 30-Day Trial.',
     features: ['Up to 10 users', 'Advanced inventory & recipes', 'Full admin dashboard', 'CRM & customer profiles', 'Advanced analytics', 'Priority support', 'Expense tracking', 'Service fees & discounts'],
     popular: true,
   },
@@ -34,7 +34,7 @@ const plans = [
     icon: Crown,
     gradient: 'from-accent-500 to-accent-600',
     light: 'bg-accent-50',
-    description: 'Unlimited users. Unlimited branches. Priority support. Advanced analytics. 15-Day Trial.',
+     description: 'Unlimited users. Unlimited branches. Priority support. Advanced analytics. 30-Day Trial.',
     features: ['Unlimited users', 'Multi-location support', 'Full CRM suite', 'AI-powered insights', 'Custom integrations', 'Dedicated account manager', '99.9% uptime SLA', 'White-label options'],
   },
   {
@@ -84,7 +84,7 @@ export default function SubscriptionEnterprise() {
     } catch (error) {
       console.error('Failed to create trial:', error);
       localStorage.setItem('isTrial', 'true');
-      localStorage.setItem('trialEndsAt', new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString());
+      localStorage.setItem('trialEndsAt', new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString());
       setTrialStarted(true);
       setStep('success');
     }
@@ -222,7 +222,7 @@ export default function SubscriptionEnterprise() {
                     Choose your plan
                   </h1>
                   <p className="text-slate-500 max-w-2xl mx-auto text-base sm:text-lg leading-relaxed">
-                    Start with a 15-day free trial. No credit card required. Cancel anytime.
+                     Start with a 30-day free trial. No credit card required. Cancel anytime.
                   </p>
                 </div>
 
@@ -271,9 +271,9 @@ export default function SubscriptionEnterprise() {
                               <span className="text-3xl font-bold text-slate-900 tracking-tight">KES {plan.price.toLocaleString()}</span>
                               <span className="text-slate-400 text-sm">/month</span>
                             </div>
-                          ) : (
-                            <span className="text-xl font-bold text-success">15-Day Free Trial</span>
-                          )}
+                           ) : (
+                             <span className="text-xl font-bold text-success">30-Day Free Trial</span>
+                           )}
                         </div>
 
                         <ul className="space-y-2.5 mb-2">
@@ -285,37 +285,41 @@ export default function SubscriptionEnterprise() {
                           ))}
                         </ul>
 
-                        {isSelected && (
-                          <motion.div
-                            layoutId="selected-indicator"
-                            className="mt-5 pt-4 border-t border-primary-100"
-                          >
-                            <span className="text-xs font-semibold text-primary-600 flex items-center gap-1.5">
-                              <Check className="w-3.5 h-3.5" /> Selected
-                            </span>
-                          </motion.div>
-                        )}
-                      </motion.div>
+                         {isSelected && (
+                           <motion.div
+                             layoutId="selected-indicator"
+                             className="mt-5 pt-4 border-t border-primary-100"
+                           >
+                             <span className="text-xs font-semibold text-primary-600 flex items-center gap-1.5">
+                               <Check className="w-3.5 h-3.5" /> Selected
+                             </span>
+                           </motion.div>
+                         )}
+
+                         <div className="mt-5">
+                           {plan.custom ? (
+                             <motion.button
+                               whileHover={{ scale: 1.02 }}
+                               whileTap={{ scale: 0.98 }}
+                               onClick={(e) => { e.stopPropagation(); setShowCustomForm(true); }}
+                               className="w-full btn-primary inline-flex items-center justify-center gap-2.5 px-6 py-3 text-sm"
+                             >
+                               Request Custom Solution <ArrowRight className="w-4 h-4" />
+                             </motion.button>
+                           ) : (
+                             <motion.button
+                               whileHover={{ scale: 1.02 }}
+                               whileTap={{ scale: 0.98 }}
+                               onClick={(e) => { e.stopPropagation(); setSelectedPlan(plan.id); handleStartTrial(); }}
+                               className="w-full btn-primary inline-flex items-center justify-center gap-2.5 px-6 py-3 text-sm"
+                             >
+                               Start 30-Day Free Trial <ArrowRight className="w-4 h-4" />
+                             </motion.button>
+                           )}
+                         </div>
+                       </motion.div>
                     );
                   })}
-                </div>
-
-                <div className="flex justify-center">
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => {
-                      if (selected?.custom) {
-                        setShowCustomForm(true);
-                      } else {
-                        handleStartTrial();
-                      }
-                    }}
-                    className="btn-primary inline-flex items-center gap-2.5 px-10 py-4 text-base"
-                  >
-                    {selected?.custom ? "Request Custom Solution" : "Start 15-Day Free Trial"}
-                    <ArrowRight className="w-5 h-5" />
-                  </motion.button>
                 </div>
               </motion.div>
             )}
@@ -554,9 +558,9 @@ export default function SubscriptionEnterprise() {
                           </div>
                         </div>
                         <div className="bg-amber-50/80 border border-amber-100 rounded-2xl p-4">
-                          <p className="text-xs text-amber-800 font-medium leading-relaxed">
-                            Your 15-day free trial starts now. You won't be charged until the trial ends.
-                          </p>
+                           <p className="text-xs text-amber-800 font-medium leading-relaxed">
+                             Your 30-day free trial starts now. You won't be charged until the trial ends.
+                           </p>
                         </div>
                       </motion.div>
                     </div>
@@ -604,9 +608,9 @@ export default function SubscriptionEnterprise() {
                     transition={{ duration: 0.5, delay: 0.4 }}
                     className="text-slate-500 max-w-md mx-auto mb-8 leading-relaxed"
                   >
-                    {trialStarted
-                      ? 'Your 15-day free trial has started. Explore all features with no commitment.'
-                      : 'Your subscription has been activated successfully. Welcome to POSIFY!'}
+                     {trialStarted
+                       ? 'Your 30-day free trial has started. Explore all features with no commitment.'
+                       : 'Your subscription has been activated successfully. Welcome to POSIFY!'}
                   </motion.p>
 
                   <motion.div

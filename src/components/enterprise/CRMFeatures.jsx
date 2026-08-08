@@ -163,7 +163,7 @@ export default function CRMFeatures() {
             Start Free Trial
             <ArrowRight className="w-5 h-5" />
           </button>
-          <p className="mt-4 text-sm text-slate-400">No credit card required. 15-day free trial.</p>
+          <p className="mt-4 text-sm text-slate-400">No credit card required. 30-day free trial.</p>
         </motion.div>
       </div>
     </section>

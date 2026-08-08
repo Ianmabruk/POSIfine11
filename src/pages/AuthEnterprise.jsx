@@ -206,7 +206,7 @@ export default function AuthEnterprise() {
   };
 
   const modeTitle = { login: "Welcome back", signup: "Create your account", "forgot-password": "Reset your password", "reset-password": "Set new password", "2fa-setup": "Two-factor authentication", "verify-email": "Verify your email" };
-  const modeSubtitle = { login: "Sign in to your account to continue", signup: "Start your 15-day free trial today", "forgot-password": "Enter your email and we'll send you a reset link", "reset-password": "Choose a strong password for your account", "2fa-setup": "Enter the 6-digit code from your authenticator app", "verify-email": "Check your inbox and verify your email address" };
+  const modeSubtitle = { login: "Sign in to your account to continue", signup: "Start your 30-day free trial today", "forgot-password": "Enter your email and we'll send you a reset link", "reset-password": "Choose a strong password for your account", "2fa-setup": "Enter the 6-digit code from your authenticator app", "verify-email": "Check your inbox and verify your email address" };
 
   return (
     <div className="relative min-h-screen flex flex-col overflow-x-hidden">
@@ -261,7 +261,7 @@ export default function AuthEnterprise() {
                 Manage sales, inventory, and customers across every channel — all from one beautifully crafted platform.
               </p>
               <div className="flex flex-col gap-4">
-                {["15-day free trial", "No credit card required", "Setup in 5 minutes"].map((item, i) => (
+                {["30-day free trial", "No credit card required", "Setup in 5 minutes"].map((item, i) => (
                   <div key={i} className="flex items-center gap-3 text-slate-300">
                     <div className="w-5 h-5 rounded-full bg-gradient-to-br from-primary-500 to-brand-500 flex items-center justify-center">
                       <CheckCircle2 className="w-3 h-3 text-white" />

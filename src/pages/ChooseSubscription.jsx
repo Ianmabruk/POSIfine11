@@ -129,12 +129,12 @@ export default function ChooseSubscription() {
 
   const handleStartTrial = async () => {
     try {
-      const planData = {
-        plan: selectedPlan,
-        billingCycle,
-        industry: selectedIndustry,
-        trialDays: 15
-      };
+        const planData = {
+          plan: selectedPlan,
+          billingCycle,
+          industry: selectedIndustry,
+          trialDays: 30
+        };
 
       // Navigate to signup with plan data
       navigate('/auth/signup', { 
@@ -187,11 +187,11 @@ export default function ChooseSubscription() {
             animate={{ opacity: 1, y: 0 }}
             className="mb-6"
           >
-            <span className="inline-block px-4 py-2 bg-gradient-to-r from-blue-100 to-pink-100 border border-blue-200 rounded-full text-sm font-medium mb-6">
-              <span className="bg-gradient-to-r from-blue-600 to-pink-600 bg-clip-text text-transparent">
-                🎉 15-Day Free Trial • No Credit Card Required
+              <span className="inline-block px-4 py-2 bg-gradient-to-r from-blue-100 to-pink-100 border border-blue-200 rounded-full text-sm font-medium mb-6">
+                <span className="bg-gradient-to-r from-blue-600 to-pink-600 bg-clip-text text-transparent">
+                  🎉 30-Day Free Trial • No Credit Card Required
+                </span>
               </span>
-            </span>
             <h1 className="text-5xl font-bold mb-4">
               <span className="text-gray-900">Choose Your</span>
               <br />
@@ -200,7 +200,7 @@ export default function ChooseSubscription() {
               </span>
             </h1>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Start with a 15-day free trial. Upgrade, downgrade, or cancel anytime.
+              Start with a 30-day free trial. Upgrade, downgrade, or cancel anytime.
             </p>
           </motion.div>
 
@@ -315,10 +315,10 @@ export default function ChooseSubscription() {
                 <h3 className="text-2xl font-bold text-gray-900">
                   {plans[selectedPlan].name} Plan Selected
                 </h3>
-                <p className="text-gray-600">
+                   <p className="text-gray-600">
                   {selectedIndustry && `${industries.find(i => i.id === selectedIndustry)?.name} • `}
-                  15-day free trial, then {formatPrice(plans[selectedPlan].price[billingCycle])} {billingCycle === 'monthly' ? 'per month' : 'per year'}
-                </p>
+                   30-day free trial, then {formatPrice(plans[selectedPlan].price[billingCycle])} {billingCycle === 'monthly' ? 'per month' : 'per year'}
+                  </p>
               </div>
               <div className={`w-16 h-16 bg-gradient-to-br ${plans[selectedPlan].color} rounded-2xl flex items-center justify-center shadow-lg`}>
                 <plans[selectedPlan].icon className="w-8 h-8 text-white" />
@@ -327,7 +327,7 @@ export default function ChooseSubscription() {
 
             <div className="grid md:grid-cols-3 gap-6 mb-8">
               <div className="text-center p-4 bg-blue-50 rounded-xl">
-                <div className="text-2xl font-bold text-blue-600">15 Days</div>
+                <div className="text-2xl font-bold text-blue-600">30 Days</div>
                 <div className="text-sm text-blue-700">Free Trial</div>
               </div>
               <div className="text-center p-4 bg-green-50 rounded-xl">
@@ -340,13 +340,13 @@ export default function ChooseSubscription() {
               </div>
             </div>
 
-            <button
-              onClick={handleStartTrial}
-              className="w-full py-4 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all hover:scale-105 flex items-center justify-center gap-2"
-            >
-              Start 15-Day Free Trial
-              <ArrowRight className="w-5 h-5" />
-            </button>
+              <button
+                onClick={handleStartTrial}
+                className="w-full py-4 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all hover:scale-105 flex items-center justify-center gap-2"
+              >
+                Start 30-Day Free Trial
+                <ArrowRight className="w-5 h-5" />
+              </button>
           </motion.div>
         )}
 
@@ -367,7 +367,7 @@ export default function ChooseSubscription() {
             </div>
           </div>
           <p className="text-xs text-gray-500">
-            Your trial will automatically expire after 15 days. You can upgrade to continue using POSiFine.
+            Your trial will automatically expire after 30 days. You can upgrade to continue using POSiFine.
           </p>
         </div>
       </div>

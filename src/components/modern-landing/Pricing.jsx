@@ -92,7 +92,7 @@ export default function Pricing() {
             Simple, Transparent Pricing
           </h2>
           <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-            Start with a 15-day free trial. No credit card required. Cancel anytime.
+            Start with a 30-day free trial. No credit card required. Cancel anytime.
           </p>
         </motion.div>
 

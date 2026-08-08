@@ -95,9 +95,9 @@ export default function EnhancedSignup() {
     setLoading(true);
 
     try {
-      // Calculate trial end date (15 days from now)
+      // Calculate trial end date (30 days from now)
       const trialEndDate = new Date();
-      trialEndDate.setDate(trialEndDate.getDate() + (planData?.trialDays || 15));
+      trialEndDate.setDate(trialEndDate.getDate() + (planData?.trialDays || 30));
 
       const signupData = {
         name: formData.name,

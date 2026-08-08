@@ -50,7 +50,7 @@ export default function CTASection() {
             className="bg-white rounded-3xl p-8 shadow-2xl"
           >
             <h3 className="text-2xl font-bold text-slate-900 mb-2">Get started today</h3>
-            <p className="text-slate-500 mb-6">Start your 15-day free trial. No credit card required.</p>
+            <p className="text-slate-500 mb-6">Start your 30-day free trial. No credit card required.</p>
 
             <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
               <div>

@@ -83,7 +83,7 @@ export default function Pricing() {
             Simple, transparent pricing
           </h2>
           <p className="text-lg text-slate-500 leading-relaxed">
-            Start with a 15-day free trial. No credit card required. Upgrade when you are ready.
+            Start with a 30-day free trial. No credit card required. Upgrade when you are ready.
           </p>
         </motion.div>
 

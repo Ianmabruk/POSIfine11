@@ -132,7 +132,7 @@ function CinematicHero() {
               transition={{ delay: 0.6 }}
               className="flex flex-wrap items-center gap-6 text-sm text-slate-500"
             >
-              {['No credit card required', '15-day free trial', 'Cancel anytime', 'GDPR compliant'].map((item) => (
+              {['No credit card required', '30-day free trial', 'Cancel anytime', 'GDPR compliant'].map((item) => (
                 <div key={item} className="flex items-center gap-2">
                   <Check className="w-4 h-4 text-success" />
                   <span>{item}</span>
