@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { auth, users, BASE_API_URL } from '../services/api';
 import { useNavigate, useLocation } from 'react-router-dom';
 import LockedAccount from '../components/LockedAccount';
@@ -11,15 +11,17 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [subscriptionStatus, setSubscriptionStatus] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
+
   const [appSettings, setAppSettings] = useState(() => {
     const cachedLogo = localStorage.getItem('appLogo');
     return cachedLogo ? { logo: cachedLogo } : {};
   });
 
-  const normalizeUser = (rawUser) => {
+  const [subscriptionStatus, setSubscriptionStatus] = useState(null);
+
+  const normalizeUser = useCallback((rawUser) => {
     if (!rawUser) return rawUser;
     const active = rawUser.active ?? rawUser.is_active ?? rawUser.account_active ?? true;
     const plan = rawUser.plan ?? rawUser.subscription ?? rawUser.account_plan;
@@ -40,15 +42,49 @@ export const AuthProvider = ({ children }) => {
       account_id: accountId,
       accountId,
     };
-  };
+  }, []);
 
-  const loadAppSettings = async () => {
+  const clearAuthStorage = useCallback(() => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('csrfToken');
+    localStorage.removeItem('appLogo');
+    localStorage.removeItem('mainAdminToken');
+    localStorage.removeItem('mainAdminUser');
+    localStorage.removeItem('ownerToken');
+    localStorage.removeItem('ownerUser');
+    const prefix = 'products_cache_';
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(prefix)) {
+        keysToRemove.push(key);
+      }
+    }
+    for (const key of keysToRemove) {
+      localStorage.removeItem(key);
+    }
+    const settingsKeys = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.startsWith('settings_cache_') || key.startsWith('subscription_cache_'))) {
+        settingsKeys.push(key);
+      }
+    }
+    for (const key of settingsKeys) {
+      localStorage.removeItem(key);
+    }
+    sessionStorage.removeItem('reminderShown');
+    sessionStorage.removeItem('adminReminderShown');
+  }, []);
+
+  const loadAppSettings = useCallback(async () => {
     const token = localStorage.getItem('token');
     if (!token) {
       setAppSettings({});
       return;
     }
-
     const cacheKey = `settings_cache_${token.slice(-8)}`;
     const cached = localStorage.getItem(cacheKey);
     if (cached) {
@@ -56,12 +92,10 @@ export const AuthProvider = ({ children }) => {
         const { data, expiresAt } = JSON.parse(cached);
         if (Date.now() < expiresAt) {
           setAppSettings(data || {});
-          if (data?.logo) localStorage.setItem('appLogo', data.logo);
           return;
         }
       } catch { /* ignore */ }
     }
-
     try {
       const response = await fetch(`${BASE_API_URL}/settings`, {
         credentials: 'include',
@@ -72,18 +106,13 @@ export const AuthProvider = ({ children }) => {
       }
       const data = await response.json();
       setAppSettings(data || {});
-      if (data?.logo) {
-        localStorage.setItem('appLogo', data.logo);
-      }
-      try {
-        localStorage.setItem(cacheKey, JSON.stringify({ data, expiresAt: Date.now() + 5 * 60 * 1000 }));
-      } catch { /* ignore */ }
+      localStorage.setItem(cacheKey, JSON.stringify({ data, expiresAt: Date.now() + 5 * 60 * 1000 }));
     } catch (error) {
       console.warn('Failed to load app settings', error);
     }
-  };
+  }, []);
 
-  const checkSubscriptionStatus = async () => {
+  const checkSubscriptionStatus = useCallback(async () => {
     const token = localStorage.getItem('token');
     if (!token) {
       setSubscriptionStatus(null);
@@ -107,45 +136,118 @@ export const AuthProvider = ({ children }) => {
       if (response.ok) {
         const data = await response.json();
         setSubscriptionStatus(data);
-        try {
-          localStorage.setItem(cacheKey, JSON.stringify({ data, expiresAt: Date.now() + 60 * 1000 }));
-        } catch { /* ignore */ }
-        if (data.status === 'expired' && !location.pathname.includes('subscription-expired') && !location.pathname.includes('choose-subscription')) {
-          navigate('/subscription-expired', { replace: true });
-        }
+        localStorage.setItem(cacheKey, JSON.stringify({ data, expiresAt: Date.now() + 60 * 1000 }));
+      } else if (response.status === 401) {
+        setSubscriptionStatus(null);
       } else {
         setSubscriptionStatus(null);
       }
     } catch (error) {
       setSubscriptionStatus(null);
     }
-  };
+  }, []);
+
+  const initializeAuth = useCallback(async () => {
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      clearAuthStorage();
+      setUser(null);
+      setLoading(false);
+      setIsInitialized(true);
+      return;
+    }
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const response = await fetch(`${BASE_API_URL}/auth/me`, {
+        credentials: 'include',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        const data = await response.json();
+        const normalized = normalizeUser(data);
+        setUser(normalized);
+        localStorage.setItem('user', JSON.stringify(normalized));
+      } else if (response.status === 401) {
+        const refreshToken = localStorage.getItem('refreshToken');
+        if (refreshToken) {
+          try {
+            const refreshResp = await fetch(`${BASE_API_URL}/auth/refresh`, {
+              method: 'POST',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ refreshToken }),
+            });
+            if (refreshResp.ok) {
+              const refreshed = await refreshResp.json();
+              if (refreshed?.token && refreshed?.user) {
+                const normalized = normalizeUser(refreshed.user);
+                localStorage.setItem('token', refreshed.token);
+                if (refreshed.refreshToken) localStorage.setItem('refreshToken', refreshed.refreshToken);
+                if (refreshed.csrfToken) localStorage.setItem('csrfToken', refreshed.csrfToken);
+                localStorage.setItem('user', JSON.stringify(normalized));
+                setUser(normalized);
+                return;
+              }
+            }
+          } catch (refreshErr) {
+            console.warn('Refresh failed:', refreshErr);
+          }
+        }
+        clearAuthStorage();
+        setUser(null);
+      } else {
+        setUser(null);
+      }
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        const savedUser = localStorage.getItem('user');
+        if (savedUser) {
+          try {
+            setUser(normalizeUser(JSON.parse(savedUser)));
+          } catch {
+            setUser(null);
+          }
+        } else {
+          setUser(null);
+        }
+      } else {
+        clearAuthStorage();
+        setUser(null);
+      }
+    } finally {
+      setLoading(false);
+      setIsInitialized(true);
+    }
+  }, [clearAuthStorage, normalizeUser]);
 
   useEffect(() => {
     initializeAuth();
-  }, []);
+  }, [initializeAuth]);
 
   useEffect(() => {
     const handleSettingsChanged = (event) => {
       if (event?.detail) {
         setAppSettings((prev) => {
           const next = { ...prev, ...event.detail };
-          if (next.logo) {
-            localStorage.setItem('appLogo', next.logo);
-          }
           return next;
         });
         return;
       }
       loadAppSettings();
     };
-
     window.addEventListener('settingsChanged', handleSettingsChanged);
     return () => window.removeEventListener('settingsChanged', handleSettingsChanged);
-  }, []);
+  }, [loadAppSettings]);
 
   useEffect(() => {
-    // Update user state when localStorage changes in other tabs or when we dispatch a custom event
     const handleStorage = () => {
       const saved = localStorage.getItem('user');
       if (saved) {
@@ -159,181 +261,16 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
       }
     };
-
     window.addEventListener('storage', handleStorage);
     window.addEventListener('localStorageUpdated', handleStorage);
-
     return () => {
       window.removeEventListener('storage', handleStorage);
       window.removeEventListener('localStorageUpdated', handleStorage);
     };
-  }, []);
-
-  const initializeAuth = async () => {
-    const timeoutMs = 8000;
-    let timeoutHandle;
-    
-    try {
-      const token = localStorage.getItem('token');
-      const mainAdminToken = localStorage.getItem('mainAdminToken');
-      const refreshToken = localStorage.getItem('refreshToken');
-      const savedUser = localStorage.getItem('user');
-      const savedMainAdminUser = localStorage.getItem('mainAdminUser');
-
-      // Main-admin session: restore directly from localStorage
-      if (mainAdminToken && savedMainAdminUser) {
-        try {
-          setUser(normalizeUser(JSON.parse(savedMainAdminUser)));
-        } catch (e) { /* ignore */ }
-        setLoading(false);
-        setIsInitialized(true);
-        return;
-      }
-
-      if (!token) {
-        if (savedUser) {
-          localStorage.removeItem('user');
-          localStorage.removeItem('refreshToken');
-          localStorage.removeItem('csrfToken');
-        }
-        setUser(null);
-        setLoading(false);
-        setIsInitialized(true);
-        return;
-      }
-
-      if (savedUser) {
-        try {
-          setUser(normalizeUser(JSON.parse(savedUser)));
-        } catch (e) { /* ignore */ }
-      }
-
-      const timeoutPromise = new Promise((_, reject) => {
-        timeoutHandle = setTimeout(() => reject(new Error('Auth init timeout')), timeoutMs);
-      });
-
-      try {
-        const [meResp, settingsResp] = await Promise.race([
-          Promise.allSettled([
-            fetch(`${BASE_API_URL}/auth/me`, {
-              credentials: 'include',
-              headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
-            }),
-            fetch(`${BASE_API_URL}/settings`, {
-              credentials: 'include',
-              headers: { Authorization: `Bearer ${token}` }
-            })
-          ]),
-          timeoutPromise
-        ]);
-
-        if (meResp.status === 'fulfilled' && meResp.value.ok) {
-          const data = await meResp.value.json();
-          const normalized = normalizeUser(data);
-          setUser(normalized);
-          localStorage.setItem('user', JSON.stringify(normalized));
-        } else if (meResp.status === 'fulfilled' && meResp.value.status === 401) {
-          localStorage.removeItem('token');
-          if (refreshToken) {
-            try {
-              const refreshResp = await fetch(`${BASE_API_URL}/auth/refresh`, {
-                method: 'POST',
-                credentials: 'include',
-                headers: {
-                  'Content-Type': 'application/json',
-                  ...(localStorage.getItem('csrfToken') ? { 'X-CSRF-Token': localStorage.getItem('csrfToken') } : {})
-                },
-                body: JSON.stringify({ refreshToken })
-              });
-              if (refreshResp.ok) {
-                const refreshed = await refreshResp.json();
-                if (refreshed?.token && refreshed?.user) {
-                  const normalized = normalizeUser(refreshed.user);
-                  localStorage.setItem('token', refreshed.token);
-                  if (refreshed.refreshToken) localStorage.setItem('refreshToken', refreshed.refreshToken);
-                  if (refreshed.csrfToken) localStorage.setItem('csrfToken', refreshed.csrfToken);
-                  localStorage.setItem('user', JSON.stringify(normalized));
-                  setUser(normalized);
-                  return;
-                }
-              }
-            } catch (refreshErr) {
-              console.warn('Refresh failed:', refreshErr);
-            }
-            localStorage.removeItem('refreshToken');
-            localStorage.removeItem('csrfToken');
-          }
-          localStorage.removeItem('user');
-          setUser(null);
-        }
-
-        if (settingsResp.status === 'fulfilled' && settingsResp.value.ok) {
-          try {
-            const data = await settingsResp.value.json();
-            setAppSettings(data || {});
-            if (data?.logo) localStorage.setItem('appLogo', data.logo);
-          } catch (e) { /* ignore */ }
-        }
-      } catch (err) {
-        console.warn('Auth check failed (network error):', err.message);
-      }
-    } catch (error) {
-      console.error('Error initializing auth:', error);
-      const token = localStorage.getItem('token');
-      if (token) {
-        const savedUser = localStorage.getItem('user');
-        if (savedUser) {
-          try { setUser(normalizeUser(JSON.parse(savedUser))); } catch (e) { setUser(null); }
-        } else {
-          setUser(null);
-        }
-      } else {
-        localStorage.removeItem('user');
-        setUser(null);
-      }
-    } finally {
-      if (timeoutHandle) clearTimeout(timeoutHandle);
-      setLoading(false);
-      setIsInitialized(true);
-      if (localStorage.getItem('token')) {
-        setTimeout(() => checkSubscriptionStatus(), 2000);
-      }
-    }
-  };
-
-
-  const clearAccountCaches = useCallback(() => {
-    try {
-      const prefix = 'products_cache_';
-      const keysToRemove = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith(prefix)) {
-          keysToRemove.push(key);
-        }
-      }
-      for (const key of keysToRemove) {
-        localStorage.removeItem(key);
-      }
-    } catch {
-      // ignore storage errors
-    }
-  }, []);
+  }, [normalizeUser]);
 
   const login = async (payload) => {
     try {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('csrfToken');
-      localStorage.removeItem('appLogo');
-      clearAccountCaches();
-      sessionStorage.removeItem('reminderShown');
-      sessionStorage.removeItem('adminReminderShown');
-      setUser(null);
-      setAppSettings({});
-
-      // If payload already contains token & user (caller passed the auth response), just set state
       if (payload && payload.token && payload.user) {
         const normalized = normalizeUser(payload.user);
         localStorage.setItem('token', payload.token);
@@ -345,13 +282,11 @@ export const AuthProvider = ({ children }) => {
         }
         localStorage.setItem('user', JSON.stringify(normalized));
         setUser(normalized);
-        // Fetch settings in background — non-blocking
         setTimeout(() => loadAppSettings(), 0);
-        setTimeout(() => checkSubscriptionStatus(), 500);
+        setTimeout(() => checkSubscriptionStatus(), 0);
         return payload;
       }
 
-      // Otherwise assume credentials were provided and call API
       const response = await auth.login(payload);
       if (response.token && response.user) {
         const normalized = normalizeUser(response.user);
@@ -364,9 +299,8 @@ export const AuthProvider = ({ children }) => {
         }
         localStorage.setItem('user', JSON.stringify(normalized));
         setUser(normalized);
-        // Fetch settings in background — non-blocking
         setTimeout(() => loadAppSettings(), 0);
-        setTimeout(() => checkSubscriptionStatus(), 500);
+        setTimeout(() => checkSubscriptionStatus(), 0);
         return response;
       }
       throw new Error('Invalid response from server');
@@ -378,17 +312,6 @@ export const AuthProvider = ({ children }) => {
 
   const signup = async (userData) => {
     try {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('csrfToken');
-      localStorage.removeItem('appLogo');
-      clearAccountCaches();
-      sessionStorage.removeItem('reminderShown');
-      sessionStorage.removeItem('adminReminderShown');
-      setUser(null);
-      setAppSettings({});
-
       const response = await auth.signup(userData);
       if (response.token && response.user) {
         const normalized = normalizeUser(response.user);
@@ -402,7 +325,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('user', JSON.stringify(normalized));
         setUser(normalized);
         setTimeout(() => loadAppSettings(), 0);
-        setTimeout(() => checkSubscriptionStatus(), 500);
+        setTimeout(() => checkSubscriptionStatus(), 0);
         return response;
       }
       throw new Error('Invalid response from server');
@@ -412,17 +335,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Update the user both locally and on backend (if possible)
   const updateUser = async (updated) => {
     try {
-      // Persist locally first for immediate UI update
       const normalized = normalizeUser(updated);
       localStorage.setItem('user', JSON.stringify(normalized));
       setUser(normalized);
-      // Notify other listeners in same tab
       window.dispatchEvent(new Event('localStorageUpdated'));
 
-      // Try to persist to backend if we have an id
       if (updated && updated.id) {
         try {
           const result = await users.update(updated.id, updated);
@@ -431,7 +350,6 @@ export const AuthProvider = ({ children }) => {
           setUser(persistedUser);
           window.dispatchEvent(new Event('localStorageUpdated'));
         } catch (err) {
-          // Non-fatal: backend update failed but local state is consistent
           console.warn('Failed to persist updated user to backend', err);
         }
       }
@@ -444,40 +362,28 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
-    // Capture refresh token before clearing localStorage
     const refreshToken = localStorage.getItem('refreshToken');
 
-    // Clear local state immediately so the UI updates even if the API call is slow
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('csrfToken');
-    localStorage.removeItem('appLogo');
-    clearAccountCaches();
-    // Clear session flags so they don't persist across re-logins
-    sessionStorage.removeItem('reminderShown');
-    sessionStorage.removeItem('adminReminderShown');
+    clearAuthStorage();
     setUser(null);
     setAppSettings({});
+    setSubscriptionStatus(null);
 
     try {
       if (refreshToken) {
-        // Fire-and-forget with a 3s timeout so logout is never blocked
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), 3000);
-        await fetch(`${BASE_API_URL}/auth/logout`, {
+        fetch(`${BASE_API_URL}/auth/logout`, {
           method: 'POST',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ refreshToken }),
           signal: controller.signal
-        }).catch(() => {});
-        clearTimeout(timer);
+        }).catch(() => {}).finally(() => clearTimeout(timer));
       }
     } catch (e) {
       // ignore
     } finally {
-      // Use replace so back-button doesn't return to a stale dashboard.
       window.location.replace('/logged-out');
     }
   };
@@ -487,39 +393,28 @@ export const AuthProvider = ({ children }) => {
     const hasMainAdminToken = !!localStorage.getItem('mainAdminToken') || !!localStorage.getItem('ownerToken');
     return !!user && (hasRegularToken || hasMainAdminToken);
   }, [user]);
-  
+
   const hasRole = useCallback((role) => user && (user.role === role), [user]);
-  
+
   const isOwner = useCallback(() => user && (user.role === 'main_admin'), [user]);
-  
+
   const isAdmin = useCallback(() => user && (user.role === 'admin' || user.role === 'main_admin'), [user]);
-  
+
   const isCashier = useCallback(() => user && (user.role === 'cashier'), [user]);
-  
-  /**
-   * Get the correct dashboard URL for the current user's role
-   * This ensures consistent redirects across the application
-   * 
-  * Role hierarchy:
-  * - 'main_admin' (Main Admin/Super Admin) → /main.admin
-   * - 'admin' (Regular Business Admin) → /admin
-   * - 'cashier' (POS Staff) → /cashier
-   */
+
   const getDashboardUrl = useCallback((userRole = null) => {
     const role = userRole || user?.role;
-    
     if (role === 'main_admin') {
       return '/main.admin';
     } else if (role === 'admin') {
       return '/admin';
     } else if (role === 'cashier') {
-      return '/cashier';
+      return '/dashboard/cashier';
     } else {
-      return '/dashboard'; // Fallback
+      return '/dashboard';
     }
   }, [user]);
 
-  // Package-related helper functions
   const isUltraPackage = useCallback(() => user && (user.plan === 'ultra'), [user]);
   const isBasicPackage = useCallback(() => user && (user.plan === 'basic'), [user]);
   const canEditStock = useCallback(() => user && (user.role === 'admin' || user.role === 'main_admin' || user.role === 'cashier'), [user]);
@@ -528,17 +423,19 @@ export const AuthProvider = ({ children }) => {
   const isRealTimeProductSyncEnabled = useCallback(() => true, []);
   const isCashierUserManagementEnabled = useCallback(() => true, []);
 
-  // Show locked account screen if user is locked
   if (user?.locked) {
     return <LockedAccount />;
   }
 
-  const contextValue = useMemo(() => ({ 
-    user, 
-    loading, 
+  const contextValue = useMemo(() => ({
+    user,
+    loading,
     isInitialized,
     appSettings,
-    login, 
+    loadAppSettings,
+    subscriptionStatus,
+    checkSubscriptionStatus,
+    login,
     signup,
     updateUser,
     logout,
@@ -554,8 +451,12 @@ export const AuthProvider = ({ children }) => {
     canManageUsers,
     canViewAnalytics,
     isRealTimeProductSyncEnabled,
-    isCashierUserManagementEnabled
-  }), [user, loading, isInitialized, appSettings, isAuthenticated, hasRole, isOwner, isAdmin, isCashier, getDashboardUrl, isUltraPackage, isBasicPackage, canEditStock, canManageUsers, canViewAnalytics]);
+    isCashierUserManagementEnabled,
+    clearAuthStorage,
+  }), [user, loading, isInitialized, appSettings, subscriptionStatus, isAuthenticated,
+      hasRole, isOwner, isAdmin, isCashier, getDashboardUrl, isUltraPackage, isBasicPackage,
+      canEditStock, canManageUsers, canViewAnalytics, loadAppSettings, checkSubscriptionStatus,
+      clearAuthStorage]);
 
   return (
     <AuthContext.Provider value={contextValue}>
@@ -563,4 +464,3 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
-

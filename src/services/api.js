@@ -88,15 +88,15 @@ const refreshAuthSession = async (csrfToken) => {
 const requestWithRetry = async (endpoint, options = {}, retryCount = 0, maxRetries = 2, didRefresh = false) => {
   const token = getToken();
   const csrfToken = getCsrfToken();
-  
+
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const baseHasApi = BASE_API_URL.endsWith('/api');
   const normalizedEndpoint = baseHasApi && cleanEndpoint.startsWith('/api/')
     ? cleanEndpoint.replace(/^\/api/, '')
     : cleanEndpoint;
-  
-  const skipAuthEndpoints = ['/auth/login', '/auth/signup', '/auth/pin-login', '/auth/refresh', '/main-admin/auth/login'];
-  const shouldSkipAuth = skipAuthEndpoints.some(ep => cleanEndpoint === ep);
+
+  const authEndpoints = ['/auth/login', '/auth/signup', '/auth/pin-login', '/auth/refresh', '/auth/change-password', '/auth/lock-screen', '/auth/unlock-screen', '/main-admin/auth/login'];
+  const shouldSkipAuth = authEndpoints.some(ep => normalizedEndpoint === ep);
 
   const config = {
     ...options,
@@ -123,18 +123,21 @@ const requestWithRetry = async (endpoint, options = {}, retryCount = 0, maxRetri
     const response = await fetch(`${BASE_API_URL}${normalizedEndpoint}`, config);
 
     if (response.status === 401) {
-      if (!didRefresh) {
+      if (!didRefresh && !shouldSkipAuth) {
         const refreshed = await refreshAuthSession(csrfToken);
         if (refreshed?.token) {
           return requestWithRetry(endpoint, options, retryCount, maxRetries, true);
         }
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('csrfToken');
       }
-      if (cleanEndpoint.includes('/auth/login') || cleanEndpoint.includes('/main-admin/auth/login')) {
+      if (normalizedEndpoint.includes('/auth/login') || normalizedEndpoint.includes('/main-admin/auth/login')) {
         const errorData = await response.json().catch(() => ({ error: 'Unauthorized' }));
         throw new Error(errorData.error || 'Invalid credentials');
       }
-      const errorData = await response.json().catch(() => ({ error: 'Request failed' }));
-      const err = new Error(errorData.error || 'Request failed');
+      const err = new Error('Authentication required. Please sign in.');
       err.status = 401;
       throw err;
     }

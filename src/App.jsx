@@ -11,7 +11,7 @@ import LogoPreloader from './components/LogoPreloader';
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 
 const LandingPremium = lazy(() => import('./pages/LandingPremium'));
-const AuthEnterprise = lazy(() => import('./pages/AuthEnterprise'));
+const AuthPage = lazy(() => import('./pages/AuthPage'));
 const SubscriptionEnterprise = lazy(() => import('./pages/SubscriptionEnterprise'));
 const SubscriptionExpired = lazy(() => import('./pages/SubscriptionExpired'));
 const LoggedOut = lazy(() => import('./pages/LoggedOut'));
@@ -120,8 +120,8 @@ function App() {
                 <Route path="/get-started" element={<LandingPremium />} />
                 <Route path="/choose-subscription" element={<SubscriptionEnterprise />} />
                 <Route path="/subscription-expired" element={<SubscriptionExpired />} />
-                <Route path="/auth/login" element={<AuthEnterprise />} />
-                <Route path="/auth/signup" element={<AuthEnterprise />} />
+                <Route path="/auth/login" element={<AuthPage />} />
+                <Route path="/auth/signup" element={<AuthPage />} />
                 <Route path="/logged-out" element={<LoggedOut />} />
                 <Route path="/plans" element={<Navigate to="/choose-subscription" />} />
                 <Route path="/build-pos" element={<ProtectedRoute><BuildPOS /></ProtectedRoute>} />
