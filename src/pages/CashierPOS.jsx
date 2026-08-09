@@ -786,7 +786,7 @@ export default function CashierPOS() {
       setMpesaPaymentStatus(null);
       showToast('error', err.message || 'Failed to process M-Pesa payment', 5000);
     }
-  }, [cart, cartItemUnits, currentTimeEntry?.id, discountValue, finalTotal, initiateMpesaPayment, mpesaPhone, normalizePhone, selectedDiscount, showToast, startMpesaPolling, taxAmount, taxType]);
+  }, [cart, cartItemUnits, currentTimeEntry?.id, initiateMpesaPayment, mpesaPhone, normalizePhone, selectedDiscount, showToast, startMpesaPolling, taxType]);
 
   const handleCloseMpesaModal = useCallback(() => {
     if (mpesaPollingRef.current) clearInterval(mpesaPollingRef.current);
