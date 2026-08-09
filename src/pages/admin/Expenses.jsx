@@ -163,7 +163,6 @@ export default function Expenses() {
               </div>
             )}
           </div>
-          </div>
           <button 
             onClick={() => setShowAddModal(true)}
             className="btn-primary flex items-center gap-2"

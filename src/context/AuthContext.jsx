@@ -49,6 +49,19 @@ export const AuthProvider = ({ children }) => {
       return;
     }
 
+    const cacheKey = `settings_cache_${token.slice(-8)}`;
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      try {
+        const { data, expiresAt } = JSON.parse(cached);
+        if (Date.now() < expiresAt) {
+          setAppSettings(data || {});
+          if (data?.logo) localStorage.setItem('appLogo', data.logo);
+          return;
+        }
+      } catch { /* ignore */ }
+    }
+
     try {
       const response = await fetch(`${BASE_API_URL}/settings`, {
         credentials: 'include',
@@ -62,6 +75,9 @@ export const AuthProvider = ({ children }) => {
       if (data?.logo) {
         localStorage.setItem('appLogo', data.logo);
       }
+      try {
+        localStorage.setItem(cacheKey, JSON.stringify({ data, expiresAt: Date.now() + 5 * 60 * 1000 }));
+      } catch { /* ignore */ }
     } catch (error) {
       console.warn('Failed to load app settings', error);
     }
@@ -73,6 +89,17 @@ export const AuthProvider = ({ children }) => {
       setSubscriptionStatus(null);
       return;
     }
+    const cacheKey = `subscription_cache_${token.slice(-8)}`;
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      try {
+        const { data, expiresAt } = JSON.parse(cached);
+        if (Date.now() < expiresAt) {
+          setSubscriptionStatus(data);
+          return;
+        }
+      } catch { /* ignore */ }
+    }
     try {
       const response = await fetch(`${BASE_API_URL}/subscription/status`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -80,6 +107,9 @@ export const AuthProvider = ({ children }) => {
       if (response.ok) {
         const data = await response.json();
         setSubscriptionStatus(data);
+        try {
+          localStorage.setItem(cacheKey, JSON.stringify({ data, expiresAt: Date.now() + 60 * 1000 }));
+        } catch { /* ignore */ }
         if (data.status === 'expired' && !location.pathname.includes('subscription-expired') && !location.pathname.includes('choose-subscription')) {
           navigate('/subscription-expired', { replace: true });
         }
@@ -154,7 +184,6 @@ export const AuthProvider = ({ children }) => {
         return;
       }
 
-      // Immediately restore cached user so the UI is usable while we verify
       if (savedUser) {
         try {
           setUser(normalizeUser(JSON.parse(savedUser)));
@@ -162,7 +191,6 @@ export const AuthProvider = ({ children }) => {
       }
 
       try {
-        // Run /auth/me and /settings in parallel to cut serial latency in half
         const [meResp, settingsResp] = await Promise.allSettled([
           fetch(`${BASE_API_URL}/auth/me`, {
             credentials: 'include',
@@ -200,20 +228,16 @@ export const AuthProvider = ({ children }) => {
                   setUser(normalized);
                   return;
                 }
-              } else {
-                localStorage.removeItem('refreshToken');
-                localStorage.removeItem('csrfToken');
               }
             } catch (refreshErr) {
               console.warn('Refresh failed:', refreshErr);
-              localStorage.removeItem('refreshToken');
-              localStorage.removeItem('csrfToken');
             }
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('csrfToken');
           }
           localStorage.removeItem('user');
           setUser(null);
         }
-        // On 5xx or network error, keep the cached user already set above
 
         if (settingsResp.status === 'fulfilled' && settingsResp.value.ok) {
           try {
@@ -224,7 +248,6 @@ export const AuthProvider = ({ children }) => {
         }
       } catch (err) {
         console.warn('Auth check failed (network error):', err.message);
-        // Cached user already restored above — nothing more to do
       }
     } catch (error) {
       console.error('Error initializing auth:', error);
@@ -243,12 +266,12 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
       setIsInitialized(true);
-      // Defer subscription check — non-critical, don't block render
       if (localStorage.getItem('token')) {
         setTimeout(() => checkSubscriptionStatus(), 2000);
       }
     }
   };
+
 
   const login = async (payload) => {
     try {
@@ -344,7 +367,8 @@ export const AuthProvider = ({ children }) => {
         }
         localStorage.setItem('user', JSON.stringify(normalized));
         setUser(normalized);
-        loadAppSettings();
+        setTimeout(() => loadAppSettings(), 0);
+        setTimeout(() => checkSubscriptionStatus(), 500);
         return response;
       }
       throw new Error('Invalid response from server');

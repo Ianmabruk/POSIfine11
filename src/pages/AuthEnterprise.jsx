@@ -1,8 +1,7 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { auth } from "../services/api";
 import { useAuth } from "../context/AuthContext";
-import { motion, AnimatePresence } from "framer-motion";
 import { 
   Mail, Lock, User, Loader, LogOut, ArrowRight, Eye, EyeOff,
   Smartphone, CheckCircle2, AlertCircle, ArrowLeft,
@@ -10,7 +9,10 @@ import {
 } from "lucide-react";
 import { getDashboardRoute } from "../utils/dashboardRouting";
 
-export default function AuthEnterprise() {
+const modeTitle = { login: "Welcome back", signup: "Create your account", "forgot-password": "Reset your password", "reset-password": "Set new password", "2fa-setup": "Two-factor authentication", "verify-email": "Verify your email" };
+const modeSubtitle = { login: "Sign in to your account to continue", signup: "Start your 30-day free trial today", "forgot-password": "Enter your email and we'll send you a reset link", "reset-password": "Choose a strong password for your account", "2fa-setup": "Enter the 6-digit code from your authenticator app", "verify-email": "Check your inbox and verify your email address" };
+
+const AuthEnterprise = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, login, loading: authLoading } = useAuth();
@@ -35,9 +37,9 @@ export default function AuthEnterprise() {
   const [emailSent, setEmailSent] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
 
-  const existingSession = !authLoading && user && localStorage.getItem("token");
+  const existingSession = useMemo(() => !authLoading && user && localStorage.getItem("token"), [authLoading, user]);
 
-  const handleSwitchUser = async () => {
+  const handleSwitchUser = useCallback(async () => {
     setSwitchingUser(true);
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -50,17 +52,17 @@ export default function AuthEnterprise() {
     sessionStorage.removeItem("reminderShown");
     sessionStorage.removeItem("adminReminderShown");
     window.location.replace("/auth/login");
-  };
+  }, []);
 
-  const getSelectedPlan = () => {
+  const getSelectedPlan = useCallback(() => {
     try {
       return JSON.parse(localStorage.getItem("selectedPlan") || "null");
     } catch (e) {
       return null;
     }
-  };
+  }, []);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
@@ -203,10 +205,11 @@ export default function AuthEnterprise() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [mode, loginMethod, formData, needsPasswordSetup, navigate, login, getSelectedPlan]);
 
-  const modeTitle = { login: "Welcome back", signup: "Create your account", "forgot-password": "Reset your password", "reset-password": "Set new password", "2fa-setup": "Two-factor authentication", "verify-email": "Verify your email" };
-  const modeSubtitle = { login: "Sign in to your account to continue", signup: "Start your 30-day free trial today", "forgot-password": "Enter your email and we'll send you a reset link", "reset-password": "Choose a strong password for your account", "2fa-setup": "Enter the 6-digit code from your authenticator app", "verify-email": "Check your inbox and verify your email address" };
+  const setFormField = useCallback((field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  }, []);
 
   return (
     <div className="relative min-h-screen flex flex-col overflow-x-hidden">
@@ -237,269 +240,246 @@ export default function AuthEnterprise() {
 
       <main className="flex-1 flex items-center justify-center px-3 sm:px-6 lg:px-8 pt-14 sm:pt-16">
         <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-0 items-center">
-          
-          {/* Left Branding Side */}
-          <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="hidden lg:flex flex-col justify-center px-8 xl:px-16"
-          >
-            <div className="relative">
-              <motion.div
-                animate={{ y: [0, -12, 0] }}
-                transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-                className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-brand-500 flex items-center justify-center mb-8 shadow-xl shadow-primary-500/30"
-              >
-                <span className="text-white font-bold text-2xl">P</span>
-              </motion.div>
-              <h2 className="text-4xl font-bold text-white mb-4 tracking-tight leading-[1.1]">
-                Welcome to<br />
-                <span className="gradient-text">the future of POS</span>
-              </h2>
-              <p className="text-slate-400 text-lg leading-relaxed mb-10 max-w-md">
-                Manage sales, inventory, and customers across every channel — all from one beautifully crafted platform.
-              </p>
-              <div className="flex flex-col gap-4">
-                {["30-day free trial", "No credit card required", "Setup in 5 minutes"].map((item, i) => (
-                  <div key={i} className="flex items-center gap-3 text-slate-300">
-                    <div className="w-5 h-5 rounded-full bg-gradient-to-br from-primary-500 to-brand-500 flex items-center justify-center">
-                      <CheckCircle2 className="w-3 h-3 text-white" />
-                    </div>
-                    <span className="text-sm font-medium">{item}</span>
-                  </div>
-                ))}
-              </div>
-              
-              {/* Floating mini cards */}
-              <motion.div
-                animate={{ y: [0, -8, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                className="absolute -right-4 top-20 glass-card p-4 rounded-2xl shadow-xl hidden xl:block"
-                style={{ width: "220px" }}
-              >
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-primary-500/20 flex items-center justify-center">
-                    <ArrowRight className="w-4 h-4 text-primary-400" />
-                  </div>
-                  <span className="text-xs font-semibold text-slate-300">Quick Setup</span>
-                </div>
-                <div className="w-full h-1.5 bg-slate-700/50 rounded-full overflow-hidden">
-                  <motion.div
-                    animate={{ width: ["0%", "100%"] }}
-                    transition={{ duration: 3, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-                    className="h-full bg-gradient-to-r from-primary-500 to-brand-500 rounded-full"
-                  />
-                </div>
-              </motion.div>
-            </div>
-          </motion.div>
+           
+           {/* Left Branding Side */}
+           <div className="hidden lg:flex flex-col justify-center px-8 xl:px-16 animate-fade-in">
+             <div className="relative">
+               <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-brand-500 flex items-center justify-center mb-8 shadow-xl shadow-primary-500/30 animate-float">
+                 <span className="text-white font-bold text-2xl">P</span>
+               </div>
+               <h2 className="text-4xl font-bold text-white mb-4 tracking-tight leading-[1.1]">
+                 Welcome to<br />
+                 <span className="gradient-text">the future of POS</span>
+               </h2>
+               <p className="text-slate-400 text-lg leading-relaxed mb-10 max-w-md">
+                 Manage sales, inventory, and customers across every channel — all from one beautifully crafted platform.
+               </p>
+               <div className="flex flex-col gap-4">
+                 {["30-day free trial", "No credit card required", "Setup in 5 minutes"].map((item, i) => (
+                   <div key={i} className="flex items-center gap-3 text-slate-300">
+                     <div className="w-5 h-5 rounded-full bg-gradient-to-br from-primary-500 to-brand-500 flex items-center justify-center">
+                       <CheckCircle2 className="w-3 h-3 text-white" />
+                     </div>
+                     <span className="text-sm font-medium">{item}</span>
+                   </div>
+                 ))}
+               </div>
+               
+               {/* Floating mini cards */}
+               <div className="absolute -right-4 top-20 glass-card p-4 rounded-2xl shadow-xl hidden xl:block animate-float-delayed" style={{ width: "220px" }}>
+                 <div className="flex items-center gap-3 mb-2">
+                   <div className="w-8 h-8 rounded-lg bg-primary-500/20 flex items-center justify-center">
+                     <ArrowRight className="w-4 h-4 text-primary-400" />
+                   </div>
+                   <span className="text-xs font-semibold text-slate-300">Quick Setup</span>
+                 </div>
+                 <div className="w-full h-1.5 bg-slate-700/50 rounded-full overflow-hidden">
+                   <div className="h-full bg-gradient-to-r from-primary-500 to-brand-500 rounded-full animate-progress" />
+                 </div>
+               </div>
+             </div>
+           </div>
 
-          {/* Right Form Side */}
-          <div className="w-full max-w-md lg:max-w-none mx-auto lg:mx-0 lg:ml-auto lg:mr-8 xl:mr-16">
-            {existingSession && !switchingUser && mode === "login" && (
-              <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 p-4 rounded-2xl glass-card">
-                <p className="text-sm text-slate-300 font-medium mb-1">You're signed in as</p>
-                <p className="text-white font-semibold truncate">{user?.email}</p>
-                <div className="flex gap-2 mt-3">
-                  <button onClick={() => navigate(getDashboardRoute(user), { replace: true })} className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-gradient-to-r from-primary-500 to-brand-500 text-white text-sm font-medium hover:shadow-lg hover:shadow-primary-500/25 transition-all">
-                    Go to Dashboard <ArrowRight size={14} />
-                  </button>
-                  <button onClick={handleSwitchUser} className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-white/20 text-slate-300 text-sm font-medium hover:bg-white/10 transition-all">
-                    <LogOut size={14} /> Switch
-                  </button>
-                </div>
-              </motion.div>
-            )}
+           {/* Right Form Side */}
+           <div className="w-full max-w-md lg:max-w-none mx-auto lg:mx-0 lg:ml-auto lg:mr-8 xl:mr-16">
+             {existingSession && !switchingUser && mode === "login" && (
+               <div className="mb-6 p-4 rounded-2xl glass-card animate-fade-in">
+                 <p className="text-sm text-slate-300 font-medium mb-1">You're signed in as</p>
+                 <p className="text-white font-semibold truncate">{user?.email}</p>
+                 <div className="flex gap-2 mt-3">
+                   <button onClick={() => navigate(getDashboardRoute(user), { replace: true })} className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-gradient-to-r from-primary-500 to-brand-500 text-white text-sm font-medium hover:shadow-lg hover:shadow-primary-500/25 transition-all">
+                     Go to Dashboard <ArrowRight size={14} />
+                   </button>
+                   <button onClick={handleSwitchUser} className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-white/20 text-slate-300 text-sm font-medium hover:bg-white/10 transition-all">
+                     <LogOut size={14} /> Switch
+                   </button>
+                 </div>
+               </div>
+             )}
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="glass-card p-8 sm:p-10 rounded-[2rem]"
-            >
-              <AnimatePresence mode="wait">
-                {emailSent && mode === "forgot-password" ? (
-                  <motion.div key="email-sent" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="text-center py-8">
-                    <div className="w-14 h-14 bg-gradient-to-br from-success to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-success/30">
-                      <CheckCircle2 className="w-7 h-7 text-white" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-white mb-2">Check your email</h3>
-                    <p className="text-sm text-slate-400 mb-6">We've sent a password reset link to <strong className="text-white">{formData.email}</strong></p>
-                    <button onClick={() => { setEmailSent(false); setMode("login"); }} className="btn-primary w-full py-3 text-sm">Back to Login</button>
-                  </motion.div>
-                ) : (
-                  <motion.form key={mode} onSubmit={handleSubmit} className="space-y-5" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }}>
-                    <div className="text-center mb-8">
-                      <div className="w-14 h-14 bg-gradient-to-br from-primary-500 to-brand-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary-500/20">
-                        <span className="text-white font-bold text-xl">P</span>
-                      </div>
-                      <h1 className="text-2xl font-bold text-white mb-1">{modeTitle[mode] || "Welcome"}</h1>
-                      <p className="text-sm text-slate-400">{modeSubtitle[mode] || ""}</p>
-                    </div>
+             <div className="glass-card p-8 sm:p-10 rounded-[2rem] animate-fade-in">
+               {emailSent && mode === "forgot-password" ? (
+                 <div className="text-center py-8 animate-fade-in">
+                   <div className="w-14 h-14 bg-gradient-to-br from-success to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-success/30">
+                     <CheckCircle2 className="w-7 h-7 text-white" />
+                   </div>
+                   <h3 className="text-lg font-semibold text-white mb-2">Check your email</h3>
+                   <p className="text-sm text-slate-400 mb-6">We've sent a password reset link to <strong className="text-white">{formData.email}</strong></p>
+                   <button onClick={() => { setEmailSent(false); setMode("login"); }} className="btn-primary w-full py-3 text-sm">Back to Login</button>
+                 </div>
+               ) : (
+                 <form onSubmit={handleSubmit} className="space-y-5 animate-fade-in">
+                   <div className="text-center mb-8">
+                     <div className="w-14 h-14 bg-gradient-to-br from-primary-500 to-brand-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary-500/20">
+                       <span className="text-white font-bold text-xl">P</span>
+                     </div>
+                     <h1 className="text-2xl font-bold text-white mb-1">{modeTitle[mode] || "Welcome"}</h1>
+                     <p className="text-sm text-slate-400">{modeSubtitle[mode] || ""}</p>
+                   </div>
 
-                      {mode === "signup" && (
-                        <div>
-                          <label className="block text-sm font-medium text-slate-300 mb-1.5">Full Name</label>
-                          <div className="relative">
-                            <User className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${focusedField === "name" ? "text-primary-400" : "text-slate-500"}`} />
-                            <input type="text" placeholder="John Doe" className="input focus:border-primary-500 focus:ring-primary-500/20" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} onFocus={() => setFocusedField("name")} onBlur={() => setFocusedField(null)} required />
-                          </div>
-                        </div>
-                      )}
+                     {mode === "signup" && (
+                       <div>
+                         <label className="block text-sm font-medium text-slate-300 mb-1.5">Full Name</label>
+                         <div className="relative">
+                           <User className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${focusedField === "name" ? "text-primary-400" : "text-slate-500"}`} />
+                           <input type="text" placeholder="John Doe" className="input focus:border-primary-500 focus:ring-primary-500/20" value={formData.name} onChange={(e) => setFormField("name", e.target.value)} onFocus={() => setFocusedField("name")} onBlur={() => setFocusedField(null)} required />
+                         </div>
+                       </div>
+                     )}
 
-                    <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-1.5">Email Address</label>
-                      <div className="relative">
-                        <Mail className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${focusedField === "email" ? "text-primary-400" : "text-slate-500"}`} />
-                        <input type="email" placeholder="you@company.com" className="input focus:border-primary-500 focus:ring-primary-500/20" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} onFocus={() => setFocusedField("email")} onBlur={() => setFocusedField(null)} required />
-                      </div>
-                    </div>
+                   <div>
+                     <label className="block text-sm font-medium text-slate-300 mb-1.5">Email Address</label>
+                     <div className="relative">
+                       <Mail className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${focusedField === "email" ? "text-primary-400" : "text-slate-500"}`} />
+                       <input type="email" placeholder="you@company.com" className="input focus:border-primary-500 focus:ring-primary-500/20" value={formData.email} onChange={(e) => setFormField("email", e.target.value)} onFocus={() => setFocusedField("email")} onBlur={() => setFocusedField(null)} required />
+                     </div>
+                   </div>
 
-                    {mode === "login" && (
-                      <div>
-                        <label className="block text-sm font-medium text-slate-300 mb-1.5">Sign in with</label>
-                        <div className="flex gap-2 p-1 bg-slate-800/50 rounded-xl border border-white/5">
-                          {["password", "pin"].map((method) => (
-                            <button key={method} type="button" onClick={() => setLoginMethod(method)} className={`flex-1 py-2 px-4 rounded-lg text-sm font-semibold transition-all ${loginMethod === method ? "bg-gradient-to-r from-primary-500 to-brand-500 text-white shadow-md shadow-primary-500/20" : "text-slate-400 hover:text-slate-200"}`}>
-                              {method === "password" ? "Password" : "PIN"}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                   {mode === "login" && (
+                     <div>
+                       <label className="block text-sm font-medium text-slate-300 mb-1.5">Sign in with</label>
+                       <div className="flex gap-2 p-1 bg-slate-800/50 rounded-xl border border-white/5">
+                         {["password", "pin"].map((method) => (
+                           <button key={method} type="button" onClick={() => setLoginMethod(method)} className={`flex-1 py-2 px-4 rounded-lg text-sm font-semibold transition-all ${loginMethod === method ? "bg-gradient-to-r from-primary-500 to-brand-500 text-white shadow-md shadow-primary-500/20" : "text-slate-400 hover:text-slate-200"}`}>
+                             {method === "password" ? "Password" : "PIN"}
+                           </button>
+                         ))}
+                       </div>
+                     </div>
+                   )}
 
-                    {(mode === "login" || mode === "signup" || mode === "reset-password") && mode !== "forgot-password" && mode !== "2fa-setup" && !needsPasswordSetup && (
-                      <>
-                        {mode === "login" && loginMethod === "password" && (
-                          <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
-                            <div className="relative">
-                              <Lock className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${focusedField === "password" ? "text-primary-400" : "text-slate-500"}`} />
-                              <input type={showPassword ? "text" : "password"} placeholder="Enter your password" className="input pl-10 pr-10 focus:border-primary-500 focus:ring-primary-500/20" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} onFocus={() => setFocusedField("password")} onBlur={() => setFocusedField(null)} required />
-                              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
-                                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                              </button>
-                            </div>
-                          </div>
-                        )}
+                   {(mode === "login" || mode === "signup" || mode === "reset-password") && mode !== "forgot-password" && mode !== "2fa-setup" && !needsPasswordSetup && (
+                     <>
+                       {mode === "login" && loginMethod === "password" && (
+                         <div>
+                           <label className="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
+                           <div className="relative">
+                             <Lock className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${focusedField === "password" ? "text-primary-400" : "text-slate-500"}`} />
+                             <input type={showPassword ? "text" : "password"} placeholder="Enter your password" className="input pl-10 pr-10 focus:border-primary-500 focus:ring-primary-500/20" value={formData.password} onChange={(e) => setFormField("password", e.target.value)} onFocus={() => setFocusedField("password")} onBlur={() => setFocusedField(null)} required />
+                             <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                             </button>
+                           </div>
+                         </div>
+                       )}
 
-                        {mode === "login" && loginMethod === "pin" && (
-                          <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-1.5">4-digit PIN</label>
-                            <input type="text" inputMode="numeric" placeholder="••••" className="input text-center text-2xl tracking-[0.5em] font-mono focus:border-primary-500 focus:ring-primary-500/20" value={formData.pin} onChange={(e) => setFormData({ ...formData, pin: e.target.value.replace(/\D/g, "").slice(0, 4) })} maxLength={4} required />
-                          </div>
-                        )}
+                       {mode === "login" && loginMethod === "pin" && (
+                         <div>
+                           <label className="block text-sm font-medium text-slate-300 mb-1.5">4-digit PIN</label>
+                           <input type="text" inputMode="numeric" placeholder="••••" className="input text-center text-2xl tracking-[0.5em] font-mono focus:border-primary-500 focus:ring-primary-500/20" value={formData.pin} onChange={(e) => setFormField("pin", e.target.value.replace(/\D/g, "").slice(0, 4))} maxLength={4} required />
+                         </div>
+                       )}
 
-                        {(mode === "signup" || mode === "reset-password") && (
-                          <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
-                            <div className="relative">
-                              <Lock className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${focusedField === "password" ? "text-primary-400" : "text-slate-500"}`} />
-                              <input type={showPassword ? "text" : "password"} placeholder={mode === "signup" ? "Create a strong password" : "New password"} className="input pl-10 pr-10 focus:border-primary-500 focus:ring-primary-500/20" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} onFocus={() => setFocusedField("password")} onBlur={() => setFocusedField(null)} required />
-                              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
-                                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                              </button>
-                            </div>
-                          </div>
-                        )}
+                       {(mode === "signup" || mode === "reset-password") && (
+                         <div>
+                           <label className="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
+                           <div className="relative">
+                             <Lock className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${focusedField === "password" ? "text-primary-400" : "text-slate-500"}`} />
+                             <input type={showPassword ? "text" : "password"} placeholder={mode === "signup" ? "Create a strong password" : "New password"} className="input pl-10 pr-10 focus:border-primary-500 focus:ring-primary-500/20" value={formData.password} onChange={(e) => setFormField("password", e.target.value)} onFocus={() => setFocusedField("password")} onBlur={() => setFocusedField(null)} required />
+                             <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                             </button>
+                           </div>
+                         </div>
+                       )}
 
-                        {mode === "reset-password" && (
-                          <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-1.5">Confirm Password</label>
-                            <div className="relative">
-                              <Lock className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${focusedField === "confirmPassword" ? "text-primary-400" : "text-slate-500"}`} />
-                              <input type={showPassword ? "text" : "password"} placeholder="Confirm your password" className="input pl-10 focus:border-primary-500 focus:ring-primary-500/20" value={formData.confirmPassword} onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })} onFocus={() => setFocusedField("confirmPassword")} onBlur={() => setFocusedField(null)} required />
-                            </div>
-                          </div>
-                        )}
+                       {mode === "reset-password" && (
+                         <div>
+                           <label className="block text-sm font-medium text-slate-300 mb-1.5">Confirm Password</label>
+                           <div className="relative">
+                             <Lock className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${focusedField === "confirmPassword" ? "text-primary-400" : "text-slate-500"}`} />
+                             <input type={showPassword ? "text" : "password"} placeholder="Confirm your password" className="input pl-10 focus:border-primary-500 focus:ring-primary-500/20" value={formData.confirmPassword} onChange={(e) => setFormField("confirmPassword", e.target.value)} onFocus={() => setFocusedField("confirmPassword")} onBlur={() => setFocusedField(null)} required />
+                           </div>
+                         </div>
+                       )}
 
-                        {mode === "2fa-setup" && (
-                          <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-1.5">Authenticator Code</label>
-                            <div className="relative">
-                              <Smartphone className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${focusedField === "totpCode" ? "text-primary-400" : "text-slate-500"}`} />
-                              <input type="text" inputMode="numeric" placeholder="000000" className="input pl-10 text-center text-2xl tracking-[0.3em] font-mono focus:border-primary-500 focus:ring-primary-500/20" value={formData.totpCode} onChange={(e) => setFormData({ ...formData, totpCode: e.target.value.replace(/\D/g, "").slice(0, 6) })} maxLength={6} onFocus={() => setFocusedField("totpCode")} onBlur={() => setFocusedField(null)} required />
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    )}
+                       {mode === "2fa-setup" && (
+                         <div>
+                           <label className="block text-sm font-medium text-slate-300 mb-1.5">Authenticator Code</label>
+                           <div className="relative">
+                             <Smartphone className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${focusedField === "totpCode" ? "text-primary-400" : "text-slate-500"}`} />
+                             <input type="text" inputMode="numeric" placeholder="000000" className="input pl-10 text-center text-2xl tracking-[0.3em] font-mono focus:border-primary-500 focus:ring-primary-500/20" value={formData.totpCode} onChange={(e) => setFormField("totpCode", e.target.value.replace(/\D/g, "").slice(0, 6))} maxLength={6} onFocus={() => setFocusedField("totpCode")} onBlur={() => setFocusedField(null)} required />
+                           </div>
+                         </div>
+                       )}
+                     </>
+                   )}
 
-                    {needsPasswordSetup && (
-                      <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4">
-                        <p className="text-sm text-amber-200 font-medium">Please set a new password to continue</p>
-                      </div>
-                    )}
+                   {needsPasswordSetup && (
+                     <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4">
+                       <p className="text-sm text-amber-200 font-medium">Please set a new password to continue</p>
+                     </div>
+                   )}
 
-                    {error && (
-                      <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="bg-red-500/10 border border-red-500/20 rounded-xl p-3.5 flex items-start gap-2.5">
-                        <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
-                        <span className="text-sm text-red-200 leading-relaxed">{error}</span>
-                      </motion.div>
-                    )}
+                   {error && (
+                     <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3.5 flex items-start gap-2.5 animate-fade-in">
+                       <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
+                       <span className="text-sm text-red-200 leading-relaxed">{error}</span>
+                     </div>
+                   )}
 
-                    <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-primary-500 to-brand-500 hover:from-primary-600 hover:to-brand-600 text-white font-semibold py-3.5 rounded-2xl transition-all shadow-lg shadow-primary-500/25 hover:shadow-primary-500/40 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm">
-                      {loading ? (
-                        <span className="flex items-center gap-2"><Loader className="w-4 h-4 animate-spin" /> Processing...</span>
-                      ) : ({ login: "Sign In", signup: "Create Account", "forgot-password": "Send Reset Link", "reset-password": "Update Password", "2fa-setup": "Verify & Continue", "verify-email": "Verify Email" })[mode] || "Continue"}
-                    </button>
-                  </motion.form>
-                )}
-              </AnimatePresence>
+                   <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-primary-500 to-brand-500 hover:from-primary-600 hover:to-brand-600 text-white font-semibold py-3.5 rounded-2xl transition-all shadow-lg shadow-primary-500/25 hover:shadow-primary-500/40 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm">
+                     {loading ? (
+                       <span className="flex items-center gap-2"><Loader className="w-4 h-4 animate-spin" /> Processing...</span>
+                     ) : ({ login: "Sign In", signup: "Create Account", "forgot-password": "Send Reset Link", "reset-password": "Update Password", "2fa-setup": "Verify & Continue", "verify-email": "Verify Email" })[mode] || "Continue"}
+                   </button>
+                 </form>
+               )}
 
-              <div className="mt-6">
-                <div className="relative mb-6">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-white/10" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-transparent px-2 text-slate-500">Or continue with</span>
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { icon: Chrome, label: "Google" },
-                    { icon: Apple, label: "Apple" },
-                    { icon: Github, label: "GitHub" },
-                  ].map((provider) => (
-                    <button key={provider.label} type="button" className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 text-slate-300 hover:text-white hover:bg-white/10 hover:border-primary-500/50 transition-all text-sm font-medium">
-                      <provider.icon className="w-4 h-4" />
-                      <span className="hidden sm:inline">{provider.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
+               <div className="mt-6">
+                 <div className="relative mb-6">
+                   <div className="absolute inset-0 flex items-center">
+                     <div className="w-full border-t border-white/10" />
+                   </div>
+                   <div className="relative flex justify-center text-xs uppercase">
+                     <span className="bg-transparent px-2 text-slate-500">Or continue with</span>
+                   </div>
+                 </div>
+                 <div className="grid grid-cols-3 gap-3">
+                   {[
+                     { icon: Chrome, label: "Google" },
+                     { icon: Apple, label: "Apple" },
+                     { icon: Github, label: "GitHub" },
+                   ].map((provider) => (
+                     <button key={provider.label} type="button" className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 text-slate-300 hover:text-white hover:bg-white/10 hover:border-primary-500/50 transition-all text-sm font-medium">
+                       <provider.icon className="w-4 h-4" />
+                       <span className="hidden sm:inline">{provider.label}</span>
+                     </button>
+                   ))}
+                 </div>
+               </div>
 
-              <div className="mt-6 text-center">
-                <button onClick={() => { setMode(mode === "login" ? "signup" : "login"); setError(""); setNeedsPasswordSetup(false); }} className="text-sm text-slate-400 hover:text-primary-400 font-medium transition-colors">
-                  {mode === "login" ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
-                </button>
-              </div>
+               <div className="mt-6 text-center">
+                 <button onClick={() => { setMode(mode === "login" ? "signup" : "login"); setError(""); setNeedsPasswordSetup(false); }} className="text-sm text-slate-400 hover:text-primary-400 font-medium transition-colors">
+                   {mode === "login" ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+                 </button>
+               </div>
 
-              {mode === "login" && (
-                <div className="mt-4 text-center">
-                  <button onClick={() => { setMode("forgot-password"); setEmailSent(false); setError(""); }} className="text-sm text-slate-500 hover:text-primary-400 font-medium transition-colors">
-                    Forgot password?
-                  </button>
-                </div>
-              )}
+               {mode === "login" && (
+                 <div className="mt-4 text-center">
+                   <button onClick={() => { setMode("forgot-password"); setEmailSent(false); setError(""); }} className="text-sm text-slate-500 hover:text-primary-400 font-medium transition-colors">
+                     Forgot password?
+                   </button>
+                 </div>
+               )}
 
-              {mode === "forgot-password" && !emailSent && (
-                <div className="mt-4 text-center">
-                  <button onClick={() => { setMode("login"); setEmailSent(false); setError(""); }} className="text-sm text-slate-500 hover:text-primary-400 font-medium transition-colors flex items-center justify-center gap-1 mx-auto">
-                    <ArrowLeft className="w-3 h-3" /> Back to login
-                  </button>
-                </div>
-              )}
-            </motion.div>
+               {mode === "forgot-password" && !emailSent && (
+                 <div className="mt-4 text-center">
+                   <button onClick={() => { setMode("login"); setEmailSent(false); setError(""); }} className="text-sm text-slate-500 hover:text-primary-400 font-medium transition-colors flex items-center justify-center gap-1 mx-auto">
+                     <ArrowLeft className="w-3 h-3" /> Back to login
+                   </button>
+                 </div>
+               )}
+             </div>
 
-            <p className="text-center text-xs text-slate-500 mt-8">
-              Protected by enterprise-grade security.
-            </p>
-          </div>
+             <p className="text-center text-xs text-slate-500 mt-8">
+               Protected by enterprise-grade security.
+             </p>
+           </div>
         </div>
       </main>
     </div>
   );
-}
+};
+
+export default AuthEnterprise;

@@ -570,8 +570,9 @@ export default function StockDashboard() {
               </tbody>
             </table>
           </div>
-        )}
-      </div>
+        </>
+      )}
+    </div>
 
       {/* Recent Deductions Table */}
       <div className="card">

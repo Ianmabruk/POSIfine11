@@ -1,8 +1,9 @@
 
 // Updated API Service Layer - Connected to Deployed Backend
 
+import { cacheGet, cacheSet, cacheClear } from '../utils/apiCache';
+
 const getBaseUrl = () => {
-  // Use environment variable if available, otherwise use localhost for development
   if (import.meta.env.VITE_API_BASE) {
     return import.meta.env.VITE_API_BASE;
   }
@@ -36,6 +37,12 @@ const shouldRetryRequest = (options = {}) => {
   const method = String(options.method || 'GET').toUpperCase();
   return method === 'GET' || method === 'HEAD';
 };
+
+function buildCacheKey(endpoint, options = {}) {
+  const token = getToken();
+  const parts = [endpoint, options.method || 'GET', token || 'anon'];
+  return parts.join('|');
+}
 
 const refreshAuthSession = async (csrfToken) => {
   if (!refreshPromise) {
@@ -78,7 +85,6 @@ const refreshAuthSession = async (csrfToken) => {
   return refreshPromise;
 };
 
-// Retry logic for network failures (handles Render free tier spindown)
 const requestWithRetry = async (endpoint, options = {}, retryCount = 0, maxRetries = 2, didRefresh = false) => {
   const token = getToken();
   const csrfToken = getCsrfToken();
@@ -89,7 +95,6 @@ const requestWithRetry = async (endpoint, options = {}, retryCount = 0, maxRetri
     ? cleanEndpoint.replace(/^\/api/, '')
     : cleanEndpoint;
   
-  // Auth endpoints that should NOT send the token (public/unauthenticated)
   const skipAuthEndpoints = ['/auth/login', '/auth/signup', '/auth/pin-login', '/auth/refresh', '/main-admin/auth/login'];
   const shouldSkipAuth = skipAuthEndpoints.some(ep => cleanEndpoint === ep);
 
@@ -104,6 +109,16 @@ const requestWithRetry = async (endpoint, options = {}, retryCount = 0, maxRetri
     }
   };
 
+  const method = String(options.method || 'GET').toUpperCase();
+  const cacheKey = buildCacheKey(normalizedEndpoint, options);
+
+  if (method === 'GET' || method === 'HEAD') {
+    const cached = cacheGet(cacheKey);
+    if (cached) {
+      return cached;
+    }
+  }
+
   try {
     const response = await fetch(`${BASE_API_URL}${normalizedEndpoint}`, config);
 
@@ -114,13 +129,10 @@ const requestWithRetry = async (endpoint, options = {}, retryCount = 0, maxRetri
           return requestWithRetry(endpoint, options, retryCount, maxRetries, true);
         }
       }
-      // For login endpoints, return the error response instead of throwing
       if (cleanEndpoint.includes('/auth/login') || cleanEndpoint.includes('/main-admin/auth/login')) {
         const errorData = await response.json().catch(() => ({ error: 'Unauthorized' }));
         throw new Error(errorData.error || 'Invalid credentials');
       }
-      
-      // For other endpoints, DON'T clear tokens or redirect.
       const errorData = await response.json().catch(() => ({ error: 'Request failed' }));
       const err = new Error(errorData.error || 'Request failed');
       err.status = 401;
@@ -149,27 +161,27 @@ const requestWithRetry = async (endpoint, options = {}, retryCount = 0, maxRetri
       if (response.status === 204) {
         return { success: true };
       }
-      return await response.json();
+      const json = await response.json();
+      if (method === 'GET' || method === 'HEAD') {
+        cacheSet(cacheKey, json, 30_000);
+      }
+      return json;
     }
 
     const errorData = await response.json().catch(() => ({ error: 'Network error' }));
     throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
 
   } catch (error) {
-    // Retry on network errors (fetch failures)
     if (error.name === 'TypeError' && error.message.includes('fetch')) {
       console.error(`API Fetch Error (attempt ${retryCount + 1}/${maxRetries + 1}):`, error);
       console.error("Attempted URL:", `${BASE_API_URL}${cleanEndpoint}`);
       
-      // If not max retries, wait and retry
       if (shouldRetryRequest(options) && retryCount < maxRetries) {
         const delayMs = Math.min(250 * Math.pow(2, retryCount), 2000);
         console.log(`Retrying in ${delayMs}ms...`);
         await new Promise(resolve => setTimeout(resolve, delayMs));
         return requestWithRetry(endpoint, options, retryCount + 1, maxRetries);
       }
-      
-      // All retries failed
       throw new Error('Cannot connect to server. The server may be waking up. Please try again in a moment.');
     }
     throw error;
@@ -180,8 +192,8 @@ const request = (endpoint, options = {}) => {
   return requestWithRetry(endpoint, options, 0, shouldRetryRequest(options) ? 2 : 0);
 };
 
+export { request, requestWithRetry };
 
-// Authentication API
 export const auth = {
   login: (credentials) => request('/auth/login', {
     method: 'POST',
