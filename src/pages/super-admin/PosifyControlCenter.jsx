@@ -32,6 +32,7 @@ export default function PosifyControlCenter() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     loadData();
