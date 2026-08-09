@@ -1,19 +1,58 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useProducts } from '../context/ProductsContext';
 import { products, sales, expenses, stats, batches, discounts, timeEntries, creditRequests, reminders } from '../services/api';
 import websocketService from '../services/websocketService';
 import { BASE_API_URL } from '../services/api';
-import { ShoppingCart, Trash2, LogOut, Plus, Minus, DollarSign, TrendingDown, Package, Edit2, Search, Camera, Upload, AlertTriangle, Clock, Play, Square, CreditCard, X, Bell, PenSquare } from 'lucide-react';
+import { ShoppingCart, Trash2, LogOut, Plus, Minus, TrendingDown, Package, Edit2, Search, Camera, AlertTriangle, Clock, Play, Square, CreditCard, X, Bell, PenSquare } from 'lucide-react';
 import SignaturePad from '../components/SignaturePad';
 import DiscountSelector from '../components/DiscountSelector';
 import ProductCard from '../components/ProductCard';
 import LowStockAlert from '../components/LowStockAlert';
-// Import optimized transaction service
 import { 
   completeSaleTransaction, 
   invalidateProductCache
 } from '../services/transactionService';
+
+const TAX_RATE = 0.16;
+
+const useCashierCalculations = (cart, selectedDiscount, taxType) => {
+  return useMemo(() => {
+    const subtotal = cart.reduce((sum, item) => {
+      const price = Number(item.price) || 0;
+      const quantity = Number(item.quantity) || 0;
+      return sum + (price * quantity);
+    }, 0);
+
+    const discountAmount = selectedDiscount
+      ? selectedDiscount.type === 'percentage'
+        ? (subtotal * Number(selectedDiscount.value) / 100)
+        : Number(selectedDiscount.value)
+      : 0;
+
+    const safeDiscount = Math.max(0, Math.min(discountAmount, subtotal));
+    const afterDiscount = Math.max(0, subtotal - safeDiscount);
+
+    let taxAmount = 0;
+    let finalTotal = 0;
+
+    if (taxType === 'inclusive') {
+      taxAmount = Math.round(((afterDiscount / (1 + TAX_RATE)) * TAX_RATE) * 100) / 100;
+      finalTotal = Math.round(afterDiscount * 100) / 100;
+    } else {
+      taxAmount = Math.round((afterDiscount * TAX_RATE) * 100) / 100;
+      finalTotal = Math.round((afterDiscount + taxAmount) * 100) / 100;
+    }
+
+    return {
+      subtotal: Math.round(subtotal * 100) / 100,
+      discountAmount: Math.round(safeDiscount * 100) / 100,
+      taxAmount,
+      finalTotal,
+      itemCount: cart.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0)
+    };
+  }, [cart, selectedDiscount, taxType]);
+};
 
 export default function CashierPOS() {
   const { user, logout } = useAuth();
@@ -65,6 +104,8 @@ export default function CashierPOS() {
   const [mpesaProvider, setMpesaProvider] = useState('intasend');
   const mpesaPollingRef = useRef(null);
   const [cartSheetOpen, setCartSheetOpen] = useState(false);
+
+  const calc = useCashierCalculations(cart, selectedDiscount, taxType);
 
   // Show a non-blocking toast notification (auto-dismisses after `ms` ms)
   const showToast = useCallback((type, message, ms = 3500) => {
@@ -722,23 +763,6 @@ export default function CashierPOS() {
     setMpesaPaymentStatus({ status: 'pending' });
 
     try {
-      const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-      const discountValue = selectedDiscount
-        ? (selectedDiscount.type === 'percentage' ? (subtotal * selectedDiscount.value / 100) : selectedDiscount.value)
-        : 0;
-      const TAX_RATE = 0.16;
-      let taxAmount = 0;
-      let finalTotal = 0;
-      if (taxType === 'inclusive') {
-        const afterDiscount = subtotal - discountValue;
-        taxAmount = Math.round(((afterDiscount / (1 + TAX_RATE)) * TAX_RATE) * 100) / 100;
-        finalTotal = Math.round(afterDiscount * 100) / 100;
-      } else {
-        const afterDiscount = subtotal - discountValue;
-        taxAmount = Math.round((afterDiscount * TAX_RATE) * 100) / 100;
-        finalTotal = Math.round((afterDiscount + taxAmount) * 100) / 100;
-      }
-
       const cartItems = cart.map(item => ({
         productId: item.id,
         quantity: item.quantity,
@@ -756,9 +780,9 @@ export default function CashierPOS() {
         },
         body: JSON.stringify({
           items: cartItems,
-          total: finalTotal,
-          discount: discountValue,
-          tax: taxAmount,
+          total: calc.finalTotal,
+          discount: calc.discountAmount,
+          tax: calc.taxAmount,
           taxType: taxType,
           paymentMethod: 'mpesa',
           shiftId: currentTimeEntry?.id
@@ -786,7 +810,7 @@ export default function CashierPOS() {
       setMpesaPaymentStatus(null);
       showToast('error', err.message || 'Failed to process M-Pesa payment', 5000);
     }
-  }, [cart, cartItemUnits, currentTimeEntry?.id, initiateMpesaPayment, mpesaPhone, normalizePhone, selectedDiscount, showToast, startMpesaPolling, taxType]);
+  }, [cart, cartItemUnits, currentTimeEntry?.id, initiateMpesaPayment, mpesaPhone, normalizePhone, showToast, startMpesaPolling, taxType, calc]);
 
   const handleCloseMpesaModal = useCallback(() => {
     if (mpesaPollingRef.current) clearInterval(mpesaPollingRef.current);
@@ -840,30 +864,6 @@ export default function CashierPOS() {
     const savedTaxType = taxType;
     
     try {
-      // Calculate totals
-      const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-      const discountValue = selectedDiscount 
-        ? (selectedDiscount.type === 'percentage' ? (subtotal * selectedDiscount.value / 100) : selectedDiscount.value)
-        : 0;
-      
-      // Calculate tax based on type
-      const TAX_RATE = 0.16; // 16% VAT
-      let taxAmount = 0;
-      let finalTotal = 0;
-      
-      if (taxType === 'inclusive') {
-        // Prices already include tax — extract tax for display/records
-        // For the discounted amount, tax is proportionally reduced
-        const afterDiscount = subtotal - discountValue;
-        taxAmount = Math.round(((afterDiscount / (1 + TAX_RATE)) * TAX_RATE) * 100) / 100;
-        finalTotal = Math.round(afterDiscount * 100) / 100;
-      } else {
-        // Tax added on top of (subtotal - discount)
-        const afterDiscount = subtotal - discountValue;
-        taxAmount = Math.round((afterDiscount * TAX_RATE) * 100) / 100;
-        finalTotal = Math.round((afterDiscount + taxAmount) * 100) / 100;
-      }
-      
       // Prepare cart items with units
       const cartItems = cart.map(item => ({
         productId: item.id,
@@ -875,9 +875,9 @@ export default function CashierPOS() {
       
       console.log('💳 [Checkout] Processing sale:', {
         items: cartItems.length,
-        total: finalTotal,
-        discount: discountValue,
-        tax: taxAmount
+        total: calc.finalTotal,
+        discount: calc.discountAmount,
+        tax: calc.taxAmount
       });
       
       // ====================================================================
@@ -886,9 +886,9 @@ export default function CashierPOS() {
       const result = await completeSaleTransaction(
         {
           items: cartItems,
-          total: finalTotal,
-          discount: discountValue,
-          tax: taxAmount,
+          total: calc.finalTotal,
+          discount: calc.discountAmount,
+          tax: calc.taxAmount,
           taxType: taxType,
           paymentMethod: paymentMethod,
           shiftId: currentTimeEntry?.id
@@ -939,9 +939,9 @@ export default function CashierPOS() {
           const newSale = {
             id: successData.saleId,
             items: cartItems,
-            total: finalTotal,
-            discount: discountValue,
-            tax: taxAmount,
+            total: calc.finalTotal,
+            discount: calc.discountAmount,
+            tax: calc.taxAmount,
             taxType: taxType,
             paymentMethod: paymentMethod,
             accountId: user?.accountId,
@@ -961,16 +961,14 @@ export default function CashierPOS() {
             detail: {
               sale: newSale,
               saleId: successData.saleId,
-              total: finalTotal,
+              total: calc.finalTotal,
               timestamp: new Date().toISOString()
             }
           }));
           
-          // Show success message – non-blocking toast so the cashier can
-          // immediately start the next sale without dismissing a dialog.
           showToast(
             'success',
-            `Sale #${successData.saleId} — KSH ${finalTotal.toLocaleString()} (${successData.processingTime || successData.clientElapsedMs?.toFixed(0) + 'ms'})`,
+            `Sale #${successData.saleId} — KSH ${calc.finalTotal.toLocaleString()} (${successData.processingTime || successData.clientElapsedMs?.toFixed(0) + 'ms'})`,
             4000
           );
           
@@ -1030,12 +1028,12 @@ export default function CashierPOS() {
     paymentMethod,
     refreshProducts,
     refreshStats,
-    selectedDiscount,
     showToast,
     taxType,
     user?.accountId,
     user?.id,
-    user?.name
+    user?.name,
+    calc
   ]);
 
   const handleAddProduct = async (e) => {
@@ -1518,23 +1516,17 @@ export default function CashierPOS() {
               <div className="space-y-2 bg-gray-50 p-3 rounded-lg">
                 <div className="flex justify-between text-sm">
                   <span>Subtotal:</span>
-                  <span className="text-gray-700">KSH {subtotal.toLocaleString()}</span>
+                  <span className="text-gray-700">KSH {calc.subtotal.toLocaleString()}</span>
                 </div>
                 {selectedDiscount && (
                   <div className="flex justify-between text-sm text-green-600">
                     <span>Discount:</span>
-                    <span>-KSH {(selectedDiscount.type === 'percentage' ? (subtotal * selectedDiscount.value / 100) : selectedDiscount.value).toLocaleString()}</span>
+                    <span>-KSH {calc.discountAmount.toLocaleString()}</span>
                   </div>
                 )}
                 {(() => {
-                  const discountVal = selectedDiscount ? (selectedDiscount.type === 'percentage' ? (subtotal * selectedDiscount.value / 100) : selectedDiscount.value) : 0;
-                  const afterDiscount = subtotal - discountVal;
-                  const taxAmt = taxType === 'inclusive'
-                    ? Math.round(((afterDiscount / 1.16) * 0.16) * 100) / 100
-                    : Math.round((afterDiscount * 0.16) * 100) / 100;
-                  const finalTot = taxType === 'inclusive'
-                    ? Math.round(afterDiscount * 100) / 100
-                    : Math.round((afterDiscount + taxAmt) * 100) / 100;
+                  const taxAmt = calc.taxAmount;
+                  const finalTot = calc.finalTotal;
                   return (
                     <>
                       <div className="flex justify-between text-sm text-orange-600">
@@ -1574,7 +1566,7 @@ export default function CashierPOS() {
                 </select>
                 {selectedDiscount && (
                   <p className="text-sm text-green-600 mt-1">
-                    Discount: KSH {(selectedDiscount.type === 'percentage' ? (subtotal * selectedDiscount.value / 100) : selectedDiscount.value).toLocaleString()}
+                    Discount: KSH {calc.discountAmount.toLocaleString()}
                   </p>
                 )}
               </div>
@@ -1634,7 +1626,7 @@ export default function CashierPOS() {
                       <div className="bg-gray-50 rounded-xl p-4">
                         <p className="text-sm text-gray-500 mb-1">Amount</p>
                         <p className="text-2xl font-bold text-gray-900">
-                          KSH {finalTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          KSH {calc.finalTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
                       </div>
 
@@ -2278,7 +2270,7 @@ export default function CashierPOS() {
                 </div>
                 <span className="font-semibold text-gray-900">View Cart</span>
               </div>
-              <span className="font-bold text-green-600 text-lg">KSH {subtotal.toLocaleString()}</span>
+              <span className="font-bold text-green-600 text-lg">KSH {calc.subtotal.toLocaleString()}</span>
             </button>
           </div>
 
@@ -2319,39 +2311,33 @@ export default function CashierPOS() {
                     <div className="space-y-2 bg-gray-50 p-3 rounded-lg">
                       <div className="flex justify-between text-sm">
                         <span>Subtotal:</span>
-                        <span className="text-gray-700">KSH {subtotal.toLocaleString()}</span>
+                        <span className="text-gray-700">KSH {calc.subtotal.toLocaleString()}</span>
                       </div>
                       {selectedDiscount && (
                         <div className="flex justify-between text-sm text-green-600">
                           <span>Discount:</span>
-                          <span>-KSH {(selectedDiscount.type === 'percentage' ? (subtotal * selectedDiscount.value / 100) : selectedDiscount.value).toLocaleString()}</span>
+                          <span>-KSH {calc.discountAmount.toLocaleString()}</span>
                         </div>
                       )}
                       {(() => {
-                        const discountVal = selectedDiscount ? (selectedDiscount.type === 'percentage' ? (subtotal * selectedDiscount.value / 100) : selectedDiscount.value) : 0;
-                        const afterDiscount = subtotal - discountVal;
-                      const taxAmt = taxType === 'inclusive'
-                        ? Math.round(((afterDiscount / 1.16) * 0.16) * 100) / 100
-                        : Math.round((afterDiscount * 0.16) * 100) / 100;
-                      const finalTot = taxType === 'inclusive'
-                        ? Math.round(afterDiscount * 100) / 100
-                        : Math.round((afterDiscount + taxAmt) * 100) / 100;
-                      return (
-                        <>
-                          <div className="flex justify-between text-sm text-orange-600">
-                            <span>VAT 16% ({taxType === 'inclusive' ? 'Included' : 'Added'}):</span>
-                            <span>{taxType === 'inclusive' ? '' : '+'}KSH {taxAmt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                          </div>
-                          <div className="border-t pt-2 flex justify-between text-lg font-bold">
-                            <span>Final Total:</span>
-                            <span className="text-green-600">
-                              KSH {finalTot.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </span>
-                          </div>
-                        </>
-                      );
-                    })()}
-                  </div>
+                        const taxAmt = calc.taxAmount;
+                        const finalTot = calc.finalTotal;
+                        return (
+                          <>
+                            <div className="flex justify-between text-sm text-orange-600">
+                              <span>VAT 16% ({taxType === 'inclusive' ? 'Included' : 'Added'}):</span>
+                              <span>{taxType === 'inclusive' ? '' : '+'}KSH {taxAmt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            </div>
+                            <div className="border-t pt-2 flex justify-between text-lg font-bold">
+                              <span>Final Total:</span>
+                              <span className="text-green-600">
+                                KSH {finalTot.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </span>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
                   <button
                     onClick={() => {
                       setCartSheetOpen(false);
