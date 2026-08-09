@@ -170,6 +170,9 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const initializeAuth = async () => {
+    const timeoutMs = 8000;
+    let timeoutHandle;
+    
     try {
       const token = localStorage.getItem('token');
       const refreshToken = localStorage.getItem('refreshToken');
@@ -190,16 +193,23 @@ export const AuthProvider = ({ children }) => {
         } catch (e) { /* ignore */ }
       }
 
+      const timeoutPromise = new Promise((_, reject) => {
+        timeoutHandle = setTimeout(() => reject(new Error('Auth init timeout')), timeoutMs);
+      });
+
       try {
-        const [meResp, settingsResp] = await Promise.allSettled([
-          fetch(`${BASE_API_URL}/auth/me`, {
-            credentials: 'include',
-            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
-          }),
-          fetch(`${BASE_API_URL}/settings`, {
-            credentials: 'include',
-            headers: { Authorization: `Bearer ${token}` }
-          })
+        const [meResp, settingsResp] = await Promise.race([
+          Promise.allSettled([
+            fetch(`${BASE_API_URL}/auth/me`, {
+              credentials: 'include',
+              headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+            }),
+            fetch(`${BASE_API_URL}/settings`, {
+              credentials: 'include',
+              headers: { Authorization: `Bearer ${token}` }
+            })
+          ]),
+          timeoutPromise
         ]);
 
         if (meResp.status === 'fulfilled' && meResp.value.ok) {
@@ -264,6 +274,7 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
       }
     } finally {
+      if (timeoutHandle) clearTimeout(timeoutHandle);
       setLoading(false);
       setIsInitialized(true);
       if (localStorage.getItem('token')) {
@@ -273,22 +284,32 @@ export const AuthProvider = ({ children }) => {
   };
 
 
+  const clearAccountCaches = useCallback(() => {
+    try {
+      const prefix = 'products_cache_';
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(prefix)) {
+          keysToRemove.push(key);
+        }
+      }
+      for (const key of keysToRemove) {
+        localStorage.removeItem(key);
+      }
+    } catch {
+      // ignore storage errors
+    }
+  }, []);
+
   const login = async (payload) => {
     try {
-      // CRITICAL: Fully clear ALL previous session data before setting new session.
-      // This prevents data leaking between different users/accounts.
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('csrfToken');
       localStorage.removeItem('appLogo');
-      // Clear ALL products caches from any previous account
-      Object.keys(localStorage).forEach(key => {
-        if (key.startsWith('products_cache_')) {
-          localStorage.removeItem(key);
-        }
-      });
-      // Clear session flags so they don't bleed across accounts
+      clearAccountCaches();
       sessionStorage.removeItem('reminderShown');
       sessionStorage.removeItem('adminReminderShown');
       setUser(null);
@@ -339,17 +360,12 @@ export const AuthProvider = ({ children }) => {
 
   const signup = async (userData) => {
     try {
-      // CRITICAL: Fully clear ALL previous session data before creating new account.
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('csrfToken');
       localStorage.removeItem('appLogo');
-      Object.keys(localStorage).forEach(key => {
-        if (key.startsWith('products_cache_')) {
-          localStorage.removeItem(key);
-        }
-      });
+      clearAccountCaches();
       sessionStorage.removeItem('reminderShown');
       sessionStorage.removeItem('adminReminderShown');
       setUser(null);
@@ -419,12 +435,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('csrfToken');
     localStorage.removeItem('appLogo');
-    // Clear ALL products caches to prevent data leaking across accounts
-    Object.keys(localStorage).forEach(key => {
-      if (key.startsWith('products_cache_')) {
-        localStorage.removeItem(key);
-      }
-    });
+    clearAccountCaches();
     // Clear session flags so they don't persist across re-logins
     sessionStorage.removeItem('reminderShown');
     sessionStorage.removeItem('adminReminderShown');

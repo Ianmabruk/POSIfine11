@@ -319,7 +319,7 @@ const AuthEnterprise = () => {
 
                      {mode === "signup" && (
                        <div>
-                         <label className="block text-sm font-medium text-slate-300 mb-1.5">Full Name</label>
+                         <label className="block text-sm font-medium text-slate-700 mb-1.5">Full Name</label>
                          <div className="relative">
                            <User className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${focusedField === "name" ? "text-primary-400" : "text-slate-500"}`} />
                            <input type="text" placeholder="John Doe" className="input focus:border-primary-500 focus:ring-primary-500/20" value={formData.name} onChange={(e) => setFormField("name", e.target.value)} onFocus={() => setFocusedField("name")} onBlur={() => setFocusedField(null)} required />
@@ -328,7 +328,7 @@ const AuthEnterprise = () => {
                      )}
 
                    <div>
-                     <label className="block text-sm font-medium text-slate-300 mb-1.5">Email Address</label>
+                     <label className="block text-sm font-medium text-slate-700 mb-1.5">Email Address</label>
                      <div className="relative">
                        <Mail className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${focusedField === "email" ? "text-primary-400" : "text-slate-500"}`} />
                        <input type="email" placeholder="you@company.com" className="input focus:border-primary-500 focus:ring-primary-500/20" value={formData.email} onChange={(e) => setFormField("email", e.target.value)} onFocus={() => setFocusedField("email")} onBlur={() => setFocusedField(null)} required />
@@ -337,7 +337,7 @@ const AuthEnterprise = () => {
 
                    {mode === "login" && (
                      <div>
-                       <label className="block text-sm font-medium text-slate-300 mb-1.5">Sign in with</label>
+                       <label className="block text-sm font-medium text-slate-700 mb-1.5">Sign in with</label>
                        <div className="flex gap-2 p-1 bg-slate-800/50 rounded-xl border border-white/5">
                          {["password", "pin"].map((method) => (
                            <button key={method} type="button" onClick={() => setLoginMethod(method)} className={`flex-1 py-2 px-4 rounded-lg text-sm font-semibold transition-all ${loginMethod === method ? "bg-gradient-to-r from-primary-500 to-brand-500 text-white shadow-md shadow-primary-500/20" : "text-slate-400 hover:text-slate-200"}`}>
@@ -352,7 +352,7 @@ const AuthEnterprise = () => {
                      <>
                        {mode === "login" && loginMethod === "password" && (
                          <div>
-                           <label className="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
+                           <label className="block text-sm font-medium text-slate-700 mb-1.5">Password</label>
                            <div className="relative">
                              <Lock className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${focusedField === "password" ? "text-primary-400" : "text-slate-500"}`} />
                              <input type={showPassword ? "text" : "password"} placeholder="Enter your password" className="input pl-10 pr-10 focus:border-primary-500 focus:ring-primary-500/20" value={formData.password} onChange={(e) => setFormField("password", e.target.value)} onFocus={() => setFocusedField("password")} onBlur={() => setFocusedField(null)} required />
@@ -365,14 +365,14 @@ const AuthEnterprise = () => {
 
                        {mode === "login" && loginMethod === "pin" && (
                          <div>
-                           <label className="block text-sm font-medium text-slate-300 mb-1.5">4-digit PIN</label>
+                           <label className="block text-sm font-medium text-slate-700 mb-1.5">4-digit PIN</label>
                            <input type="text" inputMode="numeric" placeholder="••••" className="input text-center text-2xl tracking-[0.5em] font-mono focus:border-primary-500 focus:ring-primary-500/20" value={formData.pin} onChange={(e) => setFormField("pin", e.target.value.replace(/\D/g, "").slice(0, 4))} maxLength={4} required />
                          </div>
                        )}
 
                        {(mode === "signup" || mode === "reset-password") && (
                          <div>
-                           <label className="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
+                           <label className="block text-sm font-medium text-slate-700 mb-1.5">Password</label>
                            <div className="relative">
                              <Lock className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${focusedField === "password" ? "text-primary-400" : "text-slate-500"}`} />
                              <input type={showPassword ? "text" : "password"} placeholder={mode === "signup" ? "Create a strong password" : "New password"} className="input pl-10 pr-10 focus:border-primary-500 focus:ring-primary-500/20" value={formData.password} onChange={(e) => setFormField("password", e.target.value)} onFocus={() => setFocusedField("password")} onBlur={() => setFocusedField(null)} required />
@@ -385,7 +385,7 @@ const AuthEnterprise = () => {
 
                        {mode === "reset-password" && (
                          <div>
-                           <label className="block text-sm font-medium text-slate-300 mb-1.5">Confirm Password</label>
+                           <label className="block text-sm font-medium text-slate-700 mb-1.5">Confirm Password</label>
                            <div className="relative">
                              <Lock className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${focusedField === "confirmPassword" ? "text-primary-400" : "text-slate-500"}`} />
                              <input type={showPassword ? "text" : "password"} placeholder="Confirm your password" className="input pl-10 focus:border-primary-500 focus:ring-primary-500/20" value={formData.confirmPassword} onChange={(e) => setFormField("confirmPassword", e.target.value)} onFocus={() => setFocusedField("confirmPassword")} onBlur={() => setFocusedField(null)} required />
@@ -395,7 +395,7 @@ const AuthEnterprise = () => {
 
                        {mode === "2fa-setup" && (
                          <div>
-                           <label className="block text-sm font-medium text-slate-300 mb-1.5">Authenticator Code</label>
+                           <label className="block text-sm font-medium text-slate-700 mb-1.5">Authenticator Code</label>
                            <div className="relative">
                              <Smartphone className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${focusedField === "totpCode" ? "text-primary-400" : "text-slate-500"}`} />
                              <input type="text" inputMode="numeric" placeholder="000000" className="input pl-10 text-center text-2xl tracking-[0.3em] font-mono focus:border-primary-500 focus:ring-primary-500/20" value={formData.totpCode} onChange={(e) => setFormField("totpCode", e.target.value.replace(/\D/g, "").slice(0, 6))} maxLength={6} onFocus={() => setFocusedField("totpCode")} onBlur={() => setFocusedField(null)} required />

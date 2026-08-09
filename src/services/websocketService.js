@@ -1,12 +1,11 @@
 // WebSocket Service for Real-Time Product Updates
 
 const getWebSocketUrl = () => {
-  const baseUrl = import.meta.env.VITE_API_BASE || 'https://posifine22.onrender.com/api';
-  // Convert https to wss, http to ws, and remove /api suffix for WebSocket
+  const baseUrl = import.meta.env.VITE_API_BASE || import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5000');
   return baseUrl
     .replace('https://', 'wss://')
     .replace('http://', 'ws://')
-    .replace('/api', ''); // Remove /api suffix since WebSocket is at root /ws
+    .replace('/api', '');
 };
 
 class WebSocketService {
