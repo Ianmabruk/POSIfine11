@@ -333,6 +333,7 @@ export const payments = {
     body: JSON.stringify(data)
   }),
   getStatus: (paymentId) => request(`/payments/${paymentId}/status`),
+  cloudpayStatus: (reference) => request(`/payments/cloudpay/status/${reference}`),
 };
 
 // Expenses API
