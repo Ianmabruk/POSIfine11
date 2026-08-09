@@ -50,6 +50,8 @@ export default function MainAdminLogin() {
       localStorage.removeItem('ownerUser');
       localStorage.removeItem('mainAdminToken');
       localStorage.removeItem('mainAdminUser');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('csrfToken');
 
       const response = await mainAdmin.login(formData);
       

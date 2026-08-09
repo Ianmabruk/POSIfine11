@@ -313,7 +313,7 @@ export default function SubscriptionEnterprise() {
                                onClick={(e) => { e.stopPropagation(); setSelectedPlan(plan.id); handleStartTrial(); }}
                                className="w-full btn-primary inline-flex items-center justify-center gap-2.5 px-6 py-3 text-sm"
                              >
-                               Start 30-Day Free Trial <ArrowRight className="w-4 h-4" />
+                                Select Plan <ArrowRight className="w-4 h-4" />
                              </motion.button>
                            )}
                          </div>

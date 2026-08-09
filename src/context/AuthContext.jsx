@@ -224,7 +224,10 @@ export const AuthProvider = ({ children }) => {
               const refreshResp = await fetch(`${BASE_API_URL}/auth/refresh`, {
                 method: 'POST',
                 credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                  'Content-Type': 'application/json',
+                  ...(localStorage.getItem('csrfToken') ? { 'X-CSRF-Token': localStorage.getItem('csrfToken') } : {})
+                },
                 body: JSON.stringify({ refreshToken })
               });
               if (refreshResp.ok) {

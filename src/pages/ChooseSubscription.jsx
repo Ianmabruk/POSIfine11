@@ -344,7 +344,7 @@ export default function ChooseSubscription() {
                 onClick={handleStartTrial}
                 className="w-full py-4 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all hover:scale-105 flex items-center justify-center gap-2"
               >
-                Start 30-Day Free Trial
+                 Select Plan
                 <ArrowRight className="w-5 h-5" />
               </button>
           </motion.div>

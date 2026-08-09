@@ -1518,17 +1518,17 @@ export default function CashierPOS() {
               <div className="space-y-2 bg-gray-50 p-3 rounded-lg">
                 <div className="flex justify-between text-sm">
                   <span>Subtotal:</span>
-                  <span className="text-gray-700">KSH {total.toLocaleString()}</span>
+                  <span className="text-gray-700">KSH {subtotal.toLocaleString()}</span>
                 </div>
                 {selectedDiscount && (
                   <div className="flex justify-between text-sm text-green-600">
                     <span>Discount:</span>
-                    <span>-KSH {(selectedDiscount.type === 'percentage' ? (total * selectedDiscount.value / 100) : selectedDiscount.value).toLocaleString()}</span>
+                    <span>-KSH {(selectedDiscount.type === 'percentage' ? (subtotal * selectedDiscount.value / 100) : selectedDiscount.value).toLocaleString()}</span>
                   </div>
                 )}
                 {(() => {
-                  const discountVal = selectedDiscount ? (selectedDiscount.type === 'percentage' ? (total * selectedDiscount.value / 100) : selectedDiscount.value) : 0;
-                  const afterDiscount = total - discountVal;
+                  const discountVal = selectedDiscount ? (selectedDiscount.type === 'percentage' ? (subtotal * selectedDiscount.value / 100) : selectedDiscount.value) : 0;
+                  const afterDiscount = subtotal - discountVal;
                   const taxAmt = taxType === 'inclusive'
                     ? Math.round(((afterDiscount / 1.16) * 0.16) * 100) / 100
                     : Math.round((afterDiscount * 0.16) * 100) / 100;
@@ -1574,7 +1574,7 @@ export default function CashierPOS() {
                 </select>
                 {selectedDiscount && (
                   <p className="text-sm text-green-600 mt-1">
-                    Discount: KSH {(selectedDiscount.type === 'percentage' ? (total * selectedDiscount.value / 100) : selectedDiscount.value).toLocaleString()}
+                    Discount: KSH {(selectedDiscount.type === 'percentage' ? (subtotal * selectedDiscount.value / 100) : selectedDiscount.value).toLocaleString()}
                   </p>
                 )}
               </div>
@@ -1634,7 +1634,7 @@ export default function CashierPOS() {
                       <div className="bg-gray-50 rounded-xl p-4">
                         <p className="text-sm text-gray-500 mb-1">Amount</p>
                         <p className="text-2xl font-bold text-gray-900">
-                          KSH {total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          KSH {finalTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
                       </div>
 
@@ -2278,7 +2278,7 @@ export default function CashierPOS() {
                 </div>
                 <span className="font-semibold text-gray-900">View Cart</span>
               </div>
-              <span className="font-bold text-green-600 text-lg">KSH {total.toLocaleString()}</span>
+              <span className="font-bold text-green-600 text-lg">KSH {subtotal.toLocaleString()}</span>
             </button>
           </div>
 
@@ -2316,20 +2316,20 @@ export default function CashierPOS() {
                   ))}
                 </div>
                 <div className="border-t border-gray-200 p-4 space-y-3 bg-white">
-                  <div className="space-y-2 bg-gray-50 p-3 rounded-lg">
-                    <div className="flex justify-between text-sm">
-                      <span>Subtotal:</span>
-                      <span className="text-gray-700">KSH {total.toLocaleString()}</span>
-                    </div>
-                    {selectedDiscount && (
-                      <div className="flex justify-between text-sm text-green-600">
-                        <span>Discount:</span>
-                        <span>-KSH {(selectedDiscount.type === 'percentage' ? (total * selectedDiscount.value / 100) : selectedDiscount.value).toLocaleString()}</span>
+                    <div className="space-y-2 bg-gray-50 p-3 rounded-lg">
+                      <div className="flex justify-between text-sm">
+                        <span>Subtotal:</span>
+                        <span className="text-gray-700">KSH {subtotal.toLocaleString()}</span>
                       </div>
-                    )}
-                    {(() => {
-                      const discountVal = selectedDiscount ? (selectedDiscount.type === 'percentage' ? (total * selectedDiscount.value / 100) : selectedDiscount.value) : 0;
-                      const afterDiscount = total - discountVal;
+                      {selectedDiscount && (
+                        <div className="flex justify-between text-sm text-green-600">
+                          <span>Discount:</span>
+                          <span>-KSH {(selectedDiscount.type === 'percentage' ? (subtotal * selectedDiscount.value / 100) : selectedDiscount.value).toLocaleString()}</span>
+                        </div>
+                      )}
+                      {(() => {
+                        const discountVal = selectedDiscount ? (selectedDiscount.type === 'percentage' ? (subtotal * selectedDiscount.value / 100) : selectedDiscount.value) : 0;
+                        const afterDiscount = subtotal - discountVal;
                       const taxAmt = taxType === 'inclusive'
                         ? Math.round(((afterDiscount / 1.16) * 0.16) * 100) / 100
                         : Math.round((afterDiscount * 0.16) * 100) / 100;
