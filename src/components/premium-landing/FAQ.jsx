@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown } from "lucide-react";
+import SEO from "../SEO";
 
 const faqs = [
   {
@@ -44,8 +45,27 @@ export default function FAQ() {
     setOpenIndex(openIndex === index ? null : index);
   };
 
+  const faqJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": faqs.map((item) => ({
+      "@type": "Question",
+      "name": item.question,
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": item.answer
+      }
+    }))
+  };
+
   return (
     <section id="faq" className="py-16 sm:py-24 bg-cream-50">
+      <SEO
+        title="Frequently Asked Questions - Posify POS"
+        description="Get answers to common questions about Posify POS. Learn about pricing, M-PESA integration, multi-branch support, offline mode, and security."
+        canonical="https://posifine22.onrender.com/#faq"
+        jsonLd={faqJsonLd}
+      />
       <div className="section-container">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

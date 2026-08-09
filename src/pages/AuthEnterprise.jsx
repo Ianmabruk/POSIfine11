@@ -8,6 +8,7 @@ import {
   Chrome, Apple, Github
 } from "lucide-react";
 import { getDashboardRoute } from "../utils/dashboardRouting";
+import SEO from "../components/SEO";
 
 const modeTitle = { login: "Welcome back", signup: "Create your account", "forgot-password": "Reset your password", "reset-password": "Set new password", "2fa-setup": "Two-factor authentication", "verify-email": "Verify your email" };
 const modeSubtitle = { login: "Sign in to your account to continue", signup: "Start your 30-day free trial today", "forgot-password": "Enter your email and we'll send you a reset link", "reset-password": "Choose a strong password for your account", "2fa-setup": "Enter the 6-digit code from your authenticator app", "verify-email": "Check your inbox and verify your email address" };
@@ -211,8 +212,19 @@ const AuthEnterprise = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   }, []);
 
+  const seoTitle = mode === "signup" ? "Create Your Posify Account - 15-Day Free Trial" : "Sign In to Posify - Enterprise POS Platform";
+  const seoDescription = mode === "signup"
+    ? "Create your Posify account and start your 15-day free trial. No credit card required."
+    : "Sign in to your Posify account to access sales, inventory, staff, and analytics.";
+
   return (
     <div className="relative min-h-screen flex flex-col overflow-x-hidden">
+      <SEO
+        title={seoTitle}
+        description={seoDescription}
+        canonical="https://posifine22.onrender.com/auth/login"
+        noindex={true}
+      />
       {/* Premium gradient background with soft orbs */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
         <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-purple-950" />

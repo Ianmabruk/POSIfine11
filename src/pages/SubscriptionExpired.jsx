@@ -1,12 +1,19 @@
 import { motion } from "framer-motion";
 import { AlertCircle, ArrowRight, RefreshCw } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from 'react-router-dom';
+import SEO from '../components/SEO';
 
 export default function SubscriptionExpired() {
   const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center px-4">
+      <SEO
+        title="Trial Expired - Posify POS"
+        description="Your 30-day free trial has ended. Subscribe now to continue accessing all Posify features."
+        canonical="https://posifine22.onrender.com/subscription-expired"
+        noindex={true}
+      />
       <div className="max-w-md w-full text-center">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

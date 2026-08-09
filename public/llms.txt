@@ -1,0 +1,37 @@
+# POSIFY - Enterprise POS Platform
+
+## What is Posify?
+Posify is a modern Point of Sale (POS) platform built for African businesses. It combines sales processing, inventory management, staff management, reporting, and analytics into one unified system.
+
+## Core Features
+- Sales & checkout with cash, M-PESA, and card payments
+- Real-time inventory management with stock alerts and expiry tracking
+- Cashier and staff management with role-based permissions
+- Advanced reporting and analytics dashboards
+- Multi-branch support for growing businesses
+- Offline mode with automatic cloud sync
+- Receipt generation and printing
+- Time tracking and shift management
+
+## Pricing Plans
+- Starter: KES 999/month — single location, 1 admin, 2 cashiers
+- Professional: KES 2,499/month — up to 10 branches, up to 10 users
+- Enterprise: KES 4,999/month — unlimited branches and users, API access
+
+## Free Trial
+15-day free trial available. No credit card required.
+
+## Target Market
+Small to enterprise businesses in Kenya and across Africa, including retail shops, supermarkets, clinics, pharmacies, restaurants, and service businesses.
+
+## Integrations
+- M-PESA (IntaSend / CloudPay)
+- Email notifications (SendGrid)
+- Cloud storage for backups
+
+## Contact
+- Website: https://posifine22.onrender.com
+- Support: support@micrologic.co.ke
+
+## Business Location
+Kenya

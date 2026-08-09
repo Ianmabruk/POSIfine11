@@ -1,9 +1,16 @@
 import { Link } from 'react-router-dom';
 import { LogIn, Home } from 'lucide-react';
+import SEO from '../components/SEO';
 
 export default function LoggedOut() {
   return (
     <div className="min-h-screen bg-white flex items-center justify-center px-4">
+      <SEO
+        title="Logged Out - Posify POS"
+        description="You have been securely logged out of your Posify account."
+        canonical="https://posifine22.onrender.com/logged-out"
+        noindex={true}
+      />
       <div className="text-center max-w-md mx-auto">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-50 border border-green-200 mb-6">
           <LogIn className="w-8 h-8 text-success" />

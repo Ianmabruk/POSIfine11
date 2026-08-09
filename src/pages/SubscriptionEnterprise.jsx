@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Check, ArrowLeft, CreditCard, Smartphone, Building2, Globe, Lock, Sparkles, Crown, Zap, ArrowRight, Star } from 'lucide-react';
 import api from '../services/apiClient';
 import CustomRequestForm from '../components/modern-landing/CustomRequestForm';
+import SEO from '../components/SEO';
 
 const plans = [
   {
@@ -121,6 +122,11 @@ export default function SubscriptionEnterprise() {
 
   return (
     <div className="relative min-h-screen overflow-hidden">
+      <SEO
+        title="Choose Your Plan - Posify POS Pricing"
+        description="Choose the right Posify plan for your business. Starter, Professional, Enterprise, and Custom plans available. 15-day free trial."
+        canonical="https://posifine22.onrender.com/choose-subscription"
+      />
       {/* Premium abstract gradient background */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
         <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-primary-50/30" />

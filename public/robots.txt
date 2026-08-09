@@ -1,0 +1,20 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /auth/
+Disallow: /dashboard/
+Disallow: /admin/
+Disallow: /cashier/
+Disallow: /student/
+Disallow: /canteen/
+Disallow: /uniform/
+Disallow: /bookshop/
+Disallow: /main.admin/
+Disallow: /super-admin/
+Disallow: /control-center/
+Disallow: /windatawind/
+Disallow: /logged-out
+Disallow: /subscription-expired
+Disallow: /build-pos
+
+Sitemap: https://posifine22.onrender.com/sitemap.xml
