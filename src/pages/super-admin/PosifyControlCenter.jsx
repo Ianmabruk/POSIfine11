@@ -31,6 +31,7 @@ export default function PosifyControlCenter() {
   const [revenueData, setRevenueData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
     loadData();
@@ -90,10 +91,38 @@ export default function PosifyControlCenter() {
     }
   };
 
-  const filteredBusinesses = businesses.filter(b =>
-    (b.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (b.email || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleRequestPayment = async (id) => {
+    try {
+      await mainAdminApi.requestPayment(id);
+      loadData();
+    } catch (e) {
+      console.error('Failed to request payment:', e);
+      alert(e.message || 'Failed to request payment.');
+    }
+  };
+
+  const handleClearPayment = async (id) => {
+    try {
+      await mainAdminApi.clearPayment(id);
+      loadData();
+    } catch (e) {
+      console.error('Failed to clear payment:', e);
+      alert(e.message || 'Failed to clear payment.');
+    }
+  };
+
+  const filteredBusinesses = businesses.filter(b => {
+    const matchesSearch = (b.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (b.email || '').toLowerCase().includes(searchTerm.toLowerCase());
+    if (!matchesSearch) return false;
+
+    if (statusFilter === 'all') return true;
+    if (statusFilter === 'trial') return b.trialStatus === 'active';
+    if (statusFilter === 'expired') return b.trialStatus === 'expired';
+    if (statusFilter === 'payment_required') return b.paymentRequired;
+    if (statusFilter === 'active') return !b.trialStatus || b.trialStatus === 'none';
+    return true;
+  });
 
   if (loading) {
     return (
@@ -245,7 +274,7 @@ export default function PosifyControlCenter() {
 
           {activeTab === 'businesses' && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                   <h2 className="text-2xl font-bold text-slate-900">Businesses</h2>
                   <p className="text-slate-500 mt-1">Manage all registered businesses</p>
@@ -262,59 +291,86 @@ export default function PosifyControlCenter() {
                 </div>
               </div>
 
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { key: 'all', label: 'All' },
+                  { key: 'trial', label: 'Free Trial' },
+                  { key: 'expired', label: 'Trial Expired' },
+                  { key: 'payment_required', label: 'Payment Required' },
+                  { key: 'active', label: 'Active Paid' },
+                ].map((filter) => (
+                  <button
+                    key={filter.key}
+                    onClick={() => setStatusFilter(filter.key)}
+                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                      statusFilter === filter.key
+                        ? 'bg-accent-500 text-white shadow-lg shadow-accent-500/25'
+                        : 'bg-white text-slate-600 border border-cream-300 hover:bg-cream-50'
+                    }`}
+                  >
+                    {filter.label}
+                  </button>
+                ))}
+              </div>
+
               <div className="bg-white rounded-2xl border border-cream-200 shadow-sm overflow-hidden">
                 <>
-                  <div className="md:hidden space-y-3 p-4">
-                    {filteredBusinesses.map((business) => (
-                      <div key={business._id} className="bg-white rounded-xl shadow p-4 space-y-2 border border-cream-100">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium text-slate-900 text-sm">{business.name}</p>
-                            <p className="text-xs text-slate-400">{business.email}</p>
-                          </div>
-                          <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
-                            business.isLocked ? 'bg-red-50 text-red-700' :
-                            business.isActive ? 'bg-green-50 text-green-700' :
-                            'bg-slate-100 text-slate-600'
-                          }`}>
-                            {business.isLocked ? 'Locked' : business.isActive ? 'Active' : 'Inactive'}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm pt-2 border-t border-cream-100">
-                          <span className="text-slate-600">Owner</span>
-                          <span className="text-slate-900">{business.ownerName}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-slate-600">Plan</span>
-                          <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-accent-50 text-accent-700 capitalize">{business.plan}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-slate-600">Trial</span>
-                          <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
-                            business.trialStatus === 'expired' ? 'bg-red-50 text-red-700' :
-                            business.trialStatus === 'active' ? 'bg-amber-50 text-amber-700' :
-                            'bg-slate-100 text-slate-600'
-                          }`}>
-                            {business.trialStatus === 'expired' ? 'Expired' : business.trialStatus === 'active' ? `${business.daysRemaining}d left` : 'None'}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-slate-600">Revenue</span>
-                          <span className="text-slate-900">KES {(business.totalRevenue || 0).toLocaleString()}</span>
-                        </div>
-                        <div className="pt-2">
-                          {business.isLocked ? (
-                            <button onClick={() => handleActivate(business._id)} className="text-xs px-3 py-1.5 bg-sage-500 text-white rounded-lg hover:bg-sage-600 transition-colors w-full">Activate</button>
-                          ) : (
-                            <button onClick={() => handleSuspend(business._id)} className="text-xs px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors w-full">Suspend</button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                    {filteredBusinesses.length === 0 && (
-                      <div className="text-center text-slate-400 text-sm py-4">No businesses found</div>
-                    )}
-                  </div>
+                   <div className="md:hidden space-y-3 p-4">
+                     {filteredBusinesses.map((business) => (
+                       <div key={business._id} className="bg-white rounded-xl shadow p-4 space-y-2 border border-cream-100">
+                         <div className="flex items-center justify-between">
+                           <div>
+                             <p className="font-medium text-slate-900 text-sm">{business.name}</p>
+                             <p className="text-xs text-slate-400">{business.email}</p>
+                           </div>
+                           <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
+                             business.paymentRequired ? 'bg-orange-50 text-orange-700' :
+                             business.isLocked ? 'bg-red-50 text-red-700' :
+                             business.isActive ? 'bg-green-50 text-green-700' :
+                             'bg-slate-100 text-slate-600'
+                           }`}>
+                             {business.paymentRequired ? 'Payment Required' : business.isLocked ? 'Locked' : business.isActive ? 'Active' : 'Inactive'}
+                           </span>
+                         </div>
+                         <div className="flex items-center justify-between text-sm pt-2 border-t border-cream-100">
+                           <span className="text-slate-600">Owner</span>
+                           <span className="text-slate-900">{business.ownerName}</span>
+                         </div>
+                         <div className="flex items-center justify-between text-sm">
+                           <span className="text-slate-600">Plan</span>
+                           <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-accent-50 text-accent-700 capitalize">{business.plan}</span>
+                         </div>
+                         <div className="flex items-center justify-between text-sm">
+                           <span className="text-slate-600">Trial</span>
+                           <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
+                             business.trialStatus === 'expired' ? 'bg-red-50 text-red-700' :
+                             business.trialStatus === 'active' ? 'bg-amber-50 text-amber-700' :
+                             'bg-slate-100 text-slate-600'
+                           }`}>
+                             {business.trialStatus === 'expired' ? 'Expired' : business.trialStatus === 'active' ? `${business.daysRemaining}d left` : 'None'}
+                           </span>
+                         </div>
+                         <div className="flex items-center justify-between text-sm">
+                           <span className="text-slate-600">Revenue</span>
+                           <span className="text-slate-900">KES {(business.totalRevenue || 0).toLocaleString()}</span>
+                         </div>
+                         <div className="pt-2 flex gap-2">
+                           {business.paymentRequired ? (
+                             <button onClick={() => handleClearPayment(business._id)} className="text-xs px-3 py-1.5 bg-sage-500 text-white rounded-lg hover:bg-sage-600 transition-colors flex-1">Clear Payment</button>
+                           ) : business.isLocked ? (
+                             <button onClick={() => handleActivate(business._id)} className="text-xs px-3 py-1.5 bg-sage-500 text-white rounded-lg hover:bg-sage-600 transition-colors flex-1">Activate</button>
+                           ) : business.trialStatus === 'expired' && business.plan === 'trial' ? (
+                             <button onClick={() => handleRequestPayment(business._id)} className="text-xs px-3 py-1.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors flex-1">Request Payment</button>
+                           ) : (
+                             <button onClick={() => handleSuspend(business._id)} className="text-xs px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex-1">Suspend</button>
+                           )}
+                         </div>
+                       </div>
+                     ))}
+                     {filteredBusinesses.length === 0 && (
+                       <div className="text-center text-slate-400 text-sm py-4">No businesses found</div>
+                     )}
+                   </div>
                   <div className="hidden md:block overflow-x-auto">
                     <table className="w-full">
                       <thead className="bg-cream-100 border-b border-cream-200">
@@ -354,22 +410,37 @@ export default function PosifyControlCenter() {
                             </td>
                             <td className="px-6 py-4">
                               <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
+                                business.paymentRequired ? 'bg-orange-50 text-orange-700' :
                                 business.isLocked ? 'bg-red-50 text-red-700' :
                                 business.isActive ? 'bg-green-50 text-green-700' :
                                 'bg-slate-100 text-slate-600'
                               }`}>
-                                {business.isLocked ? 'Locked' : business.isActive ? 'Active' : 'Inactive'}
+                                {business.paymentRequired ? 'Payment Required' : business.isLocked ? 'Locked' : business.isActive ? 'Active' : 'Inactive'}
                               </span>
                             </td>
                             <td className="px-6 py-4 text-sm text-slate-600">KES {(business.totalRevenue || 0).toLocaleString()}</td>
                             <td className="px-6 py-4">
                               <div className="flex gap-2">
-                                {business.isLocked ? (
+                                {business.paymentRequired ? (
+                                  <button
+                                    onClick={() => handleClearPayment(business._id)}
+                                    className="text-xs px-3 py-1.5 bg-sage-500 text-white rounded-lg hover:bg-sage-600 transition-colors"
+                                  >
+                                    Clear Payment
+                                  </button>
+                                ) : business.isLocked ? (
                                   <button
                                     onClick={() => handleActivate(business._id)}
                                     className="text-xs px-3 py-1.5 bg-sage-500 text-white rounded-lg hover:bg-sage-600 transition-colors"
                                   >
                                     Activate
+                                  </button>
+                                ) : business.trialStatus === 'expired' && business.plan === 'trial' ? (
+                                  <button
+                                    onClick={() => handleRequestPayment(business._id)}
+                                    className="text-xs px-3 py-1.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                                  >
+                                    Request Payment
                                   </button>
                                 ) : (
                                   <button

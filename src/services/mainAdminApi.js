@@ -21,12 +21,16 @@ const request = async (endpoint, options = {}) => {
     const response = await fetch(`${baseUrl}${endpoint}`, config);
 
     if (response.status === 401 || response.status === 403) {
-      localStorage.removeItem('mainAdminToken');
-      localStorage.removeItem('ownerToken');
-      localStorage.removeItem('mainAdminUser');
-      localStorage.removeItem('ownerUser');
-      window.location.href = '/windatawind';
-      throw new Error('Authentication required');
+      if (!endpoint.includes('/auth/login')) {
+        localStorage.removeItem('mainAdminToken');
+        localStorage.removeItem('ownerToken');
+        localStorage.removeItem('mainAdminUser');
+        localStorage.removeItem('ownerUser');
+        window.location.href = '/windatawind';
+        throw new Error('Authentication required');
+      }
+      const errorData = await response.json().catch(() => ({ error: 'Request failed' }));
+      throw new Error(errorData.error || errorData.message || `HTTP ${response.status}`);
     }
 
     if (!response.ok) {
@@ -67,6 +71,8 @@ export const mainAdminApi = {
 
   getPaymentHistory: () => request('/main-admin/payments'),
   getRevenueAnalytics: () => request('/main-admin/revenue'),
+  requestPayment: (id) => request(`/main-admin/businesses/${id}/request-payment`, { method: 'POST' }),
+  clearPayment: (id) => request(`/main-admin/businesses/${id}/clear-payment`, { method: 'POST' }),
 };
 
 export default mainAdminApi;

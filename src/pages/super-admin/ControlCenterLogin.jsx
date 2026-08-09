@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, ArrowRight, Shield } from 'lucide-react';
-import api from '../../services/apiClient';
+import { Mail, Lock, Eye, EyeOff, Shield } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import mainAdminApi from '../../services/mainAdminApi';
 
 export default function ControlCenterLogin() {
   const navigate = useNavigate();
+  const { initializeAuth } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -18,16 +20,34 @@ export default function ControlCenterLogin() {
     setError('');
 
     try {
-      const data = await api.loginBusiness({ email, password });
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('ownerToken');
+      localStorage.removeItem('ownerUser');
+      localStorage.removeItem('mainAdminToken');
+      localStorage.removeItem('mainAdminUser');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('csrfToken');
+
+      const loginData = await mainAdminApi.login({ email, password });
       
-      if (data.token) {
-        localStorage.setItem('mainAdminToken', data.token);
-        if (data.business) {
-          localStorage.setItem('mainAdminUser', JSON.stringify(data.business));
+      if (loginData.token) {
+        localStorage.setItem('mainAdminToken', loginData.token);
+        if (loginData.user) {
+          localStorage.setItem('mainAdminUser', JSON.stringify(loginData.user));
         }
+        if (loginData.refreshToken) {
+          localStorage.setItem('refreshToken', loginData.refreshToken);
+        }
+        if (loginData.csrfToken) {
+          localStorage.setItem('csrfToken', loginData.csrfToken);
+        }
+        
+        await initializeAuth();
+        
         navigate('/main.admin');
       } else {
-        throw new Error(data.message || 'Login failed');
+        throw new Error(loginData.error || loginData.message || 'Login failed');
       }
     } catch (err) {
       setError(err.message || 'Authentication failed. Please try again.');

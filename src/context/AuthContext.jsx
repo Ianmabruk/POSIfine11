@@ -175,8 +175,20 @@ export const AuthProvider = ({ children }) => {
     
     try {
       const token = localStorage.getItem('token');
+      const mainAdminToken = localStorage.getItem('mainAdminToken');
       const refreshToken = localStorage.getItem('refreshToken');
       const savedUser = localStorage.getItem('user');
+      const savedMainAdminUser = localStorage.getItem('mainAdminUser');
+
+      // Main-admin session: restore directly from localStorage
+      if (mainAdminToken && savedMainAdminUser) {
+        try {
+          setUser(normalizeUser(JSON.parse(savedMainAdminUser)));
+        } catch (e) { /* ignore */ }
+        setLoading(false);
+        setIsInitialized(true);
+        return;
+      }
 
       if (!token) {
         if (savedUser) {
@@ -184,6 +196,9 @@ export const AuthProvider = ({ children }) => {
           localStorage.removeItem('refreshToken');
           localStorage.removeItem('csrfToken');
         }
+        setUser(null);
+        setLoading(false);
+        setIsInitialized(true);
         return;
       }
 
@@ -467,7 +482,11 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const isAuthenticated = useCallback(() => !!user && !!localStorage.getItem('token'), [user]);
+  const isAuthenticated = useCallback(() => {
+    const hasRegularToken = !!localStorage.getItem('token');
+    const hasMainAdminToken = !!localStorage.getItem('mainAdminToken') || !!localStorage.getItem('ownerToken');
+    return !!user && (hasRegularToken || hasMainAdminToken);
+  }, [user]);
   
   const hasRole = useCallback((role) => user && (user.role === role), [user]);
   
