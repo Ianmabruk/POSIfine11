@@ -263,80 +263,133 @@ export default function PosifyControlCenter() {
               </div>
 
               <div className="bg-white rounded-2xl border border-cream-200 shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-cream-100 border-b border-cream-200">
-                      <tr>
-                        <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Business</th>
-                        <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Owner</th>
-                        <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Plan</th>
-                        <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Trial</th>
-                        <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
-                        <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Revenue</th>
-                        <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-cream-100">
-                      {filteredBusinesses.map((business) => (
-                        <tr key={business._id} className="hover:bg-cream-50/50">
-                          <td className="px-6 py-4">
-                            <div>
-                              <p className="font-medium text-slate-900 text-sm">{business.name}</p>
-                              <p className="text-xs text-slate-400">{business.email}</p>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 text-sm text-slate-600">{business.ownerName}</td>
-                          <td className="px-6 py-4">
-                            <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-accent-50 text-accent-700 capitalize">
-                              {business.plan}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
-                              business.trialStatus === 'expired' ? 'bg-red-50 text-red-700' :
-                              business.trialStatus === 'active' ? 'bg-amber-50 text-amber-700' :
-                              'bg-slate-100 text-slate-600'
-                            }`}>
-                              {business.trialStatus === 'expired' ? 'Expired' : business.trialStatus === 'active' ? `${business.daysRemaining}d left` : 'None'}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
-                              business.isLocked ? 'bg-red-50 text-red-700' :
-                              business.isActive ? 'bg-green-50 text-green-700' :
-                              'bg-slate-100 text-slate-600'
-                            }`}>
-                              {business.isLocked ? 'Locked' : business.isActive ? 'Active' : 'Inactive'}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-sm text-slate-600">KES {(business.totalRevenue || 0).toLocaleString()}</td>
-                          <td className="px-6 py-4">
-                            <div className="flex gap-2">
-                              {business.isLocked ? (
-                                <button
-                                  onClick={() => handleActivate(business._id)}
-                                  className="text-xs px-3 py-1.5 bg-sage-500 text-white rounded-lg hover:bg-sage-600 transition-colors"
-                                >
-                                  Activate
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => handleSuspend(business._id)}
-                                  className="text-xs px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-                                >
-                                  Suspend
-                                </button>
-                              )}
-                            </div>
-                          </td>
+                <>
+                  <div className="md:hidden space-y-3 p-4">
+                    {filteredBusinesses.map((business) => (
+                      <div key={business._id} className="bg-white rounded-xl shadow p-4 space-y-2 border border-cream-100">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-slate-900 text-sm">{business.name}</p>
+                            <p className="text-xs text-slate-400">{business.email}</p>
+                          </div>
+                          <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
+                            business.isLocked ? 'bg-red-50 text-red-700' :
+                            business.isActive ? 'bg-green-50 text-green-700' :
+                            'bg-slate-100 text-slate-600'
+                          }`}>
+                            {business.isLocked ? 'Locked' : business.isActive ? 'Active' : 'Inactive'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm pt-2 border-t border-cream-100">
+                          <span className="text-slate-600">Owner</span>
+                          <span className="text-slate-900">{business.ownerName}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-600">Plan</span>
+                          <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-accent-50 text-accent-700 capitalize">{business.plan}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-600">Trial</span>
+                          <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
+                            business.trialStatus === 'expired' ? 'bg-red-50 text-red-700' :
+                            business.trialStatus === 'active' ? 'bg-amber-50 text-amber-700' :
+                            'bg-slate-100 text-slate-600'
+                          }`}>
+                            {business.trialStatus === 'expired' ? 'Expired' : business.trialStatus === 'active' ? `${business.daysRemaining}d left` : 'None'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-600">Revenue</span>
+                          <span className="text-slate-900">KES {(business.totalRevenue || 0).toLocaleString()}</span>
+                        </div>
+                        <div className="pt-2">
+                          {business.isLocked ? (
+                            <button onClick={() => handleActivate(business._id)} className="text-xs px-3 py-1.5 bg-sage-500 text-white rounded-lg hover:bg-sage-600 transition-colors w-full">Activate</button>
+                          ) : (
+                            <button onClick={() => handleSuspend(business._id)} className="text-xs px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors w-full">Suspend</button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    {filteredBusinesses.length === 0 && (
+                      <div className="text-center text-slate-400 text-sm py-4">No businesses found</div>
+                    )}
+                  </div>
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-cream-100 border-b border-cream-200">
+                        <tr>
+                          <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Business</th>
+                          <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Owner</th>
+                          <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Plan</th>
+                          <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Trial</th>
+                          <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                          <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Revenue</th>
+                          <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {filteredBusinesses.length === 0 && (
-                    <div className="px-6 py-8 text-center text-slate-400 text-sm">No businesses found</div>
-                  )}
-                </div>
+                      </thead>
+                      <tbody className="divide-y divide-cream-100">
+                        {filteredBusinesses.map((business) => (
+                          <tr key={business._id} className="hover:bg-cream-50/50">
+                            <td className="px-6 py-4">
+                              <div>
+                                <p className="font-medium text-slate-900 text-sm">{business.name}</p>
+                                <p className="text-xs text-slate-400">{business.email}</p>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-slate-600">{business.ownerName}</td>
+                            <td className="px-6 py-4">
+                              <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-accent-50 text-accent-700 capitalize">
+                                {business.plan}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
+                                business.trialStatus === 'expired' ? 'bg-red-50 text-red-700' :
+                                business.trialStatus === 'active' ? 'bg-amber-50 text-amber-700' :
+                                'bg-slate-100 text-slate-600'
+                              }`}>
+                                {business.trialStatus === 'expired' ? 'Expired' : business.trialStatus === 'active' ? `${business.daysRemaining}d left` : 'None'}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
+                                business.isLocked ? 'bg-red-50 text-red-700' :
+                                business.isActive ? 'bg-green-50 text-green-700' :
+                                'bg-slate-100 text-slate-600'
+                              }`}>
+                                {business.isLocked ? 'Locked' : business.isActive ? 'Active' : 'Inactive'}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-slate-600">KES {(business.totalRevenue || 0).toLocaleString()}</td>
+                            <td className="px-6 py-4">
+                              <div className="flex gap-2">
+                                {business.isLocked ? (
+                                  <button
+                                    onClick={() => handleActivate(business._id)}
+                                    className="text-xs px-3 py-1.5 bg-sage-500 text-white rounded-lg hover:bg-sage-600 transition-colors"
+                                  >
+                                    Activate
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => handleSuspend(business._id)}
+                                    className="text-xs px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                                  >
+                                    Suspend
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {filteredBusinesses.length === 0 && (
+                      <div className="px-6 py-8 text-center text-slate-400 text-sm">No businesses found</div>
+                    )}
+                  </div>
+                </>
               </div>
             </motion.div>
           )}
@@ -383,45 +436,72 @@ export default function PosifyControlCenter() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
               <h2 className="text-2xl font-bold text-slate-900">Subscriptions</h2>
               <div className="bg-white rounded-2xl border border-cream-200 shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-cream-100 border-b border-cream-200">
-                      <tr>
-                        <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Business</th>
-                        <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Plan</th>
-                        <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Status</th>
-                        <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Start Date</th>
-                        <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase">End Date</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-cream-100">
-                      {subscriptions.map((sub) => (
-                        <tr key={sub._id} className="hover:bg-cream-50/50">
-                          <td className="px-6 py-4 text-sm text-slate-900 font-medium">{sub.businessId?.name || 'Unknown'}</td>
-                          <td className="px-6 py-4">
-                            <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-accent-50 text-accent-700 capitalize">
-                              {sub.packageType}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
-                              sub.status === 'active' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
-                            }`}>
-                              {sub.status}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-sm text-slate-600">{sub.startDate ? new Date(sub.startDate).toLocaleDateString() : 'N/A'}</td>
-                          <td className="px-6 py-4 text-sm text-slate-500">{sub.endDate ? new Date(sub.endDate).toLocaleDateString() : 'N/A'}</td>
-                        </tr>
-                      ))}
-                      {subscriptions.length === 0 && (
+                <>
+                  <div className="md:hidden space-y-3 p-4">
+                    {subscriptions.map((sub) => (
+                      <div key={sub._id} className="bg-white rounded-xl shadow p-4 space-y-2 border border-cream-100">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-slate-900 text-sm">{sub.businessId?.name || 'Unknown'}</span>
+                          <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${sub.status === 'active' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>{sub.status}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm pt-2 border-t border-cream-100">
+                          <span className="text-slate-600">Plan</span>
+                          <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-accent-50 text-accent-700 capitalize">{sub.packageType}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-600">Start Date</span>
+                          <span className="text-slate-900">{sub.startDate ? new Date(sub.startDate).toLocaleDateString() : 'N/A'}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-600">End Date</span>
+                          <span className="text-slate-900">{sub.endDate ? new Date(sub.endDate).toLocaleDateString() : 'N/A'}</span>
+                        </div>
+                      </div>
+                    ))}
+                    {subscriptions.length === 0 && (
+                      <div className="text-center text-slate-400 text-sm py-4">No subscriptions found</div>
+                    )}
+                  </div>
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-cream-100 border-b border-cream-200">
                         <tr>
-                          <td colSpan="5" className="px-6 py-8 text-center text-slate-400 text-sm">No subscriptions found</td>
+                          <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Business</th>
+                          <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Plan</th>
+                          <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Status</th>
+                          <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Start Date</th>
+                          <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase">End Date</th>
                         </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody className="divide-y divide-cream-100">
+                        {subscriptions.map((sub) => (
+                          <tr key={sub._id} className="hover:bg-cream-50/50">
+                            <td className="px-6 py-4 text-sm text-slate-900 font-medium">{sub.businessId?.name || 'Unknown'}</td>
+                            <td className="px-6 py-4">
+                              <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-accent-50 text-accent-700 capitalize">
+                                {sub.packageType}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
+                                sub.status === 'active' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+                              }`}>
+                                {sub.status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-slate-600">{sub.startDate ? new Date(sub.startDate).toLocaleDateString() : 'N/A'}</td>
+                            <td className="px-6 py-4 text-sm text-slate-500">{sub.endDate ? new Date(sub.endDate).toLocaleDateString() : 'N/A'}</td>
+                          </tr>
+                        ))}
+                        {subscriptions.length === 0 && (
+                          <tr>
+                            <td colSpan="5" className="px-6 py-8 text-center text-slate-400 text-sm">No subscriptions found</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               </div>
             </motion.div>
           )}
@@ -430,43 +510,74 @@ export default function PosifyControlCenter() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
               <h2 className="text-2xl font-bold text-slate-900">Payment History</h2>
               <div className="bg-white rounded-2xl border border-cream-200 shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-cream-100 border-b border-cream-200">
-                      <tr>
-                        <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Business</th>
-                        <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Amount</th>
-                        <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Status</th>
-                        <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Method</th>
-                        <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Date</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-cream-100">
-                      {payments.map((payment) => (
-                        <tr key={payment._id} className="hover:bg-cream-50/50">
-                          <td className="px-6 py-4 text-sm text-slate-900 font-medium">{payment.businessId?.name || 'Unknown'}</td>
-                          <td className="px-6 py-4 text-sm text-slate-600">KES {(payment.amount || 0).toLocaleString()}</td>
-                          <td className="px-6 py-4">
-                            <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
-                              payment.paymentStatus === 'completed' ? 'bg-green-50 text-green-700' :
-                              payment.paymentStatus === 'pending' ? 'bg-amber-50 text-amber-700' :
-                              'bg-red-50 text-red-700'
-                            }`}>
-                              {payment.paymentStatus}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-sm text-slate-600 capitalize">{payment.paymentMethod}</td>
-                          <td className="px-6 py-4 text-sm text-slate-500">{payment.createdAt ? new Date(payment.createdAt).toLocaleDateString() : 'N/A'}</td>
-                        </tr>
-                      ))}
-                      {payments.length === 0 && (
+                <>
+                  <div className="md:hidden space-y-3 p-4">
+                    {payments.map((payment) => (
+                      <div key={payment._id} className="bg-white rounded-xl shadow p-4 space-y-2 border border-cream-100">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-slate-900 text-sm">{payment.businessId?.name || 'Unknown'}</span>
+                          <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
+                            payment.paymentStatus === 'completed' ? 'bg-green-50 text-green-700' :
+                            payment.paymentStatus === 'pending' ? 'bg-amber-50 text-amber-700' :
+                            'bg-red-50 text-red-700'
+                          }`}>{payment.paymentStatus}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm pt-2 border-t border-cream-100">
+                          <span className="text-slate-600">Amount</span>
+                          <span className="font-medium text-slate-900">KES {(payment.amount || 0).toLocaleString()}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-600">Method</span>
+                          <span className="text-slate-900 capitalize">{payment.paymentMethod}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-600">Date</span>
+                          <span className="text-slate-900">{payment.createdAt ? new Date(payment.createdAt).toLocaleDateString() : 'N/A'}</span>
+                        </div>
+                      </div>
+                    ))}
+                    {payments.length === 0 && (
+                      <div className="text-center text-slate-400 text-sm py-4">No payments found</div>
+                    )}
+                  </div>
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-cream-100 border-b border-cream-200">
                         <tr>
-                          <td colSpan="5" className="px-6 py-8 text-center text-slate-400 text-sm">No payments found</td>
+                          <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Business</th>
+                          <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Amount</th>
+                          <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Status</th>
+                          <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Method</th>
+                          <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Date</th>
                         </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody className="divide-y divide-cream-100">
+                        {payments.map((payment) => (
+                          <tr key={payment._id} className="hover:bg-cream-50/50">
+                            <td className="px-6 py-4 text-sm text-slate-900 font-medium">{payment.businessId?.name || 'Unknown'}</td>
+                            <td className="px-6 py-4 text-sm text-slate-600">KES {(payment.amount || 0).toLocaleString()}</td>
+                            <td className="px-6 py-4">
+                              <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
+                                payment.paymentStatus === 'completed' ? 'bg-green-50 text-green-700' :
+                                payment.paymentStatus === 'pending' ? 'bg-amber-50 text-amber-700' :
+                                'bg-red-50 text-red-700'
+                              }`}>
+                                {payment.paymentStatus}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-slate-600 capitalize">{payment.paymentMethod}</td>
+                            <td className="px-6 py-4 text-sm text-slate-500">{payment.createdAt ? new Date(payment.createdAt).toLocaleDateString() : 'N/A'}</td>
+                          </tr>
+                        ))}
+                        {payments.length === 0 && (
+                          <tr>
+                            <td colSpan="5" className="px-6 py-8 text-center text-slate-400 text-sm">No payments found</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               </div>
             </motion.div>
           )}

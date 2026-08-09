@@ -62,6 +62,7 @@ export default function CashierPOS() {
   const [mpesaPaymentStatus, setMpesaPaymentStatus] = useState(null);
   const [mpesaPolling, setMpesaPolling] = useState(false);
   const [pendingMpesaSaleId, setPendingMpesaSaleId] = useState(null);
+  const [mpesaProvider, setMpesaProvider] = useState('intasend');
   const mpesaPollingRef = useRef(null);
   const [cartSheetOpen, setCartSheetOpen] = useState(false);
 
@@ -644,7 +645,7 @@ export default function CashierPOS() {
     return cleaned;
   };
 
-  const initiateMpesaPayment = useCallback(async (saleId, phone) => {
+  const initiateMpesaPayment = useCallback(async (saleId, phone, provider = 'intasend') => {
     const token = localStorage.getItem('token');
     const resp = await fetch(`${BASE_API_URL}/payments/mpesa/stk-push`, {
       method: 'POST',
@@ -652,7 +653,7 @@ export default function CashierPOS() {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({ saleId, phone })
+      body: JSON.stringify({ saleId, phone, provider })
     });
     const data = await resp.json();
     if (!resp.ok) throw new Error(data.error || 'Failed to initiate M-Pesa payment');
@@ -772,7 +773,7 @@ export default function CashierPOS() {
       const createdSaleId = saleData.saleId;
       setPendingMpesaSaleId(createdSaleId);
 
-      const stkResult = await initiateMpesaPayment(createdSaleId, normalizePhone(mpesaPhone));
+      const stkResult = await initiateMpesaPayment(createdSaleId, normalizePhone(mpesaPhone), mpesaProvider);
       if (stkResult.payment?.payment_id) {
         startMpesaPolling(stkResult.payment.payment_id);
       } else {
@@ -1880,7 +1881,46 @@ export default function CashierPOS() {
               </div>
             )}
 
-            <div className="overflow-x-auto">
+            <div className="md:hidden space-y-3">
+              {productList.map((product) => {
+                const stock = getProductStock(product.id);
+                const productBatches = batchList.filter(b => b.productId === product.id && b.quantity > 0);
+                const lowStockThreshold = getLowStockThreshold(product);
+                const isLowStock = stock > 0 && stock <= lowStockThreshold;
+                const isOutOfStock = stock <= 0;
+                return (
+                  <div key={product.id} className="bg-white rounded-xl shadow p-4 space-y-2 border border-gray-100">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {product.image && <img src={product.image} alt={product.name} className="w-8 h-8 object-cover rounded-lg" />}
+                        <span className="font-medium text-gray-900 text-sm">{product.name}</span>
+                      </div>
+                      <div className="flex gap-1">
+                        <button onClick={() => { setSelectedProduct(product); setShowAddStock(true); }} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded" title="Add Stock"><Plus className="w-4 h-4" /></button>
+                        <button className="p-1.5 text-green-600 hover:bg-green-50 rounded" title="Edit Product"><Edit2 className="w-4 h-4" /></button>
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-500">{product.category}</div>
+                    <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-100">
+                      <span className="text-gray-600">Price</span>
+                      <span className="font-semibold text-green-600">KSH {product.price?.toLocaleString()}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Stock</span>
+                      <div className="flex items-center gap-2">
+                        <span className={`font-medium ${isOutOfStock ? 'text-red-600' : isLowStock ? 'text-yellow-600' : 'text-green-700'}`}>{stock}</span>
+                        {isOutOfStock ? <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full font-medium">Out of Stock</span> : isLowStock ? <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full font-medium">Low Stock</span> : <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-medium">In Stock</span>}
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Batches</span>
+                      <span className="text-gray-600">{productBatches.length} active</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
@@ -2014,7 +2054,25 @@ export default function CashierPOS() {
               </div>
             )}
 
-            <div className="overflow-x-auto">
+            <div className="md:hidden space-y-3">
+              {data.expenses.slice().reverse().map((expense, i) => (
+                <div key={i} className="bg-white rounded-xl shadow p-4 space-y-2 border border-gray-100">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-900">{expense.description}</span>
+                    <span className="badge badge-warning text-xs">{expense.category || 'General'}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-100">
+                    <span className="text-gray-600">Date</span>
+                    <span className="text-gray-900">{new Date(expense.createdAt).toLocaleDateString()}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Amount</span>
+                    <span className="font-semibold text-red-600">KSH {expense.amount?.toLocaleString()}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>

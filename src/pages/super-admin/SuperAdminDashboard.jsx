@@ -173,7 +173,25 @@ export default function SuperAdminDashboard() {
                 <div className="mt-8 bg-white rounded-2xl border border-slate-100 shadow-soft p-6">
                   <h3 className="font-bold text-slate-900 mb-4">Recent Registrations</h3>
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm">
+                    <div className="md:hidden space-y-3">
+                      {(businesses || []).slice(0, 5).map((biz, i) => (
+                        <div key={i} className="bg-white rounded-xl shadow p-4 space-y-2 border border-slate-100">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-slate-900">{biz.business_name || biz.owner_email || '—'}</span>
+                            <span className={`badge ${biz.is_active ? 'badge-success' : 'badge-danger'} text-xs`}>{biz.is_active ? 'Active' : 'Inactive'}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm pt-2 border-t border-slate-100">
+                            <span className="text-slate-600">Plan</span>
+                            <span className="capitalize text-slate-900">{biz.plan || '—'}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-slate-600">Created</span>
+                            <span className="text-slate-900">{biz.created_at ? new Date(biz.created_at).toLocaleDateString() : '—'}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <table className="hidden md:table w-full text-left text-sm">
                       <thead>
                         <tr className="border-b border-slate-100">
                           <th className="pb-3 font-semibold text-slate-500">Business</th>
@@ -209,45 +227,76 @@ export default function SuperAdminDashboard() {
                 <h1 className="text-2xl font-bold text-slate-900 mb-6">Businesses</h1>
                 <div className="bg-white rounded-2xl border border-slate-100 shadow-soft overflow-hidden">
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm">
-                      <thead>
-                        <tr className="border-b border-slate-100 bg-slate-50/50">
-                          <th className="px-6 py-4 font-semibold text-slate-500">Business</th>
-                          <th className="px-6 py-4 font-semibold text-slate-500">Plan</th>
-                          <th className="px-6 py-4 font-semibold text-slate-500">Status</th>
-                          <th className="px-6 py-4 font-semibold text-slate-500">Users</th>
-                          <th className="px-6 py-4 font-semibold text-slate-500">Created</th>
-                          <th className="px-6 py-4 font-semibold text-slate-500">Last Active</th>
-                        </tr>
-                      </thead>
-                      <tbody>
+                    <>
+                      <div className="md:hidden space-y-3">
                         {(businesses || []).map((biz, i) => (
-                          <tr key={i} className="border-b border-slate-50 hover:bg-slate-50/50">
-                            <td className="px-6 py-4 font-medium text-slate-900">{biz.business_name || biz.owner_email}</td>
-                            <td className="px-6 py-4 capitalize text-slate-600">{biz.plan || '—'}</td>
-                            <td className="px-6 py-4">
-                              <span className={`badge ${biz.is_active ? 'badge-success' : 'badge-danger'}`}>
-                                {biz.is_active ? 'Active' : 'Inactive'}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 text-slate-600">{biz.user_count || '—'}</td>
-                            <td className="px-6 py-4 text-slate-500">
-                              {biz.created_at ? new Date(biz.created_at).toLocaleDateString() : '—'}
-                            </td>
-                            <td className="px-6 py-4 text-slate-500">
-                              {biz.last_activity_date ? new Date(biz.last_activity_date).toLocaleDateString() : '—'}
-                            </td>
-                          </tr>
+                          <div key={i} className="bg-white rounded-xl shadow p-4 space-y-2 border border-slate-100">
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium text-slate-900">{biz.business_name || biz.owner_email}</span>
+                              <span className={`badge ${biz.is_active ? 'badge-success' : 'badge-danger'} text-xs`}>{biz.is_active ? 'Active' : 'Inactive'}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-sm pt-2 border-t border-slate-100">
+                              <span className="text-slate-600">Plan</span>
+                              <span className="capitalize text-slate-900">{biz.plan || '—'}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-slate-600">Users</span>
+                              <span className="text-slate-900">{biz.user_count || '—'}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-slate-600">Created</span>
+                              <span className="text-slate-900">{biz.created_at ? new Date(biz.created_at).toLocaleDateString() : '—'}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-slate-600">Last Active</span>
+                              <span className="text-slate-900">{biz.last_activity_date ? new Date(biz.last_activity_date).toLocaleDateString() : '—'}</span>
+                            </div>
+                          </div>
                         ))}
                         {(!businesses || businesses.length === 0) && (
-                          <tr>
-                            <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
-                              No businesses found
-                            </td>
-                          </tr>
+                          <div className="text-center text-slate-500 py-8">No businesses found</div>
                         )}
-                      </tbody>
-                    </table>
+                      </div>
+                      <table className="hidden md:table w-full text-left text-sm">
+                        <thead>
+                          <tr className="border-b border-slate-100 bg-slate-50/50">
+                            <th className="px-6 py-4 font-semibold text-slate-500">Business</th>
+                            <th className="px-6 py-4 font-semibold text-slate-500">Plan</th>
+                            <th className="px-6 py-4 font-semibold text-slate-500">Status</th>
+                            <th className="px-6 py-4 font-semibold text-slate-500">Users</th>
+                            <th className="px-6 py-4 font-semibold text-slate-500">Created</th>
+                            <th className="px-6 py-4 font-semibold text-slate-500">Last Active</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(businesses || []).map((biz, i) => (
+                            <tr key={i} className="border-b border-slate-50 hover:bg-slate-50/50">
+                              <td className="px-6 py-4 font-medium text-slate-900">{biz.business_name || biz.owner_email}</td>
+                              <td className="px-6 py-4 capitalize text-slate-600">{biz.plan || '—'}</td>
+                              <td className="px-6 py-4">
+                                <span className={`badge ${biz.is_active ? 'badge-success' : 'badge-danger'}`}>
+                                  {biz.is_active ? 'Active' : 'Inactive'}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 text-slate-600">{biz.user_count || '—'}</td>
+                              <td className="px-6 py-4 text-slate-500">
+                                {biz.created_at ? new Date(biz.created_at).toLocaleDateString() : '—'}
+                              </td>
+                              <td className="px-6 py-4 text-slate-500">
+                                {biz.last_activity_date ? new Date(biz.last_activity_date).toLocaleDateString() : '—'}
+                              </td>
+                            </tr>
+                          ))}
+                          {(!businesses || businesses.length === 0) && (
+                            <tr>
+                              <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
+                                No businesses found
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </>
                   </div>
                 </div>
               </div>

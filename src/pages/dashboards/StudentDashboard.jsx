@@ -217,40 +217,66 @@ export default function StudentDashboard({ studentId: propStudentId }) {
               <p className="text-gray-500">No exam results recorded yet.</p>
             ) : (
               <div className="bg-white rounded-xl border overflow-hidden shadow-sm">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Subject</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Type</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Term</th>
-                      <th className="px-4 py-3 text-right font-semibold text-gray-700">Score</th>
-                      <th className="px-4 py-3 text-right font-semibold text-gray-700">Grade</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                <>
+                  <div className="md:hidden space-y-3 p-4">
                     {results.map((r, i) => {
                       const pct = Number(r.max_score || 100) > 0 ? (Number(r.score) / Number(r.max_score)) * 100 : 0;
+                      const grade = r.grade || (pct >= 70 ? 'A' : pct >= 60 ? 'B' : pct >= 50 ? 'C' : pct >= 40 ? 'D' : 'E');
+                      const gradeColor = pct >= 70 ? 'bg-green-100 text-green-700' : pct >= 50 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700';
                       return (
-                        <tr key={i} className="border-t hover:bg-gray-50">
-                          <td className="px-4 py-3 font-medium text-gray-800">{r.subject}</td>
-                          <td className="px-4 py-3 text-gray-600">{r.exam_type || 'Exam'}</td>
-                          <td className="px-4 py-3 text-gray-600">{r.term || '--'} {r.year || ''}</td>
-                          <td className="px-4 py-3 text-right">
+                        <div key={i} className="bg-white rounded-xl shadow p-4 space-y-2 border border-gray-100">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-gray-900">{r.subject}</span>
+                            <span className={`px-2 py-1 rounded-full text-xs font-bold ${gradeColor}`}>{grade}</span>
+                          </div>
+                          <div className="text-xs text-gray-500">{r.exam_type || 'Exam'} · {r.term || '--'} {r.year || ''}</div>
+                          <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-100">
+                            <span className="text-gray-600">Score</span>
                             <span className={`font-bold ${pct >= 50 ? 'text-green-600' : 'text-red-600'}`}>
-                              {r.score}/{r.max_score || 100}
+                              {r.score}/{r.max_score || 100} ({pct.toFixed(0)}%)
                             </span>
-                            <span className="text-gray-400 text-xs ml-1">({pct.toFixed(0)}%)</span>
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <span className={`px-2 py-1 rounded-full text-xs font-bold ${pct >= 70 ? 'bg-green-100 text-green-700' : pct >= 50 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>
-                              {r.grade || (pct >= 70 ? 'A' : pct >= 60 ? 'B' : pct >= 50 ? 'C' : pct >= 40 ? 'D' : 'E')}
-                            </span>
-                          </td>
-                        </tr>
+                          </div>
+                        </div>
                       );
                     })}
-                  </tbody>
-                </table>
+                  </div>
+                  <div className="hidden md:block">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left font-semibold text-gray-700">Subject</th>
+                          <th className="px-4 py-3 text-left font-semibold text-gray-700">Type</th>
+                          <th className="px-4 py-3 text-left font-semibold text-gray-700">Term</th>
+                          <th className="px-4 py-3 text-right font-semibold text-gray-700">Score</th>
+                          <th className="px-4 py-3 text-right font-semibold text-gray-700">Grade</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {results.map((r, i) => {
+                          const pct = Number(r.max_score || 100) > 0 ? (Number(r.score) / Number(r.max_score)) * 100 : 0;
+                          return (
+                            <tr key={i} className="border-t hover:bg-gray-50">
+                              <td className="px-4 py-3 font-medium text-gray-800">{r.subject}</td>
+                              <td className="px-4 py-3 text-gray-600">{r.exam_type || 'Exam'}</td>
+                              <td className="px-4 py-3 text-gray-600">{r.term || '--'} {r.year || ''}</td>
+                              <td className="px-4 py-3 text-right">
+                                <span className={`font-bold ${pct >= 50 ? 'text-green-600' : 'text-red-600'}`}>
+                                  {r.score}/{r.max_score || 100}
+                                </span>
+                                <span className="text-gray-400 text-xs ml-1">({pct.toFixed(0)}%)</span>
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                <span className={`px-2 py-1 rounded-full text-xs font-bold ${pct >= 70 ? 'bg-green-100 text-green-700' : pct >= 50 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>
+                                  {r.grade || (pct >= 70 ? 'A' : pct >= 60 ? 'B' : pct >= 50 ? 'C' : pct >= 40 ? 'D' : 'E')}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               </div>
             )}
           </div>
@@ -311,33 +337,63 @@ export default function StudentDashboard({ studentId: propStudentId }) {
               <p className="text-gray-500">No fee records found.</p>
             ) : (
               <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Term</th>
-                      <th className="px-4 py-3 text-right font-semibold text-gray-700">Billed</th>
-                      <th className="px-4 py-3 text-right font-semibold text-gray-700">Paid</th>
-                      <th className="px-4 py-3 text-right font-semibold text-gray-700">Balance</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Method</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                <>
+                  <div className="md:hidden space-y-3 p-4">
                     {fees.map((f, i) => {
                       const bal = Number(f.amount_due || 0) - Number(f.amount_paid || 0);
                       return (
-                        <tr key={i} className="border-t hover:bg-gray-50">
-                          <td className="px-4 py-3 font-medium">{f.term || '--'} {f.year || ''}</td>
-                          <td className="px-4 py-3 text-right">KSH {Number(f.amount_due).toLocaleString()}</td>
-                          <td className="px-4 py-3 text-right text-green-600">KSH {Number(f.amount_paid).toLocaleString()}</td>
-                          <td className={`px-4 py-3 text-right font-bold ${bal > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                            KSH {bal.toLocaleString()}
-                          </td>
-                          <td className="px-4 py-3 text-gray-500 capitalize">{f.payment_method || '--'}</td>
-                        </tr>
+                        <div key={i} className="bg-white rounded-xl shadow p-4 space-y-2 border border-gray-100">
+                          <div className="font-medium text-gray-900">{f.term || '--'} {f.year || ''}</div>
+                          <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-100">
+                            <span className="text-gray-600">Billed</span>
+                            <span className="text-gray-900">KSH {Number(f.amount_due).toLocaleString()}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-600">Paid</span>
+                            <span className="text-green-600 font-medium">KSH {Number(f.amount_paid).toLocaleString()}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-600">Balance</span>
+                            <span className={`font-bold ${bal > 0 ? 'text-red-600' : 'text-green-600'}`}>KSH {bal.toLocaleString()}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-100">
+                            <span className="text-gray-600">Method</span>
+                            <span className="text-gray-900 capitalize">{f.payment_method || '--'}</span>
+                          </div>
+                        </div>
                       );
                     })}
-                  </tbody>
-                </table>
+                  </div>
+                  <div className="hidden md:block">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left font-semibold text-gray-700">Term</th>
+                          <th className="px-4 py-3 text-right font-semibold text-gray-700">Billed</th>
+                          <th className="px-4 py-3 text-right font-semibold text-gray-700">Paid</th>
+                          <th className="px-4 py-3 text-right font-semibold text-gray-700">Balance</th>
+                          <th className="px-4 py-3 text-left font-semibold text-gray-700">Method</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {fees.map((f, i) => {
+                          const bal = Number(f.amount_due || 0) - Number(f.amount_paid || 0);
+                          return (
+                            <tr key={i} className="border-t hover:bg-gray-50">
+                              <td className="px-4 py-3 font-medium">{f.term || '--'} {f.year || ''}</td>
+                              <td className="px-4 py-3 text-right">KSH {Number(f.amount_due).toLocaleString()}</td>
+                              <td className="px-4 py-3 text-right text-green-600">KSH {Number(f.amount_paid).toLocaleString()}</td>
+                              <td className={`px-4 py-3 text-right font-bold ${bal > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                KSH {bal.toLocaleString()}
+                              </td>
+                              <td className="px-4 py-3 text-gray-500 capitalize">{f.payment_method || '--'}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               </div>
             )}
           </div>

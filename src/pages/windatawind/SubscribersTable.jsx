@@ -93,71 +93,110 @@ export default function SubscribersTable({ subscribers, onView, onEdit, onDelete
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-slate-50/80">
-              <th className="text-left px-4 sm:px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Name</th>
-              <th className="text-left px-4 sm:px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden sm:table-cell">Email</th>
-              <th className="text-left px-4 sm:px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">Phone</th>
-              <th className="text-left px-4 sm:px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Package</th>
-              <th className="text-left px-4 sm:px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Days Left</th>
-              <th className="text-left px-4 sm:px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
-              <th className="text-left px-4 sm:px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden lg:table-cell">Joined</th>
-              <th className="text-right px-4 sm:px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {filtered.length === 0 ? (
-              <tr>
-                <td colSpan={8} className="px-5 py-12 text-center text-slate-400">
-                  No subscribers found
-                </td>
+      <>
+        <div className="md:hidden space-y-3 p-4">
+          {filtered.length === 0 ? (
+            <div className="text-center text-slate-400 py-8">No subscribers found</div>
+          ) : filtered.map(sub => {
+            const days = getDaysRemaining(sub.startDate, sub.duration);
+            return (
+              <div key={sub.id} className="bg-white rounded-xl shadow p-4 space-y-2 border border-slate-100" onClick={() => onView(sub)}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-slate-900">{sub.name}</p>
+                    <p className="text-xs text-slate-400">{sub.email}</p>
+                  </div>
+                  <StatusBadge days={days} />
+                </div>
+                <div className="text-xs text-slate-500">{sub.phone}</div>
+                <div className="flex items-center justify-between text-sm pt-2 border-t border-slate-100">
+                  <span className="text-slate-600">Package</span>
+                  <PackageBadge pkg={sub.package} />
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-slate-600">Days Left</span>
+                  <span className={`font-semibold ${days <= 0 ? 'text-red-500' : days <= 3 ? 'text-amber-500' : 'text-emerald-500'}`}>
+                    {days <= 0 ? 0 : days}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-slate-600">Joined</span>
+                  <span className="text-slate-900">{sub.startDate}</span>
+                </div>
+                <div className="flex gap-2 pt-2" onClick={e => e.stopPropagation()}>
+                  <button onClick={() => onEdit(sub)} className="text-xs px-3 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex-1">Edit</button>
+                  <button onClick={() => onDelete(sub.id)} className="text-xs px-3 py-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-1">Delete</button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-slate-50/80">
+                <th className="text-left px-4 sm:px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Name</th>
+                <th className="text-left px-4 sm:px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden sm:table-cell">Email</th>
+                <th className="text-left px-4 sm:px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">Phone</th>
+                <th className="text-left px-4 sm:px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Package</th>
+                <th className="text-left px-4 sm:px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Days Left</th>
+                <th className="text-left px-4 sm:px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                <th className="text-left px-4 sm:px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden lg:table-cell">Joined</th>
+                <th className="text-right px-4 sm:px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
               </tr>
-            ) : filtered.map(sub => {
-              const days = getDaysRemaining(sub.startDate, sub.duration);
-              return (
-                <tr
-                  key={sub.id}
-                  className="hover:bg-slate-50/60 transition-colors cursor-pointer"
-                  onClick={() => onView(sub)}
-                >
-                  <td className="px-4 sm:px-5 py-3.5 font-medium text-slate-800">
-                    {sub.name}
-                    <span className="block sm:hidden text-xs text-slate-400 font-normal mt-0.5">{sub.email}</span>
-                  </td>
-                  <td className="px-4 sm:px-5 py-3.5 text-slate-600 hidden sm:table-cell">{sub.email}</td>
-                  <td className="px-4 sm:px-5 py-3.5 text-slate-600 hidden md:table-cell">{sub.phone}</td>
-                  <td className="px-4 sm:px-5 py-3.5"><PackageBadge pkg={sub.package} /></td>
-                  <td className="px-4 sm:px-5 py-3.5">
-                    <span className={`font-semibold ${days <= 0 ? 'text-red-500' : days <= 3 ? 'text-amber-500' : 'text-emerald-500'}`}>
-                      {days <= 0 ? 0 : days}
-                    </span>
-                  </td>
-                  <td className="px-4 sm:px-5 py-3.5"><StatusBadge days={days} /></td>
-                  <td className="px-4 sm:px-5 py-3.5 text-slate-500 hidden lg:table-cell">{sub.startDate}</td>
-                  <td className="px-4 sm:px-5 py-3.5 text-right">
-                    <div className="flex items-center justify-end gap-1" onClick={e => e.stopPropagation()}>
-                      <button
-                        onClick={() => onEdit(sub)}
-                        className="px-2.5 py-1.5 text-xs text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => onDelete(sub.id)}
-                        className="px-2.5 py-1.5 text-xs text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                      >
-                        Delete
-                      </button>
-                    </div>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="px-5 py-12 text-center text-slate-400">
+                    No subscribers found
                   </td>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+              ) : filtered.map(sub => {
+                const days = getDaysRemaining(sub.startDate, sub.duration);
+                return (
+                  <tr
+                    key={sub.id}
+                    className="hover:bg-slate-50/60 transition-colors cursor-pointer"
+                    onClick={() => onView(sub)}
+                  >
+                    <td className="px-4 sm:px-5 py-3.5 font-medium text-slate-800">
+                      {sub.name}
+                      <span className="block sm:hidden text-xs text-slate-400 font-normal mt-0.5">{sub.email}</span>
+                    </td>
+                    <td className="px-4 sm:px-5 py-3.5 text-slate-600 hidden sm:table-cell">{sub.email}</td>
+                    <td className="px-4 sm:px-5 py-3.5 text-slate-600 hidden md:table-cell">{sub.phone}</td>
+                    <td className="px-4 sm:px-5 py-3.5"><PackageBadge pkg={sub.package} /></td>
+                    <td className="px-4 sm:px-5 py-3.5">
+                      <span className={`font-semibold ${days <= 0 ? 'text-red-500' : days <= 3 ? 'text-amber-500' : 'text-emerald-500'}`}>
+                        {days <= 0 ? 0 : days}
+                      </span>
+                    </td>
+                    <td className="px-4 sm:px-5 py-3.5"><StatusBadge days={days} /></td>
+                    <td className="px-4 sm:px-5 py-3.5 text-slate-500 hidden lg:table-cell">{sub.startDate}</td>
+                    <td className="px-4 sm:px-5 py-3.5 text-right">
+                      <div className="flex items-center justify-end gap-1" onClick={e => e.stopPropagation()}>
+                        <button
+                          onClick={() => onEdit(sub)}
+                          className="px-2.5 py-1.5 text-xs text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => onDelete(sub.id)}
+                          className="px-2.5 py-1.5 text-xs text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </>
 
       <div className="px-5 py-3 border-t border-slate-100 text-xs text-slate-400">
         Showing {filtered.length} of {subscribers.length} subscribers

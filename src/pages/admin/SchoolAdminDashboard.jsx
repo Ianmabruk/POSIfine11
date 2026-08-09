@@ -335,42 +335,70 @@ export default function SchoolAdminDashboard() {
               ) : students.length === 0 ? (
                 <div className="text-center py-12 text-gray-500"><p className="text-lg">No students added yet.</p><p className="text-sm">Click Add Student to enroll a new student.</p></div>
               ) : (
-                <div className="overflow-x-auto -mx-4 sm:mx-0">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">Adm No</th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Class</th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">Parent</th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden lg:table-cell">Photo</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {students.map(student => (
-                        <tr key={student.id}>
-                          <td className="px-3 py-3 text-sm text-gray-900">
-                            <div className="flex items-center gap-2">
-                              {student.student_image ? <img src={student.student_image} alt="" className="w-8 h-8 rounded-full object-cover sm:hidden" /> : null}
-                              <div>
-                                <div>{student.name}</div>
-                                <div className="text-xs text-gray-400 sm:hidden">{student.admission_number || ''}</div>
-                              </div>
+                <>
+                  <div className="md:hidden space-y-3">
+                    {students.map(student => (
+                      <div key={student.id} className="bg-white rounded-xl shadow p-4 space-y-2 border border-gray-100">
+                        <div className="flex items-center gap-3">
+                          {student.student_image ? <img src={student.student_image} alt="" className="w-10 h-10 rounded-full object-cover" /> : <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-sm">?</div>}
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-gray-900 truncate">{student.name}</p>
+                            <p className="text-xs text-gray-500">Adm No: {student.admission_number || '-'}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-100">
+                          <span className="text-gray-600">Class</span>
+                          <span className="font-medium text-gray-900">{student.class_name || '-'}</span>
+                        </div>
+                        {student.parent_name && (
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-600">Parent</span>
+                            <div className="text-right">
+                              <span className="text-gray-900">{student.parent_name}</span>
+                              <span className="text-xs text-gray-400 block">{student.parent_phone || ''}</span>
                             </div>
-                          </td>
-                          <td className="px-3 py-3 text-sm text-gray-600 hidden sm:table-cell">{student.admission_number || '-'}</td>
-                          <td className="px-3 py-3 text-sm text-gray-600">{student.class_name || '-'}</td>
-                          <td className="px-3 py-3 text-sm text-gray-600 hidden md:table-cell">
-                            {student.parent_name || '-'}<div className="text-xs text-gray-400">{student.parent_phone || ''}</div>
-                          </td>
-                          <td className="px-3 py-3 hidden lg:table-cell">
-                            {student.student_image ? <img src={student.student_image} alt="" className="w-10 h-10 object-cover rounded" /> : <span className="text-xs text-gray-400">-</span>}
-                          </td>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="hidden md:block overflow-x-auto -mx-4 sm:mx-0">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">Adm No</th>
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Class</th>
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">Parent</th>
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden lg:table-cell">Photo</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {students.map(student => (
+                          <tr key={student.id}>
+                            <td className="px-3 py-3 text-sm text-gray-900">
+                              <div className="flex items-center gap-2">
+                                {student.student_image ? <img src={student.student_image} alt="" className="w-8 h-8 rounded-full object-cover sm:hidden" /> : null}
+                                <div>
+                                  <div>{student.name}</div>
+                                  <div className="text-xs text-gray-400 sm:hidden">{student.admission_number || ''}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-3 py-3 text-sm text-gray-600 hidden sm:table-cell">{student.admission_number || '-'}</td>
+                            <td className="px-3 py-3 text-sm text-gray-600">{student.class_name || '-'}</td>
+                            <td className="px-3 py-3 text-sm text-gray-600 hidden md:table-cell">
+                              {student.parent_name || '-'}<div className="text-xs text-gray-400">{student.parent_phone || ''}</div>
+                            </td>
+                            <td className="px-3 py-3 hidden lg:table-cell">
+                              {student.student_image ? <img src={student.student_image} alt="" className="w-10 h-10 object-cover rounded" /> : <span className="text-xs text-gray-400">-</span>}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
             </div>
           )}
@@ -465,42 +493,67 @@ export default function SchoolAdminDashboard() {
               {filteredResults.length === 0 ? (
                 <div className="text-center py-12 text-gray-500"><p className="text-lg">No results recorded yet.</p><p className="text-sm">Record exam results per student per course.</p></div>
               ) : (
-                <div className="overflow-x-auto -mx-4 sm:mx-0">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Course</th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Exam</th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Score</th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">Grade</th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">Remarks</th>
-                        <th className="px-3 py-3"></th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {filteredResults.map(r => (
-                        <tr key={r.id}>
-                          <td className="px-3 py-3 text-sm text-gray-900">{getStudentName(r.studentId)}</td>
-                          <td className="px-3 py-3 text-sm text-gray-600">{getCourseName(r.courseId)}</td>
-                          <td className="px-3 py-3 text-sm text-gray-600">{r.examName}</td>
-                          <td className="px-3 py-3 text-sm font-semibold text-gray-900">{r.score}</td>
-                          <td className="px-3 py-3 text-sm text-gray-600 hidden sm:table-cell">
-                            <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                              r.grade === 'A' ? 'bg-green-100 text-green-700' :
-                              r.grade === 'B' ? 'bg-blue-100 text-blue-700' :
-                              r.grade === 'C' ? 'bg-yellow-100 text-yellow-700' :
-                              r.grade === 'D' ? 'bg-orange-100 text-orange-700' :
-                              'bg-red-100 text-red-700'
-                            }`}>{r.grade || '-'}</span>
-                          </td>
-                          <td className="px-3 py-3 text-sm text-gray-500 hidden md:table-cell">{r.remarks || '-'}</td>
-                          <td className="px-3 py-3"><button onClick={() => handleDeleteResult(r.id)} className={btnDanger}><Trash2 size={14} /></button></td>
+                <>
+                  <div className="md:hidden space-y-3">
+                    {filteredResults.map(r => {
+                      const gradeColor = r.grade === 'A' ? 'bg-green-100 text-green-700' : r.grade === 'B' ? 'bg-blue-100 text-blue-700' : r.grade === 'C' ? 'bg-yellow-100 text-yellow-700' : r.grade === 'D' ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700';
+                      return (
+                        <div key={r.id} className="bg-white rounded-xl shadow p-4 space-y-2 border border-gray-100">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-gray-900">{getStudentName(r.studentId)}</span>
+                            <span className={`px-2 py-0.5 rounded text-xs font-medium ${gradeColor}`}>{r.grade || '-'}</span>
+                          </div>
+                          <div className="text-sm text-gray-600">Course: {getCourseName(r.courseId)}</div>
+                          <div className="text-sm text-gray-600">Exam: {r.examName}</div>
+                          <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-100">
+                            <span className="text-gray-600">Score</span>
+                            <span className="font-semibold text-gray-900">{r.score}</span>
+                          </div>
+                          {r.remarks && <div className="text-sm text-gray-500 pt-1">Remarks: {r.remarks}</div>}
+                          <div className="pt-2">
+                            <button onClick={() => handleDeleteResult(r.id)} className={btnDanger}><Trash2 size={14} /></button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="hidden md:block overflow-x-auto -mx-4 sm:mx-0">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Course</th>
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Exam</th>
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Score</th>
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">Grade</th>
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">Remarks</th>
+                          <th className="px-3 py-3"></th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {filteredResults.map(r => (
+                          <tr key={r.id}>
+                            <td className="px-3 py-3 text-sm text-gray-900">{getStudentName(r.studentId)}</td>
+                            <td className="px-3 py-3 text-sm text-gray-600">{getCourseName(r.courseId)}</td>
+                            <td className="px-3 py-3 text-sm text-gray-600">{r.examName}</td>
+                            <td className="px-3 py-3 text-sm font-semibold text-gray-900">{r.score}</td>
+                            <td className="px-3 py-3 text-sm text-gray-600 hidden sm:table-cell">
+                              <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                r.grade === 'A' ? 'bg-green-100 text-green-700' :
+                                r.grade === 'B' ? 'bg-blue-100 text-blue-700' :
+                                r.grade === 'C' ? 'bg-yellow-100 text-yellow-700' :
+                                r.grade === 'D' ? 'bg-orange-100 text-orange-700' :
+                                'bg-red-100 text-red-700'
+                              }`}>{r.grade || '-'}</span>
+                            </td>
+                            <td className="px-3 py-3 text-sm text-gray-500 hidden md:table-cell">{r.remarks || '-'}</td>
+                            <td className="px-3 py-3"><button onClick={() => handleDeleteResult(r.id)} className={btnDanger}><Trash2 size={14} /></button></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
             </div>
           )}

@@ -441,39 +441,58 @@ export default function AdminBarDashboard() {
                 <button onClick={() => setShowAddStaff(true)} className="text-purple-600 hover:text-purple-700 font-medium">Add your first staff member</button>
               </div>
             ) : (
-              <div className="bg-white rounded-xl shadow overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">Email</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {filteredStaff.map(member => (
-                        <tr key={member.id}>
-                          <td className="px-4 py-3 text-sm">
-                            <div className="font-medium text-gray-900">{member.name}</div>
-                            <div className="text-xs text-gray-400 sm:hidden">{member.email}</div>
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-600 hidden sm:table-cell">{member.email}</td>
-                          <td className="px-4 py-3">
-                            <span className="px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">{member.business_role || member.role}</span>
-                          </td>
-                          <td className="px-4 py-3 hidden sm:table-cell">
-                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${member.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                              {member.is_active ? 'Active' : 'Inactive'}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+              <>
+                <div className="md:hidden space-y-3">
+                  {filteredStaff.map(member => (
+                    <div key={member.id} className="bg-white rounded-xl shadow p-4 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-gray-900">{member.name}</span>
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${member.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                          {member.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-600">{member.email}</div>
+                      <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-100">
+                        <span className="text-gray-600">Role</span>
+                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">{member.business_role || member.role}</span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </div>
+                <div className="bg-white rounded-xl shadow overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">Email</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {filteredStaff.map(member => (
+                          <tr key={member.id}>
+                            <td className="px-4 py-3 text-sm">
+                              <div className="font-medium text-gray-900">{member.name}</div>
+                              <div className="text-xs text-gray-400 sm:hidden">{member.email}</div>
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-600 hidden sm:table-cell">{member.email}</td>
+                            <td className="px-4 py-3">
+                              <span className="px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">{member.business_role || member.role}</span>
+                            </td>
+                            <td className="px-4 py-3 hidden sm:table-cell">
+                              <span className={`px-2 py-1 text-xs font-semibold rounded-full ${member.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                {member.is_active ? 'Active' : 'Inactive'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
             )}
           </div>
         )}

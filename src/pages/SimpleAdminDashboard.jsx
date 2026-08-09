@@ -194,30 +194,43 @@ export default function SimpleAdminDashboard() {
           )}
           
           <div className="p-6">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-2">Name</th>
-                  <th className="text-left py-2">Email</th>
-                  <th className="text-left py-2">Role</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map(u => (
-                  <tr key={u.id} className="border-b">
-                    <td className="py-2">{u.name}</td>
-                    <td className="py-2">{u.email}</td>
-                    <td className="py-2">
-                      <span className={`px-2 py-1 rounded text-xs ${
-                        u.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
-                      }`}>
-                        {u.role}
-                      </span>
-                    </td>
+            <div className="md:hidden space-y-3">
+              {users.map(u => (
+                <div key={u.id} className="bg-white rounded-xl shadow p-4 space-y-2 border border-gray-100">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-gray-900">{u.name}</span>
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${u.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>{u.role}</span>
+                  </div>
+                  <div className="text-sm text-gray-600">{u.email}</div>
+                </div>
+              ))}
+            </div>
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-2">Name</th>
+                    <th className="text-left py-2">Email</th>
+                    <th className="text-left py-2">Role</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {users.map(u => (
+                    <tr key={u.id} className="border-b">
+                      <td className="py-2">{u.name}</td>
+                      <td className="py-2">{u.email}</td>
+                      <td className="py-2">
+                        <span className={`px-2 py-1 rounded text-xs ${
+                          u.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          {u.role}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 
@@ -294,26 +307,47 @@ export default function SimpleAdminDashboard() {
           )}
           
           <div className="p-6">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-2">Product Name</th>
-                  <th className="text-left py-2">Price</th>
-                  <th className="text-left py-2">Cost/COG</th>
-                  <th className="text-left py-2">Stock</th>
-                </tr>
-              </thead>
-              <tbody>
-                {products.map(p => (
-                  <tr key={p.id} className="border-b">
-                    <td className="py-2">{p.name}</td>
-                    <td className="py-2">TZS {p.price?.toLocaleString()}</td>
-                    <td className="py-2">TZS {(p.cost_per_unit || p.cost || 0).toLocaleString()}</td>
-                    <td className="py-2">{p.quantity || 0}</td>
+            <div className="md:hidden space-y-3">
+              {products.map(p => (
+                <div key={p.id} className="bg-white rounded-xl shadow p-4 space-y-2 border border-gray-100">
+                  <div className="font-medium text-gray-900">{p.name}</div>
+                  <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-100">
+                    <span className="text-gray-600">Price</span>
+                    <span className="font-medium text-gray-900">TZS {p.price?.toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Cost/COG</span>
+                    <span className="text-gray-900">TZS {(p.cost_per_unit || p.cost || 0).toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Stock</span>
+                    <span className="text-gray-900">{p.quantity || 0}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-2">Product Name</th>
+                    <th className="text-left py-2">Price</th>
+                    <th className="text-left py-2">Cost/COG</th>
+                    <th className="text-left py-2">Stock</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {products.map(p => (
+                    <tr key={p.id} className="border-b">
+                      <td className="py-2">{p.name}</td>
+                      <td className="py-2">TZS {p.price?.toLocaleString()}</td>
+                      <td className="py-2">TZS {(p.cost_per_unit || p.cost || 0).toLocaleString()}</td>
+                      <td className="py-2">{p.quantity || 0}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>

@@ -301,29 +301,50 @@ export default function ShopStaffDashboard({ businessLabel = 'Shop', accentColor
           <div className="flex-1">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">All Products</h2>
             <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Product</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Category</th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-700">Price</th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-700">In Stock</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <>
+                <div className="md:hidden space-y-3 p-4">
                   {products.map((p, i) => (
-                    <tr key={i} className="border-t hover:bg-gray-50">
-                      <td className="px-4 py-3 font-medium text-gray-800">{p.name}</td>
-                      <td className="px-4 py-3 text-gray-500">{p.category || '--'}</td>
-                      <td className="px-4 py-3 text-right text-gray-800">KSH {Number(p.price).toLocaleString()}</td>
-                      <td className={`px-4 py-3 text-right font-bold ${p.quantity <= 5 ? 'text-red-600' : 'text-green-600'}`}>
-                        {p.quantity}
-                      </td>
-                    </tr>
+                    <div key={i} className="bg-white rounded-xl shadow p-4 space-y-2 border border-gray-100">
+                      <div className="font-medium text-gray-900">{p.name}</div>
+                      <div className="text-xs text-gray-500">{p.category || '--'}</div>
+                      <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-100">
+                        <span className="text-gray-600">Price</span>
+                        <span className="font-medium text-gray-900">KSH {Number(p.price).toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600">In Stock</span>
+                        <span className={`font-bold ${p.quantity <= 5 ? 'text-red-600' : 'text-green-600'}`}>{p.quantity}</span>
+                      </div>
+                    </div>
                   ))}
-                  {products.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400">No products found</td></tr>}
-                </tbody>
-              </table>
+                  {products.length === 0 && <div className="text-center text-gray-400 py-4">No products found</div>}
+                </div>
+                <div className="hidden md:block">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left font-semibold text-gray-700">Product</th>
+                        <th className="px-4 py-3 text-left font-semibold text-gray-700">Category</th>
+                        <th className="px-4 py-3 text-right font-semibold text-gray-700">Price</th>
+                        <th className="px-4 py-3 text-right font-semibold text-gray-700">In Stock</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {products.map((p, i) => (
+                        <tr key={i} className="border-t hover:bg-gray-50">
+                          <td className="px-4 py-3 font-medium text-gray-800">{p.name}</td>
+                          <td className="px-4 py-3 text-gray-500">{p.category || '--'}</td>
+                          <td className="px-4 py-3 text-right text-gray-800">KSH {Number(p.price).toLocaleString()}</td>
+                          <td className={`px-4 py-3 text-right font-bold ${p.quantity <= 5 ? 'text-red-600' : 'text-green-600'}`}>
+                            {p.quantity}
+                          </td>
+                        </tr>
+                      ))}
+                      {products.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400">No products found</td></tr>}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             </div>
           </div>
         )}
@@ -333,27 +354,51 @@ export default function ShopStaffDashboard({ businessLabel = 'Shop', accentColor
           <div className="flex-1">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Sales History</h2>
             <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Date</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Items</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Method</th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-700">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <>
+                <div className="md:hidden space-y-3 p-4">
                   {sales.slice(0, 50).map((s, i) => (
-                    <tr key={i} className="border-t hover:bg-gray-50">
-                      <td className="px-4 py-3 text-gray-600">{s.created_at?.slice(0, 16).replace('T', ' ') || '--'}</td>
-                      <td className="px-4 py-3 text-gray-600">{s.items?.length || 1} item{(s.items?.length || 1) !== 1 ? 's' : ''}</td>
-                      <td className="px-4 py-3 capitalize text-gray-600">{s.payment_method || s.paymentMethod || '--'}</td>
-                      <td className="px-4 py-3 text-right font-medium">KSH {Number(s.total || s.total_amount || 0).toLocaleString()}</td>
-                    </tr>
+                    <div key={i} className="bg-white rounded-xl shadow p-4 space-y-2 border border-gray-100">
+                      <div className="text-sm font-medium text-gray-900">{s.created_at?.slice(0, 16).replace('T', ' ') || '--'}</div>
+                      <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-100">
+                        <span className="text-gray-600">Items</span>
+                        <span className="text-gray-900">{s.items?.length || 1} item{(s.items?.length || 1) !== 1 ? 's' : ''}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600">Method</span>
+                        <span className="text-gray-900 capitalize">{s.payment_method || s.paymentMethod || '--'}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600">Total</span>
+                        <span className="font-medium text-gray-900">KSH {Number(s.total || s.total_amount || 0).toLocaleString()}</span>
+                      </div>
+                    </div>
                   ))}
-                  {sales.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400">No sales yet</td></tr>}
-                </tbody>
-              </table>
+                  {sales.length === 0 && <div className="text-center text-gray-400 py-4">No sales yet</div>}
+                </div>
+                <div className="hidden md:block">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left font-semibold text-gray-700">Date</th>
+                        <th className="px-4 py-3 text-left font-semibold text-gray-700">Items</th>
+                        <th className="px-4 py-3 text-left font-semibold text-gray-700">Method</th>
+                        <th className="px-4 py-3 text-right font-semibold text-gray-700">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sales.slice(0, 50).map((s, i) => (
+                        <tr key={i} className="border-t hover:bg-gray-50">
+                          <td className="px-4 py-3 text-gray-600">{s.created_at?.slice(0, 16).replace('T', ' ') || '--'}</td>
+                          <td className="px-4 py-3 text-gray-600">{s.items?.length || 1} item{(s.items?.length || 1) !== 1 ? 's' : ''}</td>
+                          <td className="px-4 py-3 capitalize text-gray-600">{s.payment_method || s.paymentMethod || '--'}</td>
+                          <td className="px-4 py-3 text-right font-medium">KSH {Number(s.total || s.total_amount || 0).toLocaleString()}</td>
+                        </tr>
+                      ))}
+                      {sales.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400">No sales yet</td></tr>}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             </div>
           </div>
         )}

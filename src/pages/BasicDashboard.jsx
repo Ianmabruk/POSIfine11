@@ -148,36 +148,56 @@ export default function BasicDashboard() {
           {recentSales.length === 0 ? (
             <p className="text-gray-500 text-center py-8">No sales yet</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Date</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Items</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Total</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Payment</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentSales.map(sale => (
-                    <tr key={sale.id} className="border-t border-gray-100">
-                      <td className="px-4 py-3 text-sm text-gray-900">
-                        {new Date(sale.created_at || sale.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-900">
-                        {sale.items?.length || 0} items
-                      </td>
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                        KSH {sale.total.toLocaleString()}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">
-                        {sale.payment_method || sale.paymentMethod || 'Cash'}
-                      </td>
+            <>
+              <div className="md:hidden space-y-3">
+                {recentSales.map(sale => (
+                  <div key={sale.id} className="bg-white rounded-xl shadow p-4 space-y-2 border border-gray-100">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-900">{new Date(sale.created_at || sale.createdAt).toLocaleDateString()}</span>
+                      <span className="text-xs text-gray-500">{sale.items?.length || 0} items</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-100">
+                      <span className="text-gray-600">Total</span>
+                      <span className="font-semibold text-gray-900">KSH {sale.total.toLocaleString()}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Payment</span>
+                      <span className="text-gray-900">{sale.payment_method || sale.paymentMethod || 'Cash'}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Date</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Items</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Total</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Payment</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {recentSales.map(sale => (
+                      <tr key={sale.id} className="border-t border-gray-100">
+                        <td className="px-4 py-3 text-sm text-gray-900">
+                          {new Date(sale.created_at || sale.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-900">
+                          {sale.items?.length || 0} items
+                        </td>
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                          KSH {sale.total.toLocaleString()}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600">
+                          {sale.payment_method || sale.paymentMethod || 'Cash'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
 

@@ -183,7 +183,49 @@ export default function AdminPaymentDashboard() {
       {/* User Management */}
       <div className="bg-white rounded-xl shadow-lg p-6">
         <h2 className="text-xl font-bold mb-4">User Management</h2>
-        <div className="overflow-x-auto">
+        <div className="md:hidden space-y-3">
+          {users.map(user => (
+            <div key={user.id} className="bg-white rounded-xl shadow p-4 space-y-2 border border-gray-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-gray-900">{user.name}</p>
+                  <p className="text-xs text-gray-500">{user.email}</p>
+                </div>
+                <div className="flex items-center gap-1">
+                  {user.active ? (
+                    <span className="flex items-center gap-1 text-green-600 text-xs">
+                      <CheckCircle size={14} /> Active
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-red-600 text-xs">
+                      <XCircle size={14} /> Inactive
+                    </span>
+                  )}
+                  {user.locked && <span className="text-red-500 text-xs">(Locked)</span>}
+                </div>
+              </div>
+              <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-100">
+                <span className="text-gray-600">Plan</span>
+                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                  user.plan === 'ultra' ? 'bg-purple-100 text-purple-800' :
+                  user.plan === 'basic' ? 'bg-green-100 text-green-800' :
+                  'bg-gray-100 text-gray-800'
+                }`}>
+                  {user.plan || 'No Plan'}
+                </span>
+              </div>
+              <div className="flex gap-2 pt-2">
+                {!user.active && user.plan && (
+                  <button onClick={() => activateUser(user.id)} className="text-xs bg-green-500 text-white px-3 py-1.5 rounded hover:bg-green-600 flex-1">Activate</button>
+                )}
+                <button onClick={() => lockUser(user.id, !user.locked)} className={`text-xs px-3 py-1.5 rounded flex-1 ${user.locked ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-red-500 text-white hover:bg-red-600'}`}>
+                  {user.locked ? <Unlock size={14} /> : <Lock size={14} />}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
