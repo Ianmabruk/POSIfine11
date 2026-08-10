@@ -75,8 +75,6 @@ const request = async (endpoint, options = {}) => {
       localStorage.removeItem('ownerToken');
       localStorage.removeItem('mainAdminUser');
       localStorage.removeItem('ownerUser');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('csrfToken');
       window.location.href = '/windatawind';
       throw new Error('Authentication required');
     }
