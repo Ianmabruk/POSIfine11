@@ -181,13 +181,16 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('user', JSON.stringify(normalized));
       } else if (response.status === 401) {
         const refreshToken = localStorage.getItem('refreshToken');
+        const csrfToken = localStorage.getItem('csrfToken');
         if (refreshToken) {
           try {
             setIsRefreshing(true);
+            const refreshHeaders = { 'Content-Type': 'application/json' };
+            if (csrfToken) refreshHeaders['X-CSRF-Token'] = csrfToken;
             const refreshResp = await fetch(`${BASE_API_URL}/auth/refresh`, {
               method: 'POST',
               credentials: 'include',
-              headers: { 'Content-Type': 'application/json' },
+              headers: refreshHeaders,
               body: JSON.stringify({ refreshToken }),
             });
             if (refreshResp.ok) {
