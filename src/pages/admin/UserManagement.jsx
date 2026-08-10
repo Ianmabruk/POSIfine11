@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { users as usersApi, sales as salesApi, BASE_API_URL } from '../../services/api';
+import { cacheClear } from '../../utils/apiCache';
 import { useAuth } from '../../context/AuthContext';
 import { Plus, Edit2, Trash2, Mail, Shield, Eye, Monitor, X, Clock, ShoppingCart, UserCheck, UserX, Users, Lock, Trash, Building, Stethoscope, Hotel, Utensils, DollarSign } from 'lucide-react';
 
@@ -187,6 +188,9 @@ export default function UserManagement() {
         // Replace temporary user with real one
         setUsers(prev => prev.map(u => u.id === tempId ? (result?.user || result) : u));
         
+        // Invalidate users list cache so background refresh sees the new user
+        cacheClear('/users\\|(GET|HEAD)\\|');
+        
         // Show success message with login credentials including PIN
         const loginInstructions = `✅ Cashier added successfully!\n\n📧 Email: ${userData.email}\n🔑 Password: ${userData.password}\n🔢 PIN: ${cashierPIN}\n\n💡 LOGIN OPTIONS:\n1. Email + Password: Use email and password above\n2. PIN Login: Use email + ${cashierPIN}\n\nPlease share these credentials securely with the new cashier.`;
         
@@ -226,6 +230,7 @@ export default function UserManagement() {
     try {
       setLoading(true);
       await usersApi.update(userId, { permissions });
+      cacheClear('/users\\|(GET|HEAD)\\|');
       await loadUsers();
       setEditingUser(null);
     } catch (error) {
@@ -259,6 +264,7 @@ export default function UserManagement() {
         throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
       }
 
+      cacheClear('/users\\|(GET|HEAD)\\|');
       await loadUsers();
     } catch (error) {
       console.error('Error updating user status:', error);
@@ -273,7 +279,6 @@ export default function UserManagement() {
       setLoading(true);
       const newLocked = !currentLocked;
       
-
 
       // Call the backend API to lock/unlock user
       const response = await fetch(`${BASE_API_URL}/users/${userId}/lock`, {
@@ -290,6 +295,7 @@ export default function UserManagement() {
         throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
       }
 
+      cacheClear('/users\\|(GET|HEAD)\\|');
       await loadUsers();
     } catch (error) {
       console.error('Error updating user lock status:', error);
@@ -299,12 +305,12 @@ export default function UserManagement() {
     }
   };
 
-
   const handleDeleteUser = async (userId) => {
     if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
       try {
         setLoading(true);
         await usersApi.delete(userId);
+        cacheClear('/users\\|(GET|HEAD)\\|');
         await loadUsers();
       } catch (error) {
         console.error('Error deleting user:', error);

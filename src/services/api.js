@@ -85,6 +85,15 @@ const refreshAuthSession = async (csrfToken) => {
   return refreshPromise;
 };
 
+const invalidateEndpointCache = (endpoint) => {
+    try {
+        const escaped = endpoint.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        cacheClear(new RegExp(`^api_cache_${escaped}\\|(GET|HEAD)\\|`).source);
+    } catch {
+        cacheClear();
+    }
+};
+
 const requestWithRetry = async (endpoint, options = {}, retryCount = 0, maxRetries = 2, didRefresh = false) => {
   const token = getToken();
   const csrfToken = getCsrfToken();
@@ -167,6 +176,8 @@ const requestWithRetry = async (endpoint, options = {}, retryCount = 0, maxRetri
       const json = await response.json();
       if (method === 'GET' || method === 'HEAD') {
         cacheSet(cacheKey, json, 30_000);
+      } else {
+        invalidateEndpointCache(normalizedEndpoint);
       }
       return json;
     }
