@@ -273,6 +273,11 @@
     @apply bg-white/90 backdrop-blur-2xl border border-white/50;
   }
 
+  /* Premium auth card glass effect */
+  .glass-card-premium {
+    @apply bg-white/80 backdrop-blur-2xl border border-white/40 shadow-glass-premium rounded-3xl;
+  }
+
   /* Hover lift effect */
   .hover-lift {
     @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-premium;

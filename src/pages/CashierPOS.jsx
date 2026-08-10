@@ -4,7 +4,7 @@ import { useProducts } from '../context/ProductsContext';
 import { products, sales, expenses, stats, batches, discounts, timeEntries, creditRequests, reminders } from '../services/api';
 import websocketService from '../services/websocketService';
 import { BASE_API_URL } from '../services/api';
-import { ShoppingCart, Trash2, LogOut, Plus, Minus, TrendingDown, Package, Edit2, Search, Camera, AlertTriangle, Clock, Play, Square, CreditCard, X, Bell, PenSquare } from 'lucide-react';
+import { ShoppingCart, Trash2, LogOut, Plus, Minus, TrendingDown, Package, Edit2, Search, Camera, AlertTriangle, Clock, Play, Square, CreditCard, X, Bell, PenSquare, Loader2 } from 'lucide-react';
 import SignaturePad from '../components/SignaturePad';
 import DiscountSelector from '../components/DiscountSelector';
 import ProductCard from '../components/ProductCard';
@@ -13,6 +13,7 @@ import {
   completeSaleTransaction, 
   invalidateProductCache
 } from '../services/transactionService';
+import EmptyState from '../components/ui/EmptyState';
 
 const TAX_RATE = 0.16;
 
@@ -104,6 +105,31 @@ export default function CashierPOS() {
   const [mpesaProvider, setMpesaProvider] = useState('intasend');
   const mpesaPollingRef = useRef(null);
   const [cartSheetOpen, setCartSheetOpen] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [productsLoading, setProductsLoading] = useState(false);
+  const searchTimeoutRef = useRef(null);
+
+  // Debounced search for faster experience
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+
+  useEffect(() => {
+    setSearchLoading(true);
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    searchTimeoutRef.current = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      setSearchLoading(false);
+    }, 150);
+    return () => {
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    };
+  }, [searchTerm]);
+
+  // Show loading on product list when updating
+  useEffect(() => {
+    setProductsLoading(true);
+    const timer = setTimeout(() => setProductsLoading(false), 200);
+    return () => clearTimeout(timer);
+  }, [productList.length, productUpdateCount]);
 
   const calc = useCashierCalculations(cart, selectedDiscount, taxType);
 
@@ -1365,152 +1391,179 @@ export default function CashierPOS() {
                 <input
                   type="text"
                   placeholder="Search products..."
-                  className="input pl-10"
+                  className="input pl-10 pr-10"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
+                {searchLoading && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+                  </div>
+                )}
               </div>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-              {productList.filter(p => p.name?.toLowerCase().includes(searchTerm.toLowerCase())).map(product => {
-                const stock = getProductStock(product.id);
-                const lowStockThreshold = getLowStockThreshold(product);
-                const isLowStock = stock > 0 && stock <= lowStockThreshold;
-                const isOutOfStock = stock <= 0;
-                
-                return (
-                  <button
-                    key={product.id}
-                    onClick={() => addToCart(product)}
-                    disabled={isOutOfStock}
-                    className={`card text-left hover:shadow-xl transition-all transform hover:scale-105 relative ${
-                      isOutOfStock ? 'opacity-50 cursor-not-allowed bg-gray-100' : 'bg-gradient-to-br from-white to-gray-50'
-                    }`}
-                  >
-                    {product.image && (
-                      <div className="w-full h-32 mb-3 rounded-lg overflow-hidden bg-gray-100">
-                        <img 
-                          src={product.image} 
-                          alt={product.name}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    )}
-                    {isLowStock && !isOutOfStock && (
-                      <div className="absolute top-2 right-2 bg-yellow-500 text-white p-1 rounded-full">
-                        <AlertTriangle className="w-4 h-4" />
-                      </div>
-                    )}
-                    {isOutOfStock && (
-                      <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
-                        OUT
-                      </div>
-                    )}
-                    <h3 className="font-semibold mb-2 text-gray-900">{product.name}</h3>
-                    <p className="text-xl font-bold text-green-600">KSH {product.price?.toLocaleString()}</p>
-                    <div className="flex justify-between items-center mt-2">
-                      <p className={`text-xs font-medium ${
-                        isOutOfStock ? 'text-red-600' : isLowStock ? 'text-yellow-600' : 'text-green-600'
-                      }`}>
-                        Stock: {stock}
-                      </p>
-                      {isOutOfStock ? (
-                        <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full font-medium">
-                          Out of Stock
-                        </span>
-                      ) : isLowStock ? (
-                        <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full font-medium">
-                          Low Stock
-                        </span>
-                      ) : (
-                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-medium">
-                          In Stock
-                        </span>
-                      )}
+            
+            {productsLoading && productList.length === 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+                {[1,2,3,4,5,6,7,8].map(i => (
+                  <div key={i} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div className="w-full h-32 bg-gray-100 animate-pulse" />
+                    <div className="p-4 space-y-3">
+                      <div className="h-5 bg-gray-200 rounded-lg w-3/4 animate-pulse" />
+                      <div className="h-4 bg-gray-200 rounded-lg w-1/2 animate-pulse" />
+                      <div className="h-8 bg-gray-200 rounded-lg w-1/3 animate-pulse" />
                     </div>
-                  </button>
-                );
-              })}
-            </div>
+                  </div>
+                ))}
+              </div>
+            ) : productList.filter(p => p.name?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())).length === 0 ? (
+              <EmptyState
+                icon="no-products"
+                title="No products found"
+                description={debouncedSearchTerm ? `No products match "${debouncedSearchTerm}"` : 'No products available. Add products to get started.'}
+                actionLabel="Add Product"
+                onAction={() => setActiveView('products')}
+              />
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+                {productList.filter(p => p.name?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())).map(product => {
+                  const stock = getProductStock(product.id);
+                  const lowStockThreshold = getLowStockThreshold(product);
+                  const isLowStock = stock > 0 && stock <= lowStockThreshold;
+                  const isOutOfStock = stock <= 0;
+                  
+                  return (
+                    <button
+                      key={product.id}
+                      onClick={() => addToCart(product)}
+                      disabled={isOutOfStock}
+                      className={`
+                        group relative overflow-hidden rounded-2xl border border-gray-100 bg-white
+                        text-left transition-all duration-300
+                        hover:shadow-xl hover:shadow-gray-200/60 hover:-translate-y-0.5
+                        disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none disabled:hover:translate-y-0
+                      `}
+                    >
+                      {/* Image */}
+                      <div className="relative w-full h-36 sm:h-40 bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
+                        {product.image ? (
+                          <img 
+                            src={product.image} 
+                            alt={product.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Package className="w-12 h-12 text-gray-300" />
+                          </div>
+                        )}
+                        
+                        {/* Stock Badges */}
+                        {isLowStock && !isOutOfStock && (
+                          <div className="absolute top-2 right-2 bg-amber-500 text-white p-1.5 rounded-lg shadow-lg shadow-amber-500/20">
+                            <AlertTriangle className="w-4 h-4" />
+                          </div>
+                        )}
+                        {isOutOfStock && (
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                            <span className="bg-red-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg">
+                              OUT OF STOCK
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Content */}
+                      <div className="p-3 sm:p-4">
+                        <h3 className="font-semibold text-sm sm:text-base text-gray-900 mb-1 truncate">{product.name}</h3>
+                        <p className="text-lg sm:text-xl font-bold text-green-600 mb-2">
+                          KSH {product.price?.toLocaleString()}
+                        </p>
+                        <div className="flex items-center justify-between">
+                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                            isOutOfStock ? 'text-red-600 bg-red-50' : isLowStock ? 'text-amber-600 bg-amber-50' : 'text-green-600 bg-green-50'
+                          }`}>
+                            {stock} in stock
+                          </span>
+                          {!isOutOfStock && (
+                            <div className="w-8 h-8 rounded-lg bg-green-50 text-green-600 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Plus className="w-4 h-4" />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
-          <div className="w-full lg:w-96 bg-white border-t lg:border-t-0 lg:border-l border-gray-200 p-4 sm:p-6 flex flex-col shadow-xl lg:max-h-none max-h-[60vh]">
-            <div className="flex items-center gap-2 mb-4 sm:mb-6">
-              <div className="w-10 h-10 bg-gradient-to-br from-green-600 to-teal-600 rounded-xl flex items-center justify-center">
-                <ShoppingCart className="w-5 h-5 text-white" />
-              </div>
-              <h2 className="text-xl font-semibold">Cart</h2>
-              <span className="ml-auto bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-semibold">{cart.length} items</span>
-            </div>
+           <div className="w-full lg:w-96 bg-white/80 backdrop-blur-xl border-t lg:border-t-0 lg:border-l border-gray-200/60 p-4 sm:p-6 flex flex-col shadow-xl lg:max-h-none max-h-[60vh]">
+             <div className="flex items-center gap-3 mb-4 sm:mb-6">
+               <div className="w-11 h-11 bg-gradient-to-br from-green-600 to-teal-600 rounded-2xl flex items-center justify-center shadow-lg shadow-green-500/20">
+                 <ShoppingCart className="w-5 h-5 text-white" />
+               </div>
+               <div>
+                 <h2 className="text-xl font-bold text-gray-900">Cart</h2>
+                 <p className="text-xs text-gray-500">{cart.length} item{cart.length !== 1 ? 's' : ''}</p>
+               </div>
+             </div>
 
-            <div className="flex-1 overflow-y-auto mb-6">
-              {cart.length === 0 ? (
-                <div className="text-center mt-16">
-                  <ShoppingCart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-400">Cart is empty</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {cart.map(item => (
-                    <div key={item.id} className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 shadow-sm">
-                      <div className="flex justify-between items-start mb-3">
-                        <h4 className="font-semibold text-gray-900">{item.name}</h4>
-                        <button onClick={() => removeFromCart(item.id)} className="text-red-600 hover:bg-red-50 p-1 rounded">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <button onClick={() => updateQuantity(item.id, -1)} className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center hover:bg-gray-100 transition-colors">
-                            <Minus className="w-4 h-4" />
-                          </button>
-                          <span className="w-10 text-center font-semibold">{item.quantity}</span>
-                          <button onClick={() => updateQuantity(item.id, 1)} className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center hover:bg-gray-100 transition-colors">
-                            <Plus className="w-4 h-4" />
-                          </button>
-                        </div>
-                        <span className="font-bold text-green-600">KSH {(item.price * item.quantity).toLocaleString()}</span>
-                      </div>
-                      
-                      {/* UNIT SELECTOR */}
-                      <div className="flex gap-2 items-center mt-2">
-                        <label className="text-xs font-semibold text-gray-600">Unit:</label>
-                        <select 
-                          value={cartItemUnits[item.id] || item.unit || 'piece'}
-                          onChange={(e) => {
-                            setCartItemUnits({
-                              ...cartItemUnits,
-                              [item.id]: e.target.value
-                            });
-                          }}
-                          className="text-xs px-2 py-1 border border-gray-300 rounded bg-white"
-                        >
-                          <option value="piece">Piece</option>
-                          <option value="kg">Kilogram (kg)</option>
-                          <option value="g">Grams (g)</option>
-                          <option value="l">Liters (L)</option>
-                        </select>
-                        <input 
-                          type="number" 
-                          step="0.01"
-                          min="0.01"
-                          max="999"
-                          placeholder="qty"
-                          defaultValue={item.quantity}
-                          className="text-xs px-2 py-1 border border-gray-300 rounded w-16"
-                          onChange={(e) => {
-                            const newQty = parseFloat(e.target.value);
-                            if (!isNaN(newQty) && newQty > 0) {
-                              updateQuantity(item.id, newQty - item.quantity);
-                            }
-                          }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+             <div className="flex-1 overflow-y-auto mb-6 -mx-1">
+               {cart.length === 0 ? (
+                 <div className="flex flex-col items-center justify-center py-16 text-center">
+                   <div className="w-20 h-20 rounded-full bg-gray-50 flex items-center justify-center mb-4">
+                     <ShoppingCart className="w-10 h-10 text-gray-300" />
+                   </div>
+                   <p className="text-gray-500 font-medium mb-1">Cart is empty</p>
+                   <p className="text-xs text-gray-400">Tap products to add them</p>
+                 </div>
+               ) : (
+                 <div className="space-y-2.5 px-1">
+                   {cart.map(item => {
+                     const itemTotal = item.price * item.quantity;
+                     return (
+                       <div key={item.id} className="group bg-white rounded-2xl border border-gray-100 p-3.5 shadow-sm hover:shadow-md hover:border-gray-200 transition-all">
+                         <div className="flex items-start justify-between mb-2.5">
+                           <div className="flex-1 min-w-0 pr-2">
+                             <h4 className="font-semibold text-sm text-gray-900 truncate">{item.name}</h4>
+                             <p className="text-xs text-gray-500 mt-0.5">KSH {item.price?.toLocaleString()} each</p>
+                           </div>
+                           <button 
+                             onClick={() => removeFromCart(item.id)} 
+                             className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-xl transition-colors flex-shrink-0"
+                             aria-label="Remove item"
+                           >
+                             <Trash2 className="w-4 h-4" />
+                           </button>
+                         </div>
+                         
+                         <div className="flex items-center justify-between">
+                           <div className="flex items-center gap-2">
+                             <button 
+                               onClick={() => updateQuantity(item.id, -1)} 
+                               className="w-9 h-9 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center hover:bg-gray-100 hover:border-gray-300 active:scale-95 transition-all min-h-[44px] min-w-[44px]"
+                             >
+                               <Minus className="w-4 h-4 text-gray-600" />
+                             </button>
+                             <span className="w-10 text-center font-bold text-gray-900 text-lg">{item.quantity}</span>
+                             <button 
+                               onClick={() => updateQuantity(item.id, 1)} 
+                               className="w-9 h-9 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center hover:bg-gray-100 hover:border-gray-300 active:scale-95 transition-all min-h-[44px] min-w-[44px]"
+                             >
+                               <Plus className="w-4 h-4 text-gray-600" />
+                             </button>
+                           </div>
+                           <span className="font-bold text-green-600 text-base sm:text-lg">KSH {itemTotal.toLocaleString()}</span>
+                         </div>
+                       </div>
+                     );
+                   })}
+                 </div>
+               )}
+             </div>
 
             <div className="border-t border-gray-200 pt-4 space-y-4">
               <div className="space-y-2 bg-gray-50 p-3 rounded-lg">

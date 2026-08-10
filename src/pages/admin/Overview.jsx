@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { stats, sales as salesApi } from '../../services/api';
 import { DollarSign, TrendingUp, TrendingDown, ShoppingBag, Package, AlertCircle, BrainCircuit, Sparkles } from 'lucide-react';
 import AICharts from '../../components/AICharts';
+import StatCard from '../../components/ui/StatCard';
+import SkeletonCard from '../../components/ui/SkeletonCard';
+import EmptyState from '../../components/ui/EmptyState';
 
 
 export default function Overview() {
@@ -66,18 +69,22 @@ export default function Overview() {
 
   if (loading) {
     return (
-      <div className="p-6 space-y-6">
+      <div className="p-6 space-y-8">
         <div className="flex gap-4 overflow-x-auto pb-2">
           {[1,2,3,4].map(i => (
-            <div key={i} className="min-w-[180px] sm:min-w-[200px] h-32 bg-gray-200 rounded-2xl animate-pulse flex-shrink-0"></div>
+            <div key={i} className="min-w-[200px] flex-1">
+              <SkeletonCard variant="stat" />
+            </div>
           ))}
         </div>
         <div className="flex gap-4 overflow-x-auto pb-2">
           {[1,2,3,4].map(i => (
-            <div key={i} className="min-w-[160px] sm:min-w-[180px] h-24 bg-gray-100 rounded-2xl animate-pulse flex-shrink-0"></div>
+            <div key={i} className="min-w-[180px] flex-1">
+              <SkeletonCard variant="stat" />
+            </div>
           ))}
         </div>
-        <div className="h-64 bg-gray-100 rounded-3xl animate-pulse"></div>
+        <SkeletonCard variant="chart" />
       </div>
     );
   }
@@ -160,7 +167,7 @@ export default function Overview() {
   ];
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-8">
 
       {/* KPI Cards - horizontal row everywhere */}
       <div className="flex flex-nowrap gap-4 overflow-x-auto pb-2 scrollbar-hide">
@@ -168,17 +175,16 @@ export default function Overview() {
           const Icon = kpi?.icon;
           if (!Icon) return null;
           return (
-            <div key={index} className={`card bg-gradient-to-br ${kpi.color} text-white border-0 shadow-lg hover:shadow-xl transition-all transform hover:scale-105 min-w-[180px] sm:min-w-[200px] flex-shrink-0`}>
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                  <Icon className="w-6 h-6" />
-                </div>
-                <span className="text-sm font-semibold bg-white/20 px-2 py-1 rounded-full">
-                  {kpi.change}
-                </span>
-              </div>
-              <p className="text-sm text-white/80 mb-1">{kpi.label}</p>
-              <p className="text-2xl font-bold">{kpi.value}</p>
+            <div key={index} className="min-w-[200px] flex-1">
+              <StatCard
+                title={kpi.label}
+                value={kpi.value}
+                icon={Icon}
+                color={kpi.color}
+                trend="up"
+                trendValue={kpi.change}
+                delay={index * 100}
+              />
             </div>
           );
         })}
@@ -190,16 +196,14 @@ export default function Overview() {
           const Icon = card?.icon;
           if (!Icon) return null;
           return (
-            <div key={index} className="card min-w-[160px] sm:min-w-[180px] flex-shrink-0">
-              <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-xl ${card.color} flex items-center justify-center`}>
-                  <Icon className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">{card.label}</p>
-                  <p className="text-xl font-bold text-gray-900">{card.value}</p>
-                </div>
-              </div>
+            <div key={index} className="min-w-[180px] flex-1">
+              <StatCard
+                title={card.label}
+                value={card.value}
+                icon={Icon}
+                color="from-gray-500 to-gray-600"
+                delay={index * 100 + 400}
+              />
             </div>
           );
         })}
@@ -216,10 +220,13 @@ export default function Overview() {
         
 
         {(!data.recentSales || data.recentSales.length === 0) ? (
-          <div className="text-center py-12">
-            <AlertCircle className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500">No sales yet</p>
-          </div>
+          <EmptyState
+            icon="no-sales"
+            title="No sales yet"
+            description="Sales will appear here once transactions are completed. Start processing sales to see your revenue data."
+            actionLabel="View POS"
+            onAction={() => window.open('/cashier', '_blank')}
+          />
         ) : (
           <>
             {/* Mobile cards */}

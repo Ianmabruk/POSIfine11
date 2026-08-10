@@ -13,6 +13,8 @@ export const AuthProvider = ({ children }) => {
   const [isInitialized, setIsInitialized] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const [authError, setAuthError] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const [appSettings, setAppSettings] = useState(() => {
     const cachedLogo = localStorage.getItem('appLogo');
@@ -149,6 +151,8 @@ export const AuthProvider = ({ children }) => {
 
   const initializeAuth = useCallback(async () => {
     const token = localStorage.getItem('token');
+    setAuthError(null);
+    setIsRefreshing(false);
 
     if (!token) {
       clearAuthStorage();
@@ -179,6 +183,7 @@ export const AuthProvider = ({ children }) => {
         const refreshToken = localStorage.getItem('refreshToken');
         if (refreshToken) {
           try {
+            setIsRefreshing(true);
             const refreshResp = await fetch(`${BASE_API_URL}/auth/refresh`, {
               method: 'POST',
               credentials: 'include',
@@ -194,17 +199,21 @@ export const AuthProvider = ({ children }) => {
                 if (refreshed.csrfToken) localStorage.setItem('csrfToken', refreshed.csrfToken);
                 localStorage.setItem('user', JSON.stringify(normalized));
                 setUser(normalized);
+                setIsRefreshing(false);
                 return;
               }
             }
           } catch (refreshErr) {
             console.warn('Refresh failed:', refreshErr);
           }
+          setIsRefreshing(false);
         }
         clearAuthStorage();
         setUser(null);
+        setAuthError('Session expired. Please sign in again.');
       } else {
         setUser(null);
+        setAuthError('Unable to verify session. Please try again.');
       }
     } catch (error) {
       if (error.name === 'AbortError') {
@@ -218,9 +227,11 @@ export const AuthProvider = ({ children }) => {
         } else {
           setUser(null);
         }
+        setAuthError('Connection timeout. Showing cached data.');
       } else {
         clearAuthStorage();
         setUser(null);
+        setAuthError('Network error. Please check your connection.');
       }
     } finally {
       setLoading(false);
@@ -431,6 +442,8 @@ export const AuthProvider = ({ children }) => {
     user,
     loading,
     isInitialized,
+    authError,
+    isRefreshing,
     appSettings,
     loadAppSettings,
     subscriptionStatus,
@@ -453,7 +466,7 @@ export const AuthProvider = ({ children }) => {
     isRealTimeProductSyncEnabled,
     isCashierUserManagementEnabled,
     clearAuthStorage,
-  }), [user, loading, isInitialized, appSettings, subscriptionStatus, isAuthenticated,
+  }), [user, loading, isInitialized, authError, isRefreshing, appSettings, subscriptionStatus, isAuthenticated,
       hasRole, isOwner, isAdmin, isCashier, getDashboardUrl, isUltraPackage, isBasicPackage,
       canEditStock, canManageUsers, canViewAnalytics, loadAppSettings, checkSubscriptionStatus,
       clearAuthStorage]);
