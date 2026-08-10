@@ -102,7 +102,7 @@ export default function CashierPOS() {
   const [mpesaPaymentStatus, setMpesaPaymentStatus] = useState(null);
   const [mpesaPolling, setMpesaPolling] = useState(false);
   const [pendingMpesaSaleId, setPendingMpesaSaleId] = useState(null);
-  const [mpesaProvider, setMpesaProvider] = useState('intasend');
+  const [mpesaProvider, setMpesaProvider] = useState('cloudpay');
   const mpesaPollingRef = useRef(null);
   const [cartSheetOpen, setCartSheetOpen] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -712,7 +712,7 @@ export default function CashierPOS() {
     return cleaned;
   };
 
-  const initiateMpesaPayment = useCallback(async (saleId, phone, provider = 'intasend') => {
+  const initiateMpesaPayment = useCallback(async (saleId, phone, provider = 'cloudpay') => {
     const token = localStorage.getItem('token');
     const resp = await fetch(`${BASE_API_URL}/payments/mpesa/stk-push`, {
       method: 'POST',
