@@ -1065,13 +1065,19 @@ export default function CashierPOS() {
   const handleAddProduct = async (e) => {
     e.preventDefault();
     try {
+      const price = Number(newProduct.price);
+      if (!Number.isFinite(price) || price < 0) {
+        alert('Please enter a valid price');
+        return;
+      }
+
       console.log('➕ Creating new product:', newProduct.name);
       
       // Create the product with visibleToCashier flag
       const createdProduct = await products.create({ 
         ...newProduct, 
-        price: parseFloat(newProduct.price),
-        cost: parseFloat(newProduct.cost || 0),
+        price,
+        cost: Number(newProduct.cost || 0),
         quantity: 0, // Stock managed through batches
         visibleToCashier: true, // ✅ CRITICAL: Make product visible to cashier
         expenseOnly: false // ✅ Not an expense-only item
