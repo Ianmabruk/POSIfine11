@@ -26,6 +26,7 @@ export default function AuthPage() {
   const [touched, setTouched] = useState({});
   const [fieldErrors, setFieldErrors] = useState({});
   const formRef = useRef(null);
+  const redirectedRef = useRef(false);
 
   const existingSession = !authLoading && user && localStorage.getItem('token');
 
@@ -133,6 +134,7 @@ export default function AuthPage() {
           plan: planId || planData?.id || 'trial',
         });
         if (res.token && res.user) {
+          await login(res);
           setSuccess('Account created! Redirecting...');
           setTimeout(() => navigate(getDashboardRoute(res.user), { replace: true }), 800);
         } else {
@@ -162,7 +164,9 @@ export default function AuthPage() {
   };
 
   useEffect(() => {
+    if (redirectedRef.current) return;
     if (existingSession && !authLoading) {
+      redirectedRef.current = true;
       navigate(getDashboardRoute(user), { replace: true });
     }
   }, [existingSession, authLoading, user, navigate]);

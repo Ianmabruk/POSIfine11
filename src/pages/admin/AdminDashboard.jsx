@@ -72,8 +72,6 @@ export default function AdminDashboard() {
           
           if (needsUpdate) {
             localStorage.setItem('user', JSON.stringify(userData));
-            window.dispatchEvent(new Event('storage'));
-            window.dispatchEvent(new Event('localStorageUpdated'));
           }
         }
       }

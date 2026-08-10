@@ -135,7 +135,6 @@ export default function SettingsPage() {
           cached.profilePicture = base64;
           cached.profile_picture = base64;
           localStorage.setItem('user', JSON.stringify(cached));
-          window.dispatchEvent(new Event('localStorageUpdated'));
         } catch (error) {
           console.error('Failed to save profile picture:', error);
         }

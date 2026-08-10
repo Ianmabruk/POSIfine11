@@ -1,4 +1,4 @@
-import { AlertTriangle, Package, ShoppingCart, FileText, Clock } from 'lucide-react';
+import { AlertTriangle, Package, ShoppingCart, FileText, Clock, Bell } from 'lucide-react';
 
 const iconMap = {
   'no-products': Package,
