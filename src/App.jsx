@@ -57,8 +57,8 @@ function ProtectedRoute({ children, adminOnly = false, ultraOnly = false, ownerO
   
   // Owner route protection (main.admin)
   if (ownerOnly) {
-    const ownerToken = localStorage.getItem('ownerToken') || localStorage.getItem('mainAdminToken') || localStorage.getItem('token');
-    const ownerUser = localStorage.getItem('ownerUser') || localStorage.getItem('mainAdminUser') || localStorage.getItem('user');
+    const ownerToken = localStorage.getItem('mainAdminToken') || localStorage.getItem('ownerToken');
+    const ownerUser = localStorage.getItem('mainAdminUser') || localStorage.getItem('ownerUser');
     if (!ownerToken || !ownerUser) return <Navigate to="/windatawind" replace />;
     try {
       const userData = JSON.parse(ownerUser);

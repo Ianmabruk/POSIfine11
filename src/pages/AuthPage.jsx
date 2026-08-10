@@ -123,10 +123,14 @@ export default function AuthPage() {
           throw new Error('Authentication failed. Please try again.');
         }
       } else {
+        const selectedPlan = localStorage.getItem('selectedPlan');
+        const planId = localStorage.getItem('planId');
+        const planData = selectedPlan ? JSON.parse(selectedPlan) : null;
         const res = await signup({
           email: formData.email,
           password: formData.password,
           name: formData.name,
+          plan: planId || planData?.id || 'trial',
         });
         if (res.token && res.user) {
           setSuccess('Account created! Redirecting...');

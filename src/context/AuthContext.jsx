@@ -52,10 +52,6 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('csrfToken');
     localStorage.removeItem('appLogo');
-    localStorage.removeItem('mainAdminToken');
-    localStorage.removeItem('mainAdminUser');
-    localStorage.removeItem('ownerToken');
-    localStorage.removeItem('ownerUser');
     const prefix = 'products_cache_';
     const keysToRemove = [];
     for (let i = 0; i < localStorage.length; i++) {
@@ -150,7 +146,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const initializeAuth = useCallback(async () => {
-    const token = localStorage.getItem('token') || localStorage.getItem('mainAdminToken') || localStorage.getItem('ownerToken');
+    const token = localStorage.getItem('token');
     setAuthError(null);
     setIsRefreshing(false);
 
@@ -220,7 +216,7 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       if (error.name === 'AbortError') {
-        const savedUser = localStorage.getItem('user') || localStorage.getItem('mainAdminUser') || localStorage.getItem('ownerUser');
+        const savedUser = localStorage.getItem('user');
         if (savedUser) {
           try {
             setUser(normalizeUser(JSON.parse(savedUser)));

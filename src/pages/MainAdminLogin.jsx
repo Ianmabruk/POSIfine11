@@ -15,12 +15,11 @@ export default function MainAdminLogin() {
   const redirectDone = useRef(false);
 
   useEffect(() => {
-    // Only check redirect once
     if (redirectDone.current) return;
     redirectDone.current = true;
 
-    const token = localStorage.getItem('token') || localStorage.getItem('ownerToken') || localStorage.getItem('mainAdminToken');
-    const userStr = localStorage.getItem('user') || localStorage.getItem('ownerUser') || localStorage.getItem('mainAdminUser');
+    const token = localStorage.getItem('mainAdminToken') || localStorage.getItem('ownerToken');
+    const userStr = localStorage.getItem('mainAdminUser') || localStorage.getItem('ownerUser');
     
     if (token && userStr) {
       try {
@@ -29,8 +28,8 @@ export default function MainAdminLogin() {
           navigate('/main.admin', { replace: true });
         }
       } catch (e) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        localStorage.removeItem('mainAdminToken');
+        localStorage.removeItem('mainAdminUser');
         localStorage.removeItem('ownerToken');
         localStorage.removeItem('ownerUser');
       }
@@ -43,7 +42,6 @@ export default function MainAdminLogin() {
     setError('');
 
     try {
-      // Reset any stale auth state that can cause role mismatches during owner login.
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       localStorage.removeItem('ownerToken');
@@ -56,13 +54,10 @@ export default function MainAdminLogin() {
       const response = await mainAdmin.login(formData);
       
       if (response.token && response.user) {
-        // Save to multiple keys for compatibility
-        localStorage.setItem('token', response.token);
-        localStorage.setItem('user', JSON.stringify(response.user));
-        localStorage.setItem('ownerToken', response.token);
-        localStorage.setItem('ownerUser', JSON.stringify(response.user));
         localStorage.setItem('mainAdminToken', response.token);
         localStorage.setItem('mainAdminUser', JSON.stringify(response.user));
+        localStorage.setItem('ownerToken', response.token);
+        localStorage.setItem('ownerUser', JSON.stringify(response.user));
         if (response.refreshToken) {
           localStorage.setItem('refreshToken', response.refreshToken);
         }

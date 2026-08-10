@@ -33,13 +33,8 @@ export default function ControlCenterLogin() {
       
       if (loginData.token) {
         localStorage.setItem('mainAdminToken', loginData.token);
-        localStorage.setItem('token', loginData.token);
-        localStorage.setItem('ownerToken', loginData.token);
         if (loginData.user) {
-          const userStr = JSON.stringify(loginData.user);
-          localStorage.setItem('mainAdminUser', userStr);
-          localStorage.setItem('user', userStr);
-          localStorage.setItem('ownerUser', userStr);
+          localStorage.setItem('mainAdminUser', JSON.stringify(loginData.user));
         }
         if (loginData.refreshToken) {
           localStorage.setItem('refreshToken', loginData.refreshToken);
@@ -47,8 +42,6 @@ export default function ControlCenterLogin() {
         if (loginData.csrfToken) {
           localStorage.setItem('csrfToken', loginData.csrfToken);
         }
-        
-        await initializeAuth();
         
         navigate('/main.admin');
       } else {
