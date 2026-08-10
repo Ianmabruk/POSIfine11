@@ -68,10 +68,12 @@ export default function PaymentInput() {
       
       // Redirect to dashboard immediately after payment
       if (plan.id === 'ultra') {
-        // For Ultra plan, check if they should be admin or cashier
-        navigate('/main.admin', { replace: true });
+        if (userData.role === 'main_admin' || userData.role === 'owner') {
+          navigate('/main.admin', { replace: true });
+        } else {
+          navigate('/admin', { replace: true });
+        }
       } else {
-        // Basic plan goes to basic dashboard
         navigate('/dashboard', { replace: true });
       }
 

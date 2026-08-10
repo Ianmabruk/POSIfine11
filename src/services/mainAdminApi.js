@@ -1,7 +1,7 @@
 import { getToken } from './api';
 
 const getMainAdminToken = () => {
-  return localStorage.getItem('mainAdminToken') || localStorage.getItem('ownerToken');
+  return localStorage.getItem('mainAdminToken') || localStorage.getItem('ownerToken') || localStorage.getItem('token');
 };
 
 const getRefreshToken = () => localStorage.getItem('refreshToken');

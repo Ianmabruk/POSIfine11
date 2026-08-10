@@ -150,7 +150,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const initializeAuth = useCallback(async () => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || localStorage.getItem('mainAdminToken') || localStorage.getItem('ownerToken');
     setAuthError(null);
     setIsRefreshing(false);
 
@@ -220,7 +220,7 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       if (error.name === 'AbortError') {
-        const savedUser = localStorage.getItem('user');
+        const savedUser = localStorage.getItem('user') || localStorage.getItem('mainAdminUser') || localStorage.getItem('ownerUser');
         if (savedUser) {
           try {
             setUser(normalizeUser(JSON.parse(savedUser)));

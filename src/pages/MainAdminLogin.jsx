@@ -26,7 +26,7 @@ export default function MainAdminLogin() {
       try {
         const userData = JSON.parse(userStr);
         if (['main_admin', 'owner'].includes(userData.role)) {
-          navigate('/main.admin/dashboard', { replace: true });
+          navigate('/main.admin', { replace: true });
         }
       } catch (e) {
         localStorage.removeItem('token');
@@ -69,7 +69,7 @@ export default function MainAdminLogin() {
         if (response.csrfToken) {
           localStorage.setItem('csrfToken', response.csrfToken);
         }
-        navigate('/main.admin/dashboard', { replace: true });
+        navigate('/main.admin', { replace: true });
       } else {
         throw new Error('Invalid response from server or insufficient permissions');
       }

@@ -33,8 +33,13 @@ export default function ControlCenterLogin() {
       
       if (loginData.token) {
         localStorage.setItem('mainAdminToken', loginData.token);
+        localStorage.setItem('token', loginData.token);
+        localStorage.setItem('ownerToken', loginData.token);
         if (loginData.user) {
-          localStorage.setItem('mainAdminUser', JSON.stringify(loginData.user));
+          const userStr = JSON.stringify(loginData.user);
+          localStorage.setItem('mainAdminUser', userStr);
+          localStorage.setItem('user', userStr);
+          localStorage.setItem('ownerUser', userStr);
         }
         if (loginData.refreshToken) {
           localStorage.setItem('refreshToken', loginData.refreshToken);
