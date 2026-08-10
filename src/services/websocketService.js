@@ -26,6 +26,8 @@ class WebSocketService {
     this.maxReconnectAttempts = 5;
     this.reconnectDelay = 3000;
     this.isManualClose = false;
+    this.token = null;
+    this.pongTimeout = null;
   }
 
   /**
@@ -43,8 +45,8 @@ class WebSocketService {
         return;
       }
 
-      // Connect to /ws endpoint (NOT /ws/products)
-      const wsUrl = `${getWebSocketUrl()}/ws`;
+      this.token = token;
+      const wsUrl = `${getWebSocketUrl()}/api/ws/products?token=${encodeURIComponent(token)}`;
 
       try {
         this.ws = new WebSocket(wsUrl);
@@ -52,11 +54,7 @@ class WebSocketService {
         this.ws.onopen = () => {
           console.log('✅ WebSocket connected for real-time updates');
           this.reconnectAttempts = 0;
-          
-          // Send authentication message (backend expects this format)
-          this.ws.send(JSON.stringify({ token: token }));
-          console.log('🔐 Authentication sent');
-          
+          this.startHeartbeat();
           resolve();
         };
 
@@ -65,32 +63,43 @@ class WebSocketService {
             const message = JSON.parse(event.data);
             const messageType = message.type ? message.type.toLowerCase() : 'unknown';
 
-            // Handle authentication confirmation
             if (messageType === 'connected') {
               console.log('✅ WebSocket authenticated:', message.account_id);
               return;
             }
 
-            // Normalize event names and handle all message types
+            if (messageType === 'products_snapshot') {
+              console.log('📦 Initial products loaded via WebSocket');
+              this.emit('initial', message.data?.allProducts || []);
+              return;
+            }
+
+            if (messageType === 'pong') {
+              this.resetPongTimeout();
+              return;
+            }
+
+            if (messageType === 'error') {
+              console.error('WebSocket server error:', message.message);
+              this.emit('error', message);
+              return;
+            }
+
             if (messageType === 'stock_updated') {
               console.log('📦 Stock update received:', message.data);
-              // Call the provided callback with stock update
               if (onStockUpdate) {
                 onStockUpdate(message.data);
               }
               this.emit('stock_updated', message.data);
             } else if (messageType === 'sale_completed') {
               console.log('💰 Sale completed - stock deducted:', message.data);
-              // Emit with updated products for UI refresh
               this.emit('sale_completed', message.data);
-              // Also call the stock update callback if provided
               if (onStockUpdate && message.data.updatedProducts) {
                 onStockUpdate({ allProducts: message.data.updatedProducts });
               }
             } else if (messageType === 'admin_sale_completed') {
               console.log('👨‍💼 Admin sale completed:', message.data);
               this.emit('admin_sale_completed', message.data);
-              // Also emit as sale_completed for components listening to general sales
               this.emit('sale_completed', message.data);
               if (onStockUpdate && message.data.updatedProducts) {
                 onStockUpdate({ allProducts: message.data.updatedProducts });
@@ -110,16 +119,10 @@ class WebSocketService {
               if (onStockUpdate && message.data.allProducts) {
                 onStockUpdate({ allProducts: message.data.allProducts });
               }
-            } else if (messageType === 'initial') {
-              console.log('📦 Initial products loaded via WebSocket');
-              this.emit('initial', message.products);
             } else if (messageType === 'heartbeat') {
-              // Silent heartbeat - keep connection alive
               this.emit('heartbeat', message);
             } else {
-              // Log other message types for debugging
               console.log(`📨 Message received (${messageType}):`, message.data);
-              // Emit generic event for any unknown message type
               if (messageType !== 'unknown') {
                 this.emit(messageType, message.data);
               }
@@ -135,8 +138,9 @@ class WebSocketService {
           reject(error);
         };
 
-        this.ws.onclose = () => {
-          console.log('🔌 WebSocket disconnected');
+        this.ws.onclose = (event) => {
+          console.log('🔌 WebSocket disconnected:', event.reason || event.code);
+          this.stopHeartbeat();
           if (!this.isManualClose) {
             this.attemptReconnect(token, onStockUpdate);
           }
@@ -146,6 +150,42 @@ class WebSocketService {
         reject(error);
       }
     });
+  }
+
+  startHeartbeat() {
+    this.stopHeartbeat();
+    this.pongTimeout = setTimeout(() => {
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        try {
+          this.ws.send('ping');
+          this.pongTimeout = setTimeout(() => {
+            console.warn('WebSocket pong timeout - closing connection');
+            this.ws.close();
+          }, 5000);
+        } catch (e) {
+          console.error('Heartbeat ping failed:', e);
+        }
+      }
+    }, 30000);
+  }
+
+  stopHeartbeat() {
+    if (this.pongTimeout) {
+      clearTimeout(this.pongTimeout);
+      this.pongTimeout = null;
+    }
+  }
+
+  resetPongTimeout() {
+    if (this.pongTimeout) {
+      clearTimeout(this.pongTimeout);
+      this.pongTimeout = setTimeout(() => {
+        console.warn('WebSocket pong timeout - closing connection');
+        if (this.ws) {
+          this.ws.close();
+        }
+      }, 5000);
+    }
   }
 
   /**
