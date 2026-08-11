@@ -908,7 +908,7 @@ export default function SchoolAdminDashboard() {
             <div className="space-y-3">
               <input type="number" min="0" placeholder="Amount (KSH) *" className={inputCls} value={paymentForm.amount} onChange={e => setPaymentForm({ ...paymentForm, amount: e.target.value })} />
               <select className={inputCls} value={paymentForm.method} onChange={e => setPaymentForm({ ...paymentForm, method: e.target.value })}>
-                <option value="cash">Cash</option><option value="mpesa">M-Pesa</option><option value="bank">Bank Transfer</option><option value="card">Card</option>
+                <option value="cash">Cash</option><option value="bank">Bank Transfer</option><option value="card">Card</option>
               </select>
               <input type="text" placeholder="Reference / Receipt No" className={inputCls} value={paymentForm.reference} onChange={e => setPaymentForm({ ...paymentForm, reference: e.target.value })} />
               <div className="flex gap-2 pt-2">

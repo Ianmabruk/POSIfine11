@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
-import { stats, sales as salesApi } from '../../services/api';
-import { DollarSign, TrendingUp, TrendingDown, ShoppingBag, Package, AlertCircle, BrainCircuit, Sparkles } from 'lucide-react';
-import AICharts from '../../components/AICharts';
+import { stats, sales as salesApi, products } from '../../services/api';
+import { DollarSign, TrendingUp, TrendingDown, ShoppingBag, Package, AlertCircle, BarChart3 } from 'lucide-react';
 import StatCard from '../../components/ui/StatCard';
 import SkeletonCard from '../../components/ui/SkeletonCard';
 import EmptyState from '../../components/ui/EmptyState';
@@ -10,7 +9,8 @@ import EmptyState from '../../components/ui/EmptyState';
 export default function Overview() {
   const [data, setData] = useState({ 
     stats: { totalSales: 0, totalExpenses: 0, profit: 0, grossProfit: 0, netProfit: 0, totalCOGS: 0, dailySales: 0, weeklySales: 0, productCount: 0 }, 
-    recentSales: [] 
+    recentSales: [],
+    topProducts: []
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -30,10 +30,10 @@ export default function Overview() {
   const loadData = async () => {
     try {
       setError(null);
-      // Fetch stats and recent sales (limit=20) concurrently
-      const [statsData, salesData] = await Promise.all([
+      const [statsData, salesData, topProductsData] = await Promise.all([
         stats.get(),
-        salesApi.getAll({ limit: 20, sort: '-created_at' })
+        salesApi.getAll({ limit: 20, sort: '-created_at' }),
+        fetchTopProducts()
       ]);
       
       const validStats = {
@@ -49,20 +49,38 @@ export default function Overview() {
       };
       
       const validSales = Array.isArray(salesData) ? salesData : [];
+      const validTopProducts = Array.isArray(topProductsData) ? topProductsData : [];
       
       setData({ 
         stats: validStats, 
-        recentSales: validSales.slice(0, 10)
+        recentSales: validSales.slice(0, 10),
+        topProducts: validTopProducts
       });
     } catch (error) {
       console.error('Failed to load data:', error);
       setError(error.message);
       setData({ 
         stats: { totalSales: 0, totalExpenses: 0, profit: 0, grossProfit: 0, netProfit: 0, totalCOGS: 0, dailySales: 0, weeklySales: 0, productCount: 0 }, 
-        recentSales: [] 
+        recentSales: [],
+        topProducts: []
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchTopProducts = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${BASE_API_URL}/admin/analytics/top-products?period=month`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!response.ok) return [];
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.error('Failed to load top products:', error);
+      return [];
     }
   };
 
@@ -305,28 +323,48 @@ export default function Overview() {
           </>
         )}
       </div>
-      {/* AI Sales Forecast Section */}
-      <div className="rounded-3xl border border-slate-200 bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.14),_transparent_35%),linear-gradient(135deg,#ffffff,#f8fafc_60%,#eef6ff)] p-6 mt-6 shadow-sm">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-4">
-          <div className="flex items-start gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 text-white shadow-lg shadow-sky-300/50">
-              <BrainCircuit className="w-7 h-7 drop-shadow" />
+      {/* Most Selling Products */}
+      <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-white to-gray-50 p-6 mt-6 shadow-sm">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-green-500 to-teal-600 text-white shadow-lg">
+              <BarChart3 className="w-6 h-6" />
             </div>
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold tracking-[0.18em] text-sky-700">
-                <Sparkles className="w-3.5 h-3.5" />
-                FORECAST STUDIO
-              </div>
-              <h2 className="text-2xl font-semibold text-slate-900 mt-3">AI Sales Forecast</h2>
-              <p className="text-sm text-slate-600 mt-1">Revenue and profit outlook for the next trading periods, refreshed from live sales data.</p>
+              <h2 className="text-xl font-semibold text-slate-900">Most Selling Products</h2>
+              <p className="text-sm text-slate-600">Best sellers based on actual completed sales</p>
             </div>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-600">
-            <p className="font-semibold text-slate-900">Forecast input</p>
-            <p>Recent sales, cost of goods, and margin trend.</p>
-          </div>
         </div>
-        <AICharts periods={4} />
-      </div>    </div>
+        {!data.topProducts || data.topProducts.length === 0 ? (
+          <EmptyState
+            icon="no-sales"
+            title="No sales data yet"
+            description="Sales data will appear here once transactions are completed."
+            actionLabel="View POS"
+            onAction={() => window.open('/cashier', '_blank')}
+          />
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {data.topProducts.map((product, index) => (
+              <div key={product.productId || index} className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm hover:shadow-md transition-shadow">
+                <div className="w-full h-24 bg-gray-50 rounded-xl mb-3 overflow-hidden flex items-center justify-center">
+                  {product.image ? (
+                    <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <Package className="w-10 h-10 text-gray-300" />
+                  )}
+                </div>
+                <h3 className="font-semibold text-sm text-gray-900 truncate">{product.name}</h3>
+                <p className="text-xs text-gray-500 mt-1">Sold: {product.quantitySold?.toLocaleString() || 0} {product.unit || 'pcs'}</p>
+                <div className="mt-2 flex items-center gap-1">
+                  <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">#{index + 1}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

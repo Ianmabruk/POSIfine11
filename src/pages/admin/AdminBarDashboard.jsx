@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Users, Plus, Wine, DollarSign, Package, MessageSquare, Trash2, X, Beer, GlassWater, BarChart3 } from 'lucide-react';
 import api, { BASE_API_URL } from '../../services/api';
-import ProAIAssistant from '../../components/ProAIAssistant';
 
 const BAR_STORAGE_KEY = 'bar_admin_data';
 
@@ -33,9 +32,6 @@ export default function AdminBarDashboard() {
   const [showAddStaff, setShowAddStaff] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [aiAnswer, setAiAnswer] = useState('');
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiError, setAiError] = useState('');
 
   // Bar-specific local data
   const [barData, setBarData] = useState(loadBarData);
@@ -168,25 +164,6 @@ export default function AdminBarDashboard() {
     return combined;
   }, [products, barData.menuItems, selectedCategory]);
 
-  const askAiFromSearch = async () => {
-    if (!searchTerm.trim()) return;
-    try {
-      setAiLoading(true); setAiError(''); setAiAnswer('');
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${BASE_API_URL}/ai/ask`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }) },
-        body: JSON.stringify({ question: searchTerm.trim(), context: { businessType: user?.business_type || 'bar', staffCount: staff.length } })
-      });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload?.message || payload?.error || 'AI request failed');
-      const answer = payload?.data?.answer || payload?.answer;
-      if (!answer) throw new Error('No AI response received');
-      setAiAnswer(answer);
-    } catch (err) { setAiError(err.message || 'AI request failed'); }
-    finally { setAiLoading(false); }
-  };
-
   const tabs = [
     { id: 'overview', label: 'Overview', icon: BarChart3 },
     { id: 'menu', label: 'Menu & Drinks', icon: Beer },
@@ -290,21 +267,12 @@ export default function AdminBarDashboard() {
               </div>
             )}
 
-            {/* Search + AI */}
+            {/* Search */}
             <div className="bg-white rounded-xl shadow p-4 sm:p-6 mb-6">
               <div className="flex flex-col sm:flex-row gap-2">
-                <input type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Search or ask AI..."
+                <input type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Search..."
                   className={`${inputCls} flex-1`} />
-                <button onClick={askAiFromSearch} disabled={aiLoading || !searchTerm.trim()}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 text-sm whitespace-nowrap">
-                  {aiLoading ? 'Asking...' : 'Ask AI'}
-                </button>
               </div>
-              {(aiAnswer || aiError) && (
-                <div className={`mt-3 rounded-lg border px-4 py-3 text-sm ${aiError ? 'border-red-200 bg-red-50 text-red-700' : 'border-purple-200 bg-purple-50 text-purple-900'}`}>
-                  {aiError || aiAnswer}
-                </div>
-              )}
             </div>
 
             {/* Recent Messages */}
@@ -450,85 +418,6 @@ export default function AdminBarDashboard() {
                         <span className={`px-2 py-1 text-xs font-semibold rounded-full ${member.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                           {member.is_active ? 'Active' : 'Inactive'}
                         </span>
-                      </div>
-                      <div className="text-sm text-gray-600">{member.email}</div>
-                      <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-100">
-                        <span className="text-gray-600">Role</span>
-                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">{member.business_role || member.role}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="bg-white rounded-xl shadow overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">Email</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200">
-                        {filteredStaff.map(member => (
-                          <tr key={member.id}>
-                            <td className="px-4 py-3 text-sm">
-                              <div className="font-medium text-gray-900">{member.name}</div>
-                              <div className="text-xs text-gray-400 sm:hidden">{member.email}</div>
-                            </td>
-                            <td className="px-4 py-3 text-sm text-gray-600 hidden sm:table-cell">{member.email}</td>
-                            <td className="px-4 py-3">
-                              <span className="px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">{member.business_role || member.role}</span>
-                            </td>
-                            <td className="px-4 py-3 hidden sm:table-cell">
-                              <span className={`px-2 py-1 text-xs font-semibold rounded-full ${member.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                                {member.is_active ? 'Active' : 'Inactive'}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        )}
-
-        {/* MESSAGES TAB */}
-        {activeTab === 'messages' && (
-          <div>
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-6">Messages</h2>
-            {messages.length === 0 ? (
-              <div className="text-center py-12 text-gray-500 bg-white rounded-xl shadow">
-                <MessageSquare className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                <p className="text-lg">No messages yet.</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {messages.map(msg => (
-                  <div key={msg.id} className="bg-white rounded-xl shadow p-4">
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                      <div>
-                        <span className="font-medium text-gray-900">{msg.fromUserName}</span>
-                        <span className="text-xs text-purple-600 ml-2">{msg.fromRole}</span>
-                      </div>
-                      <span className="text-xs text-gray-500">{new Date(msg.timestamp).toLocaleString()}</span>
-                    </div>
-                    <p className="text-sm text-gray-600">{msg.content}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* AI Assistant */}
-        <div className="mt-8">
-          <ProAIAssistant adminMode role={user?.role} businessType={user?.business_type || 'bar'} />
-        </div>
       </div>
 
       {/* MODALS */}

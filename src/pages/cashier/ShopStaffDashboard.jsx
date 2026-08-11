@@ -264,7 +264,6 @@ export default function ShopStaffDashboard({ businessLabel = 'Shop', accentColor
                   <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)}
                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400">
                     <option value="cash">Cash</option>
-                    <option value="mpesa">M-Pesa</option>
                     <option value="card">Card</option>
                     <option value="credit">Credit</option>
                   </select>

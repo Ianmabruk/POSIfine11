@@ -12,7 +12,6 @@ const hasRecipe = (product) => Array.isArray(product?.recipe) && product.recipe.
 const PAYMENT_COLORS = {
   cash: 'bg-green-100 text-green-800',
   card: 'bg-blue-100 text-blue-800',
-  mpesa: 'bg-purple-100 text-purple-800',
   credit: 'bg-yellow-100 text-yellow-800',
 };
 

@@ -34,9 +34,6 @@ export default function AdminDashboard() {
   const location = useLocation();
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [aiAnswer, setAiAnswer] = useState('');
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiError, setAiError] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   // Seed appSettings from context (which reads localStorage + backend on login)
   const [appSettings, setAppSettings] = useState(() => {
@@ -170,45 +167,8 @@ export default function AdminDashboard() {
 
   const handleSearchKeyDown = (e) => {
     if (e.key === 'Enter' && searchQuery.trim()) {
-      askAiFromSearch();
-    }
-  };
-
-  const askAiFromSearch = async () => {
-    if (!searchQuery.trim()) return;
-    try {
-      setAiLoading(true);
-      setAiError('');
-      setAiAnswer('');
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${BASE_API_URL}/ai/ask`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { Authorization: `Bearer ${token}` })
-        },
-        body: JSON.stringify({
-          question: searchQuery.trim(),
-          context: {
-            section: menuItems.find(item => isActive(item.path))?.label || 'Dashboard',
-            user: { name: user?.name, email: user?.email },
-            note: 'Analyze current admin reports and answer based on available data.'
-          }
-        })
-      });
-
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(payload?.message || payload?.error || 'AI request failed');
-      }
-
-      const answer = payload?.data?.answer || payload?.answer;
-      if (!answer) throw new Error('No AI response received');
-      setAiAnswer(answer);
-    } catch (err) {
-      setAiError(err.message || 'AI request failed');
-    } finally {
-      setAiLoading(false);
+      const menuItem = menuItems.find(item => isActive(item.path));
+      if (menuItem) navigate(menuItem.path);
     }
   };
 

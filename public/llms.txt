@@ -25,7 +25,7 @@ Posify is a modern Point of Sale (POS) platform built for African businesses. It
 Small to enterprise businesses in Kenya and across Africa, including retail shops, supermarkets, clinics, pharmacies, restaurants, and service businesses.
 
 ## Integrations
-- M-PESA (IntaSend / CloudPay)
+- M-PESA
 - Email notifications (SendGrid)
 - Cloud storage for backups
 

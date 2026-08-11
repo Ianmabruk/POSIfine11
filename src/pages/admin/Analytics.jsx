@@ -12,8 +12,6 @@ import {
   Download
 } from 'lucide-react';
 import { BASE_API_URL } from '../../services/api';
-import AICharts from '../../components/AICharts';
-import StaffScores from '../../components/StaffScores';
 import { exportAnalyticsPDF } from '../../utils/exportData';
 
 export default function Analytics() {
@@ -515,45 +513,7 @@ export default function Analytics() {
             </div>
           </>
         )}
-      </motion.div>
-
-      {/* AI-Powered Sales Forecasting */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="bg-white rounded-lg shadow-sm p-6 mb-6"
-      >
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-800">🤖 AI Sales Forecast</h2>
-            <p className="text-sm text-gray-600">Predicted revenue and profit trends</p>
-          </div>
-          <div className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
-            AI Powered
-          </div>
-        </div>
-        <AICharts periods={4} />
-      </motion.div>
-
-      {/* Employee Performance Scores */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="bg-white rounded-lg shadow-sm p-6"
-      >
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-800">👥 Staff Performance</h2>
-            <p className="text-sm text-gray-600">AI-scored employee rankings</p>
-          </div>
-          <div className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
-            AI Analytics
-          </div>
-        </div>
-        <StaffScores />
-      </motion.div>
+       </motion.div>
     </div>
   );
 }

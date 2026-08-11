@@ -148,7 +148,7 @@ const apiRequest = async (endpoint, options = {}) => {
  * @param {number} saleData.total - Final total amount
  * @param {number} saleData.discount - Discount applied
  * @param {number} saleData.tax - Tax amount
- * @param {string} saleData.paymentMethod - Payment method (cash/mpesa/card)
+ * @param {string} saleData.paymentMethod - Payment method (cash/card)
  * @param {string} saleData.taxType - Tax type (inclusive/exclusive)
  * @param {number} saleData.shiftId - Current shift ID (optional)
  * @param {Function} onOptimisticUpdate - Immediate UI callback (called BEFORE API)

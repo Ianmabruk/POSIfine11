@@ -52,7 +52,6 @@ const plans = [
 ];
 
 const paymentMethods = [
-  { id: 'mpesa', name: 'M-Pesa', icon: Smartphone, desc: 'Pay with M-Pesa' },
   { id: 'visa', name: 'Visa', icon: CreditCard, desc: 'Credit / Debit card' },
   { id: 'mastercard', name: 'Mastercard', icon: CreditCard, desc: 'Credit / Debit card' },
   { id: 'paypal', name: 'PayPal', icon: Globe, desc: 'Pay with PayPal' },
@@ -65,7 +64,7 @@ export default function SubscriptionEnterprise() {
   const navigate = useNavigate();
   const [step, setStep] = useState('plan');
   const [selectedPlan, setSelectedPlan] = useState('business');
-  const [paymentMethod, setPaymentMethod] = useState('mpesa');
+  const [paymentMethod, setPaymentMethod] = useState('visa');
   const [paymentDetails, setPaymentDetails] = useState({ phone: '', cardNumber: '', expiry: '', cvv: '', accountName: '', bankName: '' });
   const [processing, setProcessing] = useState(false);
   const [trialStarted, setTrialStarted] = useState(false);
@@ -383,28 +382,6 @@ export default function SubscriptionEnterprise() {
 
                       <div className="space-y-5">
                         <AnimatePresence mode="wait">
-                          {paymentMethod === 'mpesa' && (
-                            <motion.div
-                              key="mpesa-form"
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: -10 }}
-                              transition={{ duration: 0.3 }}
-                            >
-                              <label className="input-label">M-Pesa Phone Number</label>
-                              <div className="relative">
-                                <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                                <input
-                                  type="tel"
-                                  placeholder="+254 7XX XXX XXX"
-                                  className="input pl-11"
-                                  value={paymentDetails.phone}
-                                  onChange={(e) => setPaymentDetails({ ...paymentDetails, phone: e.target.value })}
-                                />
-                              </div>
-                            </motion.div>
-                          )}
-
                           {(paymentMethod === 'visa' || paymentMethod === 'mastercard') && (
                             <motion.div
                               key="card-form"

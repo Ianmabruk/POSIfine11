@@ -342,12 +342,7 @@ export const sales = {
 
 // Payments API
 export const payments = {
-  mpesaStkPush: (data) => request('/payments/mpesa/stk-push', {
-    method: 'POST',
-    body: JSON.stringify(data)
-  }),
   getStatus: (paymentId) => request(`/payments/${paymentId}/status`),
-  cloudpayStatus: (reference) => request(`/payments/cloudpay/status/${reference}`),
 };
 
 // Expenses API
