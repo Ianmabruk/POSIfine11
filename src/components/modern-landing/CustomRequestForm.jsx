@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Building2, Send, CheckCircle2, AlertCircle } from 'lucide-react';
+import api from '../../services/api';
 
 export default function CustomRequestForm({ isOpen, onClose, onSubmit }) {
   const [formData, setFormData] = useState({
@@ -38,14 +39,25 @@ export default function CustomRequestForm({ isOpen, onClose, onSubmit }) {
     setError('');
 
     try {
-      await new Promise(r => setTimeout(r, 1500));
+      const payload = {
+        businessName: formData.businessName,
+        contactName: formData.businessName,
+        email: formData.email,
+        phone: formData.phone,
+        industry: formData.industry,
+        expectedUsers: formData.expectedUsers ? Number(formData.expectedUsers) : undefined,
+        expectedBranches: formData.expectedBranches ? Number(formData.expectedBranches) : undefined,
+        featuresNeeded: formData.featuresNeeded,
+        additionalNotes: formData.additionalNotes,
+      };
+      const response = await api.auth.customPlanRequest(payload);
       setSuccess(true);
       setTimeout(() => {
-        onSubmit(formData);
+        if (onSubmit) onSubmit(response.data);
         onClose();
       }, 2000);
     } catch (err) {
-      setError('Failed to submit request. Please try again.');
+      setError(err.message || 'Failed to submit request. Please try again.');
     } finally {
       setLoading(false);
     }

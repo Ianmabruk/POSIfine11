@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Building2, Users, FileText, Settings, LogOut,
   TrendingUp, Shield, Activity, Search, ChevronRight, BarChart3,
-  Package, Clock, DollarSign, X, Menu
+  Package, Clock, DollarSign, X, Menu, Mail, Send, CheckCircle2, AlertCircle
 } from 'lucide-react';
 import mainAdminApi from '../../services/mainAdminApi';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
@@ -18,6 +18,8 @@ const navItems = [
   { id: 'subscriptions', label: 'Subscriptions', icon: FileText },
   { id: 'payments', label: 'Payments', icon: DollarSign },
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+  { id: 'custom-requests', label: 'Custom Requests', icon: Users },
+  { id: 'email-dashboard', label: 'Email Dashboard', icon: Mail },
 ];
 
 export default function PosifyControlCenter() {
@@ -29,6 +31,11 @@ export default function PosifyControlCenter() {
   const [subscriptions, setSubscriptions] = useState([]);
   const [payments, setPayments] = useState([]);
   const [revenueData, setRevenueData] = useState(null);
+  const [customPlanRequests, setCustomPlanRequests] = useState([]);
+  const [emailLogs, setEmailLogs] = useState([]);
+  const [emailForm, setEmailForm] = useState({ businessId: '', subject: '', message: '', amountDue: '', dueDate: '' });
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailSearch, setEmailSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -43,7 +50,7 @@ export default function PosifyControlCenter() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [metricsData, bizData, activeTrials, expiredTrials, subsData, paymentsData, revenue] = await Promise.all([
+      const [metricsData, bizData, activeTrials, expiredTrials, subsData, paymentsData, revenue, customRequests, emailLogsData] = await Promise.all([
         mainAdminApi.getDashboardMetrics().catch(() => null),
         mainAdminApi.getBusinesses().catch(() => []),
         mainAdminApi.getActiveTrials().catch(() => []),
@@ -51,6 +58,8 @@ export default function PosifyControlCenter() {
         mainAdminApi.getAllSubscriptions().catch(() => []),
         mainAdminApi.getPaymentHistory().catch(() => []),
         mainAdminApi.getRevenueAnalytics().catch(() => null),
+        mainAdminApi.getCustomPlanRequests().catch(() => []),
+        mainAdminApi.getEmailLogs().catch(() => []),
       ]);
 
       setMetrics(metricsData);
@@ -59,6 +68,8 @@ export default function PosifyControlCenter() {
       setSubscriptions(Array.isArray(subsData) ? subsData : []);
       setPayments(Array.isArray(paymentsData) ? paymentsData : []);
       setRevenueData(revenue);
+      setCustomPlanRequests(Array.isArray(customRequests) ? customRequests : []);
+      setEmailLogs(Array.isArray(emailLogsData) ? emailLogsData : []);
     } catch (e) {
       console.error('Failed to load admin data:', e);
     } finally {
@@ -109,6 +120,57 @@ export default function PosifyControlCenter() {
     } catch (e) {
       console.error('Failed to clear payment:', e);
       alert(e.message || 'Failed to clear payment.');
+    }
+  };
+
+  const loadCustomPlanRequests = async () => {
+    try {
+      const data = await mainAdminApi.getCustomPlanRequests();
+      setCustomPlanRequests(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error('Failed to load custom plan requests:', e);
+    }
+  };
+
+  const handleReviewCustomPlanRequest = async (id, status) => {
+    try {
+      await mainAdminApi.reviewCustomPlanRequest(id, { status });
+      loadCustomPlanRequests();
+    } catch (e) {
+      alert(e.message || 'Failed to update request.');
+    }
+  };
+
+  const loadEmailLogs = async () => {
+    try {
+      const data = await mainAdminApi.getEmailLogs();
+      setEmailLogs(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error('Failed to load email logs:', e);
+    }
+  };
+
+  const handleSendPaymentReminder = async (e) => {
+    e.preventDefault();
+    if (!emailForm.businessId) {
+      alert('Please select a business');
+      return;
+    }
+    setEmailSending(true);
+    try {
+      await mainAdminApi.sendPaymentReminder(emailForm.businessId, {
+        subject: emailForm.subject,
+        message: emailForm.message,
+        amountDue: emailForm.amountDue ? Number(emailForm.amountDue) : undefined,
+        dueDate: emailForm.dueDate || undefined,
+      });
+      alert('Payment reminder sent successfully');
+      setEmailForm({ businessId: '', subject: '', message: '', amountDue: '', dueDate: '' });
+      loadEmailLogs();
+    } catch (e) {
+      alert(e.message || 'Failed to send email');
+    } finally {
+      setEmailSending(false);
     }
   };
 
@@ -702,6 +764,195 @@ export default function PosifyControlCenter() {
                     </ResponsiveContainer>
                   </div>
                 )}
+              </div>
+            </motion.div>
+          )}
+
+          {activeTab === 'custom-requests' && (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+              <h2 className="text-2xl font-bold text-slate-900">Custom Plan Requests</h2>
+              <div className="bg-white rounded-2xl border border-cream-200 shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-cream-100 border-b border-cream-200">
+                      <tr>
+                        <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Business</th>
+                        <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Contact</th>
+                        <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Email</th>
+                        <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Industry</th>
+                        <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Status</th>
+                        <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Date</th>
+                        <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-cream-100">
+                      {customPlanRequests.map((req) => (
+                        <tr key={req.id} className="hover:bg-cream-50/50">
+                          <td className="px-6 py-4 text-sm text-slate-900 font-medium">{req.business_name}</td>
+                          <td className="px-6 py-4 text-sm text-slate-600">{req.contact_name}</td>
+                          <td className="px-6 py-4 text-sm text-slate-600">{req.email}</td>
+                          <td className="px-6 py-4 text-sm text-slate-600 capitalize">{req.industry || 'N/A'}</td>
+                          <td className="px-6 py-4">
+                            <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
+                              req.status === 'approved' ? 'bg-green-50 text-green-700' :
+                              req.status === 'rejected' ? 'bg-red-50 text-red-700' :
+                              req.status === 'contacted' ? 'bg-blue-50 text-blue-700' :
+                              req.status === 'under_review' ? 'bg-amber-50 text-amber-700' :
+                              'bg-slate-100 text-slate-600'
+                            }`}>
+                              {req.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-slate-500">{req.created_at ? new Date(req.created_at).toLocaleDateString() : 'N/A'}</td>
+                          <td className="px-6 py-4">
+                            <div className="flex gap-2">
+                              {req.status === 'pending' && (
+                                <>
+                                  <button onClick={() => handleReviewCustomPlanRequest(req.id, 'under_review')} className="text-xs px-3 py-1.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors">Under Review</button>
+                                  <button onClick={() => handleReviewCustomPlanRequest(req.id, 'contacted')} className="text-xs px-3 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">Contacted</button>
+                                  <button onClick={() => handleReviewCustomPlanRequest(req.id, 'approved')} className="text-xs px-3 py-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">Approve</button>
+                                  <button onClick={() => handleReviewCustomPlanRequest(req.id, 'rejected')} className="text-xs px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">Reject</button>
+                                </>
+                              )}
+                              {(req.status === 'under_review' || req.status === 'contacted') && (
+                                <>
+                                  <button onClick={() => handleReviewCustomPlanRequest(req.id, 'approved')} className="text-xs px-3 py-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">Approve</button>
+                                  <button onClick={() => handleReviewCustomPlanRequest(req.id, 'rejected')} className="text-xs px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">Reject</button>
+                                </>
+                              )}
+                              {(req.status === 'approved' || req.status === 'rejected') && (
+                                <span className="text-xs text-slate-400">Finalized</span>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                      {customPlanRequests.length === 0 && (
+                        <tr>
+                          <td colSpan="7" className="px-6 py-8 text-center text-slate-400 text-sm">No custom plan requests found</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {activeTab === 'email-dashboard' && (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+              <h2 className="text-2xl font-bold text-slate-900">Email Dashboard</h2>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-white rounded-2xl p-6 border border-cream-200 shadow-sm">
+                  <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                    <Send className="w-5 h-5 text-accent-500" />
+                    Send Payment Reminder
+                  </h3>
+                  <form onSubmit={handleSendPaymentReminder} className="space-y-4">
+                    <div>
+                      <label className="input-label">Business</label>
+                      <select
+                        value={emailForm.businessId}
+                        onChange={(e) => setEmailForm({ ...emailForm, businessId: e.target.value })}
+                        className="input"
+                        required
+                      >
+                        <option value="">Select Business</option>
+                        {businesses.map((b) => (
+                          <option key={b._id} value={b._id}>{b.name} ({b.email})</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="input-label">Subject</label>
+                      <input
+                        type="text"
+                        value={emailForm.subject}
+                        onChange={(e) => setEmailForm({ ...emailForm, subject: e.target.value })}
+                        className="input"
+                        placeholder="Payment Reminder — Business Name"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="input-label">Message</label>
+                      <textarea
+                        value={emailForm.message}
+                        onChange={(e) => setEmailForm({ ...emailForm, message: e.target.value })}
+                        className="input min-h-[120px] resize-none"
+                        placeholder="Enter your payment reminder message..."
+                        required
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="input-label">Amount Due (KES)</label>
+                        <input
+                          type="number"
+                          value={emailForm.amountDue}
+                          onChange={(e) => setEmailForm({ ...emailForm, amountDue: e.target.value })}
+                          className="input"
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div>
+                        <label className="input-label">Due Date</label>
+                        <input
+                          type="date"
+                          value={emailForm.dueDate}
+                          onChange={(e) => setEmailForm({ ...emailForm, dueDate: e.target.value })}
+                          className="input"
+                        />
+                      </div>
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={emailSending}
+                      className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {emailSending ? (
+                        <span className="flex items-center gap-2">
+                          <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          Sending...
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-2">
+                          <Send className="w-4 h-4" />
+                          Send Payment Reminder
+                        </span>
+                      )}
+                    </button>
+                  </form>
+                </div>
+
+                <div className="bg-white rounded-2xl p-6 border border-cream-200 shadow-sm">
+                  <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                    <Mail className="w-5 h-5 text-accent-500" />
+                    Email History
+                  </h3>
+                  <div className="space-y-3 max-h-[500px] overflow-y-auto">
+                    {emailLogs.map((log) => (
+                      <div key={log.id} className="flex items-start justify-between p-4 bg-cream-50 rounded-xl">
+                        <div className="flex-1">
+                          <p className="font-medium text-slate-900 text-sm">{log.subject}</p>
+                          <p className="text-xs text-slate-500 mt-1">To: {log.recipient}</p>
+                          <p className="text-xs text-slate-400 mt-1">{log.created_at ? new Date(log.created_at).toLocaleString() : 'N/A'}</p>
+                        </div>
+                        <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
+                          log.status === 'sent' ? 'bg-green-50 text-green-700' :
+                          log.status === 'failed' ? 'bg-red-50 text-red-700' :
+                          'bg-amber-50 text-amber-700'
+                        }`}>
+                          {log.status}
+                        </span>
+                      </div>
+                    ))}
+                    {emailLogs.length === 0 && (
+                      <p className="text-slate-400 text-sm text-center py-4">No emails sent yet</p>
+                    )}
+                  </div>
+                </div>
               </div>
             </motion.div>
           )}

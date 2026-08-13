@@ -25,7 +25,7 @@ export function getDashboardRoute(user) {
     user: user.email
   });
 
-  if (role === 'main_admin') {
+  if (role === 'main_admin' || role === 'owner') {
     console.log('[getDashboardRoute] → /main.admin (Main Admin)');
     return '/main.admin';
   }

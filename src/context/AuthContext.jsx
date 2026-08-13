@@ -52,25 +52,15 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('csrfToken');
     localStorage.removeItem('appLogo');
-    const prefix = 'products_cache_';
+    const prefixes = ['products_cache_', 'settings_cache_', 'subscription_cache_', 'api_cache_'];
     const keysToRemove = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && key.startsWith(prefix)) {
+      if (key && prefixes.some(prefix => key.startsWith(prefix))) {
         keysToRemove.push(key);
       }
     }
     for (const key of keysToRemove) {
-      localStorage.removeItem(key);
-    }
-    const settingsKeys = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && (key.startsWith('settings_cache_') || key.startsWith('subscription_cache_'))) {
-        settingsKeys.push(key);
-      }
-    }
-    for (const key of settingsKeys) {
       localStorage.removeItem(key);
     }
     sessionStorage.removeItem('reminderShown');
@@ -219,14 +209,48 @@ export const AuthProvider = ({ children }) => {
         const savedUser = localStorage.getItem('user');
         if (savedUser) {
           try {
-            setUser(normalizeUser(JSON.parse(savedUser)));
+            const parsed = JSON.parse(savedUser);
+            const cachedUser = normalizeUser(parsed);
+            const cachedToken = localStorage.getItem('token');
+            if (cachedToken && cachedUser?.id) {
+              const verifyController = new AbortController();
+              const verifyTimeout = setTimeout(() => verifyController.abort(), 5000);
+              try {
+                const verifyResp = await fetch(`${BASE_API_URL}/auth/me`, {
+                  credentials: 'include',
+                  headers: { Authorization: `Bearer ${cachedToken}`, 'Content-Type': 'application/json' },
+                  signal: verifyController.signal,
+                });
+                clearTimeout(verifyTimeout);
+                if (verifyResp.ok) {
+                  const data = await verifyResp.json();
+                  const normalized = normalizeUser(data);
+                  setUser(normalized);
+                  localStorage.setItem('user', JSON.stringify(normalized));
+                  setAuthError(null);
+                } else {
+                  clearAuthStorage();
+                  setUser(null);
+                  setAuthError('Session expired. Please sign in again.');
+                }
+              } catch (verifyError) {
+                clearTimeout(verifyTimeout);
+                clearAuthStorage();
+                setUser(null);
+                setAuthError('Session expired. Please sign in again.');
+              }
+            } else {
+              clearAuthStorage();
+              setUser(null);
+            }
           } catch {
+            clearAuthStorage();
             setUser(null);
           }
         } else {
+          clearAuthStorage();
           setUser(null);
         }
-        setAuthError('Connection timeout. Showing cached data.');
       } else {
         clearAuthStorage();
         setUser(null);
@@ -372,6 +396,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
+    const token = localStorage.getItem('token');
     const refreshToken = localStorage.getItem('refreshToken');
 
     clearAuthStorage();
@@ -380,13 +405,17 @@ export const AuthProvider = ({ children }) => {
     setSubscriptionStatus(null);
 
     try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
       if (refreshToken) {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), 3000);
         fetch(`${BASE_API_URL}/auth/logout`, {
           method: 'POST',
           credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify({ refreshToken }),
           signal: controller.signal
         }).catch(() => {}).finally(() => clearTimeout(timer));
@@ -406,7 +435,7 @@ export const AuthProvider = ({ children }) => {
 
   const hasRole = useCallback((role) => user && (user.role === role), [user]);
 
-  const isOwner = useCallback(() => user && (user.role === 'main_admin'), [user]);
+  const isOwner = useCallback(() => user && (user.role === 'main_admin' || user.role === 'owner'), [user]);
 
   const isAdmin = useCallback(() => user && (user.role === 'admin' || user.role === 'main_admin'), [user]);
 

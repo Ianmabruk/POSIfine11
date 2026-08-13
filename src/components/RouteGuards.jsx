@@ -149,11 +149,22 @@ export function BusinessTypeGuard({ children, requiredType }) {
 }
 
 /**
- * Admin Guard - Requires admin role
+ * Admin Guard - Requires business admin or main admin role
  */
 export function AdminGuard({ children }) {
   return (
     <RoleGuard allowedRoles={['admin', 'main_admin']}>
+      {children}
+    </RoleGuard>
+  );
+}
+
+/**
+ * Cashier Guard - Requires cashier role
+ */
+export function CashierGuard({ children }) {
+  return (
+    <RoleGuard allowedRoles={['cashier']}>
       {children}
     </RoleGuard>
   );

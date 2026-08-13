@@ -124,6 +124,17 @@ export const mainAdminApi = {
   getRevenueAnalytics: () => request('/main-admin/revenue'),
   requestPayment: (id) => request(`/main-admin/businesses/${id}/request-payment`, { method: 'POST' }),
   clearPayment: (id) => request(`/main-admin/businesses/${id}/clear-payment`, { method: 'POST' }),
+
+  getCustomPlanRequests: () => request('/main-admin/custom-plan-requests'),
+  reviewCustomPlanRequest: (id, data) => request(`/main-admin/custom-plan-requests/${id}/review`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  sendPaymentReminder: (id, data) => request(`/main-admin/businesses/${id}/send-payment-reminder`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  getEmailLogs: () => request('/main-admin/email-logs'),
 };
 
 export default mainAdminApi;

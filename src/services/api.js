@@ -239,7 +239,12 @@ export const auth = {
   changePassword: (currentPassword, newPassword, newPin) => request('/auth/change-password', {
     method: 'POST',
     body: JSON.stringify({ currentPassword, newPassword, newPin })
-  })
+  }),
+
+  customPlanRequest: (data) => request('/custom-plan-request', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  }),
 };
 
 

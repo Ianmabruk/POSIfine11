@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ProductsProvider } from './context/ProductsContext';
-import { ProtectedRoute as RouteGuard } from './components/RouteGuards';
+import { ProtectedRoute as RouteGuard, AdminGuard, CashierGuard } from './components/RouteGuards';
 import ReminderModal from './components/ReminderModal';
 import SubscriptionReminderBar from './components/SubscriptionReminderBar';
 import StockUpdateListener from './components/StockUpdateListener';
@@ -130,9 +130,9 @@ function App() {
                 <Route path="/dashboard" element={<ProtectedRoute><DashboardRouter /></ProtectedRoute>} />
                 <Route path="/dashboard/cashier" element={<ProtectedRoute><CashierPOS /></ProtectedRoute>} />
                 
-                {/* Admin Dashboard */}
-                <Route path="/admin/*" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
-                <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
+                {/* Admin Dashboard - Business Admin only */}
+                <Route path="/admin/*" element={<ProtectedRoute><AdminGuard><AdminDashboard /></AdminGuard></ProtectedRoute>} />
+                <Route path="/admin" element={<ProtectedRoute><AdminGuard><AdminDashboard /></AdminGuard></ProtectedRoute>} />
                 
                 {/* Student routes */}
                 <Route path="/student" element={<ProtectedRoute><RouteGuard><StudentDashboard /></RouteGuard></ProtectedRoute>} />
@@ -165,8 +165,8 @@ function App() {
                 <Route path="/subscription" element={<Navigate to="/choose-subscription" />} />
                 <Route path="/payment" element={<Navigate to="/choose-subscription" />} />
                 
-                {/* OLD Cashier route - direct access to old CashierPOS */}
-                <Route path="/cashier" element={<ProtectedRoute><CashierPOS /></ProtectedRoute>} />
+                {/* Cashier POS - Cashier only */}
+                <Route path="/cashier" element={<ProtectedRoute><CashierGuard><CashierPOS /></CashierGuard></ProtectedRoute>} />
 
                 {/* 404 Catch-all */}
                 <Route path="*" element={
