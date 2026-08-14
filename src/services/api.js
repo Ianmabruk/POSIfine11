@@ -104,7 +104,7 @@ const requestWithRetry = async (endpoint, options = {}, retryCount = 0, maxRetri
     ? cleanEndpoint.replace(/^\/api/, '')
     : cleanEndpoint;
 
-  const authEndpoints = ['/auth/login', '/auth/signup', '/auth/pin-login', '/auth/refresh', '/auth/change-password', '/auth/lock-screen', '/auth/unlock-screen', '/main-admin/auth/login'];
+  const authEndpoints = ['/auth/login', '/auth/signup', '/auth/refresh', '/auth/change-password', '/auth/lock-screen', '/auth/unlock-screen', '/main-admin/auth/login'];
   const shouldSkipAuth = authEndpoints.some(ep => normalizedEndpoint === ep);
 
   const config = {
@@ -214,11 +214,6 @@ export const auth = {
     body: JSON.stringify(credentials)
   }),
   
-  pinLogin: (credentials) => request('/auth/pin-login', {
-    method: 'POST',
-    body: JSON.stringify(credentials)
-  }),
-  
   signup: (data) => request('/auth/signup', {
     method: 'POST',
     body: JSON.stringify(data)
@@ -236,9 +231,9 @@ export const auth = {
     body: JSON.stringify({ pin })
   }),
 
-  changePassword: (currentPassword, newPassword, newPin) => request('/auth/change-password', {
+  changePassword: (currentPassword, newPassword) => request('/auth/change-password', {
     method: 'POST',
-    body: JSON.stringify({ currentPassword, newPassword, newPin })
+    body: JSON.stringify({ currentPassword, newPassword })
   }),
 
   customPlanRequest: (data) => request('/custom-plan-request', {

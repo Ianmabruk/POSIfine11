@@ -20,7 +20,7 @@ export default function SettingsPage() {
 
   // Change password modal state
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
-  const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '', newPin: '' });
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [passwordError, setPasswordError] = useState('');
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
@@ -150,8 +150,8 @@ export default function SettingsPage() {
       setPasswordError('Current password is required');
       return;
     }
-    if (!passwordForm.newPassword && !passwordForm.newPin) {
-      setPasswordError('Enter a new password or new PIN');
+    if (!passwordForm.newPassword) {
+      setError('New password is required');
       return;
     }
     if (passwordForm.newPassword && passwordForm.newPassword.length < 4) {
@@ -172,7 +172,7 @@ export default function SettingsPage() {
       const result = await auth.changePassword(
         passwordForm.currentPassword,
         passwordForm.newPassword || undefined,
-        passwordForm.newPin || undefined
+        passwordForm.newPassword ? passwordForm.newPassword : undefined
       );
       const changedWhat = [];
       if (passwordForm.newPassword) changedWhat.push('Password');
@@ -358,7 +358,7 @@ export default function SettingsPage() {
             <h3 className="text-lg font-semibold">Security</h3>
           </div>
           <div className="space-y-3">
-            <button onClick={() => { setShowChangePasswordModal(true); setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '', newPin: '' }); setPasswordError(''); setPasswordSuccess(''); }} className="btn-secondary text-sm w-full">Change Password / PIN</button>
+            <button onClick={() => { setShowChangePasswordModal(true); setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' }); setPasswordError(''); setPasswordSuccess(''); }} className="btn-secondary text-sm w-full">Change Password</button>
             <button className="btn-secondary text-sm w-full">Enable 2FA</button>
           </div>
         </div>
@@ -454,20 +454,6 @@ export default function SettingsPage() {
                   className="w-full px-3 py-2 border rounded-lg mt-1"
                   placeholder="Re-enter new password"
                   autoComplete="new-password"
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-700">New PIN (optional)</label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  value={passwordForm.newPin}
-                  onChange={(e) => setPasswordForm({ ...passwordForm, newPin: e.target.value.replace(/\D/g, '') })}
-                  className="w-full px-3 py-2 border rounded-lg mt-1"
-                  placeholder="Enter new PIN (min 4 digits)"
-                  maxLength={8}
                 />
               </div>
 

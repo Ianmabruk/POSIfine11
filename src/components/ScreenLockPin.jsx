@@ -1,15 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { Lock, Unlock, Eye, EyeOff } from 'lucide-react';
 
-export default function ScreenLockPin({ isLocked, onUnlock, userPin = '1234', userName, businessLogo }) {
-  const [pin, setPin] = useState('');
-  const [showPin, setShowPin] = useState(false);
+export default function ScreenLockPin({ isLocked, onUnlock, userName, businessLogo }) {
   const [error, setError] = useState('');
-  const [attempts, setAttempts] = useState(0);
   const [isBlocked, setIsBlocked] = useState(false);
-  const [blockTimeLeft, setBlockTimeLeft] = useState(0);
 
-  // Auto-lock after inactivity
+  const handleUnlock = async () => {
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${BASE_API_URL}/auth/unlock-screen`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        credentials: 'include'
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || data.message || 'Failed to unlock');
+        return;
+      }
+      const data = await res.json();
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+      }
+      onUnlock && onUnlock();
+    } catch (err) {
+      setError('Network error. Please try again.');
+    }
+  };
   useEffect(() => {
     if (!isLocked) {
       let inactivityTimer;

@@ -33,10 +33,6 @@ export default function UserManagement() {
     }
   });
   
-  const [showPINModal, setShowPINModal] = useState(false);
-  const [selectedUserForPIN, setSelectedUserForPIN] = useState(null);
-  const [newPIN, setNewPIN] = useState('');
-
   // Business types available for Pro plan
   const businessTypes = [
     { id: 'clinic', name: 'Clinic', icon: Stethoscope, roles: ['doctor', 'reception', 'pharmacy', 'nurse'] },
@@ -134,19 +130,13 @@ export default function UserManagement() {
     }
     
     try {
-      // Generate PIN for cashier login
-      const cashierPIN = generatePIN();
-      
       const userData = {
         name: newUser.name.trim(),
         email: newUser.email.trim().toLowerCase(),
         password: newUser.password.trim(),
         role: 'cashier',
-        pin: cashierPIN,
-        cashier_pin: cashierPIN,
         profilePicture: newUser.profilePicture || undefined,
         permissions: newUser.permissions,
-        // Add business type and role for Pro plan users
         ...(isProPlan && newUser.businessType && {
           businessType: newUser.businessType,
           businessRole: newUser.businessRole || 'cashier'
@@ -191,8 +181,8 @@ export default function UserManagement() {
         // Invalidate users list cache so background refresh sees the new user
         cacheClear('/users\\|(GET|HEAD)\\|');
         
-        // Show success message with login credentials including PIN
-        const loginInstructions = `✅ Cashier added successfully!\n\n📧 Email: ${userData.email}\n🔑 Password: ${userData.password}\n🔢 PIN: ${cashierPIN}\n\n💡 LOGIN OPTIONS:\n1. Email + Password: Use email and password above\n2. PIN Login: Use email + ${cashierPIN}\n\nPlease share these credentials securely with the new cashier.`;
+        // Show success message with login credentials
+        const loginInstructions = `✅ Cashier added successfully!\n\n📧 Email: ${userData.email}\n🔑 Password: ${userData.password}\n\nPlease share these credentials securely with the new cashier.`;
         
         alert(loginInstructions);
         
@@ -342,29 +332,6 @@ export default function UserManagement() {
       alert('All users data cleared');
     } catch (error) {
       alert('Failed to clear users: ' + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleResetPIN = (user) => {
-    setSelectedUserForPIN(user);
-    setNewPIN(generatePIN());
-    setShowPINModal(true);
-  };
-
-  const handleConfirmPINReset = async () => {
-    try {
-      setLoading(true);
-      await usersApi.update(selectedUserForPIN.id, { cashierPIN: newPIN });
-      await loadUsers();
-      setShowPINModal(false);
-      setSelectedUserForPIN(null);
-      setNewPIN('');
-      alert(`✅ PIN reset successfully!\n\n🔢 New PIN for ${selectedUserForPIN.name}: ${newPIN}\n\nPlease share this PIN securely with the cashier.`);
-    } catch (error) {
-      console.error('Error resetting PIN:', error);
-      alert('Failed to reset PIN: ' + error.message);
     } finally {
       setLoading(false);
     }

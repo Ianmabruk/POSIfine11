@@ -611,22 +611,10 @@ export default function AdminDashboard() {
                         </td>
                         <td className="px-4 py-3 text-sm">
                           <button
-                            onClick={() => {
-                              const newPin = prompt('Enter 4-digit PIN for ' + user.name + ':', user.pin || '');
-                              if (newPin && /^\d{4}$/.test(newPin)) {
-                                users.update(user.id, { pin: newPin })
-                                  .then(() => {
-                                    alert('PIN updated successfully!');
-                                    loadData();
-                                  })
-                                  .catch(err => alert('Failed to update PIN: ' + err.message));
-                              } else if (newPin !== null) {
-                                alert('PIN must be exactly 4 digits');
-                              }
-                            }}
-                            className="text-blue-600 hover:text-blue-700 font-medium"
+                            onClick={() => users.update(user.id, { active: !user.active })}
+                            className={`${user.active ? 'text-red-600 hover:text-red-700' : 'text-green-600 hover:text-green-700'} font-medium`}
                           >
-                            Set PIN
+                            {user.active ? 'Deactivate' : 'Activate'}
                           </button>
                         </td>
                       </tr>

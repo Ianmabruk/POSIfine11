@@ -81,40 +81,16 @@ export default function AuthNew() {
       }
 
       if (isLogin) {
-        if (loginMethod === 'pin') {
-          if (!formData.pin || formData.pin.length !== 4) {
-            setError('Please enter a valid 4-digit PIN');
-            setLoading(false);
-            return;
-          }
-        } else {
-          if (!formData.password) {
-            setError('Please enter your password');
-            setLoading(false);
-            return;
-          }
+        if (!formData.password) {
+          setError('Please enter your password');
+          setLoading(false);
+          return;
         }
       }
 
       let res;
       if (isLogin) {
-        if (loginMethod === 'pin') {
-          try {
-            res = await auth.pinLogin({ email: formData.email, pin: formData.pin });
-          } catch (pinError) {
-            if (pinError.message.includes('PIN not set')) {
-              setError('PIN not set for this user. Please use password login.');
-            } else if (pinError.message.includes('Invalid PIN')) {
-              setError('Invalid PIN. Please try again.');
-            } else {
-              throw pinError;
-            }
-            setLoading(false);
-            return;
-          }
-        } else {
-          res = await auth.login({ email: formData.email, password: formData.password });
-        }
+        res = await auth.login({ email: formData.email, password: formData.password });
       } else {
         const selectedPlan = getSelectedPlan();
         const planId = localStorage.getItem('planId') || selectedPlan?.id || 'starter';
@@ -290,46 +266,39 @@ export default function AuthNew() {
 
               {isLogin && (
                 <div className="space-y-3">
-                  <div className="flex gap-2 bg-[#f5f7fb] p-1 rounded-lg">
-                    <button
-                      type="button"
-                      onClick={() => setLoginMethod('password')}
-                      className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
-                        loginMethod === 'password' 
-                          ? 'bg-gradient-to-r from-[#2d4cff] to-[#3b82f6] text-white shadow-sm' 
-                          : 'text-slate-600 hover:text-slate-900'
-                      }`}
-                    >
-                      Password
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setLoginMethod('pin')}
-                      className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
-                        loginMethod === 'pin' 
-                          ? 'bg-gradient-to-r from-[#2d4cff] to-[#3b82f6] text-white shadow-sm' 
-                          : 'text-slate-600 hover:text-slate-900'
-                      }`}
-                    >
-                      PIN
-                    </button>
+                  <div className="text-center text-sm text-slate-500">
+                    Sign in with your email and password
                   </div>
                 </div>
               )}
 
-              {isLogin && loginMethod === 'password' && (
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                  <input
-                    type="password"
-                    placeholder="Password"
-                    className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 bg-white text-gray-900 placeholder-gray-400 focus:border-[#2d4cff] focus:ring-2 focus:ring-[#2d4cff]/20 outline-none transition-all"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    required
-                  />
-                </div>
-              )}
+                  {isLogin && (
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                      <input
+                        type="password"
+                        placeholder="Password"
+                        className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 bg-white text-gray-900 placeholder-gray-400 focus:border-[#2d4cff] focus:ring-2 focus:ring-[#2d4cff]/20 outline-none transition-all"
+                        value={formData.password}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        required
+                      />
+                    </div>
+                  )}
+
+                  {!isLogin && (
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                      <input
+                        type="password"
+                        placeholder="Password (min 8 chars, 1 uppercase, 1 number)"
+                        className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 bg-white text-gray-900 placeholder-gray-400 focus:border-[#2d4cff] focus:ring-2 focus:ring-[#2d4cff]/20 outline-none transition-all"
+                        value={formData.password}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        required
+                      />
+                    </div>
+                  )}
 
               {isLogin && loginMethod === 'pin' && (
                 <div className="relative">

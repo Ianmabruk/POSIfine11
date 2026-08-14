@@ -140,23 +140,7 @@ const AuthEnterprise = () => {
 
       let res;
       if (mode === "login") {
-        if (loginMethod === "pin") {
-          try {
-            res = await auth.pinLogin({ email: formData.email, pin: formData.pin });
-          } catch (pinError) {
-            if (pinError.message?.includes("PIN not set")) {
-              setError("PIN not set. Please use password login.");
-            } else if (pinError.message?.includes("Invalid PIN")) {
-              setError("Invalid PIN. Please try again.");
-            } else {
-              setError(pinError.message || "PIN login failed");
-            }
-            setLoading(false);
-            return;
-          }
-        } else {
-          res = await auth.login({ email: formData.email, password: formData.password });
-        }
+        res = await auth.login({ email: formData.email, password: formData.password });
       } else {
         const selectedPlan = getSelectedPlan();
         const planId = localStorage.getItem("planId") || selectedPlan?.id || "starter";
