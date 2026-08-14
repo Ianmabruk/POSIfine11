@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-const DEFAULT_TITLE = 'POSIFY - Enterprise POS Platform';
+const DEFAULT_TITLE = 'POSIFY - Modern POS Platform for African Businesses';
 const DEFAULT_DESCRIPTION = 'Posify is a modern POS platform for African businesses. Manage sales, inventory, staff, and analytics in one system. 15-day free trial.';
 
 export default function SEO({

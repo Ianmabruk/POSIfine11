@@ -10,33 +10,23 @@ const plans = [
   {
     id: 'starter',
     name: 'STARTER',
-    price: 999,
+    price: 1000,
     icon: Zap,
     gradient: 'from-slate-500 to-slate-600',
     light: 'bg-slate-50',
-     description: 'Small businesses. Limited users. Core modules. 30-Day Trial.',
-    features: ['Single user access', 'Basic inventory tracking', 'Sales & order management', 'Daily reports & insights', 'Email support', 'Cashier POS dashboard'],
+     description: 'Small businesses. 1 Admin + 1 Cashier. Core POS modules. 30-Day Trial.',
+    features: ['1 Admin account', '1 Cashier account', 'Basic inventory tracking', 'Sales & order management', 'Daily reports & insights', 'Email support', 'Cashier POS dashboard'],
   },
   {
     id: 'business',
     name: 'BUSINESS',
-    price: 2499,
+    price: 1500,
     icon: Zap,
     gradient: 'from-primary-500 to-brand-500',
     light: 'bg-primary-50',
-     description: 'Growing companies. More users. Multi-branch. Advanced reports. 30-Day Trial.',
-    features: ['Up to 10 users', 'Advanced inventory & recipes', 'Full admin dashboard', 'CRM & customer profiles', 'Advanced analytics', 'Priority support', 'Expense tracking', 'Service fees & discounts'],
+     description: 'Growing companies. Multiple Admins + Multiple Cashiers. Advanced reports. 30-Day Trial.',
+    features: ['Multiple Admin accounts', 'Multiple Cashier accounts', 'Advanced inventory & recipes', 'Full admin dashboard', 'CRM & customer profiles', 'Advanced analytics', 'Priority support', 'Expense tracking', 'Service fees & discounts'],
     popular: true,
-  },
-  {
-    id: 'enterprise',
-    name: 'ENTERPRISE',
-    price: 4999,
-    icon: Crown,
-    gradient: 'from-accent-500 to-accent-600',
-    light: 'bg-accent-50',
-     description: 'Unlimited users. Unlimited branches. Priority support. Advanced analytics. 30-Day Trial.',
-    features: ['Unlimited users', 'Multi-location support', 'Full CRM suite', 'AI-powered insights', 'Custom integrations', 'Dedicated account manager', '99.9% uptime SLA', 'White-label options'],
   },
   {
     id: 'custom',
@@ -45,7 +35,7 @@ const plans = [
     icon: Sparkles,
     gradient: 'from-brand-500 to-success-500',
     light: 'bg-brand-50',
-    description: 'Specialized workflows for hospitals, schools, manufacturers, and warehouses.',
+    description: 'A customized POS/web solution based on your requirements.',
     features: ['Custom business type setup', 'Specialized modules', 'Industry-specific features', 'Custom reporting', 'Priority support', 'Custom invoice generation'],
     custom: true,
   },
@@ -123,7 +113,7 @@ export default function SubscriptionEnterprise() {
     <div className="relative min-h-screen overflow-hidden">
       <SEO
         title="Choose Your Plan - Posify POS Pricing"
-        description="Choose the right Posify plan for your business. Starter, Professional, Enterprise, and Custom plans available. 15-day free trial."
+        description="Choose the right Posify plan for your business. Starter and Business plans available. 30-day free trial."
         canonical="https://posifine22.onrender.com/choose-subscription"
       />
       {/* Premium abstract gradient background */}

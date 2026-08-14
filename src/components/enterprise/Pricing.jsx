@@ -6,11 +6,12 @@ const plans = [
   {
     id: "starter",
     name: "Starter",
-    price: 999,
+    price: 1000,
     period: "month",
-    description: "Perfect for small shops getting started",
+    description: "Perfect for small businesses getting started",
     features: [
-      "Single User",
+      "1 Admin account",
+      "1 Cashier account",
       "Basic Inventory",
       "Sales Tracking",
       "Daily Reports",
@@ -23,11 +24,12 @@ const plans = [
   {
     id: "business",
     name: "Business",
-    price: 2499,
+    price: 1500,
     period: "month",
     description: "For growing teams that need more power",
     features: [
-      "Up to 5 Users",
+      "Multiple Admin accounts",
+      "Multiple Cashier accounts",
       "Advanced Inventory",
       "Full Admin Dashboard",
       "CRM & Customer Profiles",
@@ -40,23 +42,24 @@ const plans = [
     popular: true,
   },
   {
-    id: "enterprise",
-    name: "Enterprise",
-    price: 4999,
-    period: "month",
-    description: "For organizations that need everything",
+    id: "custom",
+    name: "Custom",
+    price: null,
+    period: "",
+    description: "Tailored solutions for your business needs",
     features: [
-      "Unlimited Users",
-      "Multi-Location Support",
-      "Full CRM Suite",
-      "AI-Powered Analytics",
-      "Custom Integrations",
-      "Dedicated Account Manager",
-      "SLA Guarantee",
-      "White-label Options",
+      "Custom pricing based on requirements",
+      "Dedicated account manager",
+      "Custom integrations",
+      "Advanced security features",
+      "Compliance tools",
+      "Custom training sessions",
+      "White-label options",
+      "SLA support",
     ],
-    cta: "Contact Sales",
+    cta: "Request Custom Plan",
     popular: false,
+    custom: true,
   },
 ];
 
@@ -111,8 +114,14 @@ export default function Pricing({ onGetStarted }) {
               </div>
 
               <div className="mb-8">
-                <span className="text-4xl font-bold text-slate-900">KES {plan.price.toLocaleString()}</span>
-                <span className="text-slate-500 text-sm font-medium"> /{plan.period}</span>
+                {plan.price ? (
+                  <>
+                    <span className="text-4xl font-bold text-slate-900">KES {plan.price.toLocaleString()}</span>
+                    <span className="text-slate-500 text-sm font-medium"> /{plan.period}</span>
+                  </>
+                ) : (
+                  <span className="text-2xl font-bold text-slate-900">Contact us</span>
+                )}
               </div>
 
               <ul className="space-y-3 mb-8">
@@ -129,6 +138,8 @@ export default function Pricing({ onGetStarted }) {
                 className={`w-full py-3.5 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
                   plan.popular
                     ? "bg-primary-600 text-white hover:bg-primary-700 shadow-lg shadow-primary-500/25 active:scale-[0.98]"
+                    : plan.custom
+                    ? "bg-brand-500 text-white hover:bg-brand-600 shadow-lg shadow-brand-500/25 active:scale-[0.98]"
                     : "bg-slate-900 text-white hover:bg-slate-800 active:scale-[0.98]"
                 }`}
               >

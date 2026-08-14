@@ -34,7 +34,7 @@ export function ProPlanGuard({ children }) {
     return <Navigate to="/auth/login" replace />;
   }
 
-  const isPro = user.subscription === 'pro' || user.plan === 'pro' || user.subscription === 'custom' || user.subscription === 'PRO_PETROLEUM' || user.plan === 'PRO_PETROLEUM';
+  const isPro = user.subscription === 'business' || user.plan === 'business' || user.subscription === 'custom' || user.plan === 'custom';
 
   if (!isPro) {
     return <Navigate to="/upgrade" replace />;
@@ -160,12 +160,32 @@ export function AdminGuard({ children }) {
 }
 
 /**
- * Cashier Guard - Requires cashier role
+ * Cashier Guard - Requires cashier role OR admin/main_admin/owner role for POS access
  */
 export function CashierGuard({ children }) {
-  return (
-    <RoleGuard allowedRoles={['cashier']}>
-      {children}
-    </RoleGuard>
-  );
+  const { user } = useAuth();
+
+  const userRole = user?.role;
+  const allowedRoles = ['cashier', 'admin', 'main_admin', 'owner'];
+
+  if (!userRole || !allowedRoles.includes(userRole)) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center">
+          <div className="text-6xl mb-4">🚫</div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
+          <p className="text-gray-600 mb-4">You don't have permission to access this page.</p>
+          <p className="text-sm text-gray-500">Your role: {userRole || 'none'}</p>
+          <button
+            onClick={() => window.history.back()}
+            className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
 }

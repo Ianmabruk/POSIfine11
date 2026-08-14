@@ -51,7 +51,7 @@ export default function PaymentInput() {
         name: paymentData.fullName,
         password: 'changeme123',
         plan: plan.id,
-        role: plan.id === 'ultra' ? 'admin' : 'cashier',
+        role: plan.id === 'business' ? 'admin' : 'cashier',
         active: true,
         amount: plan.price,
         paymentMethod: 'mpesa',
@@ -67,7 +67,7 @@ export default function PaymentInput() {
       await login(result);
       
       // Redirect to dashboard immediately after payment
-      if (plan.id === 'ultra') {
+      if (plan.id === 'business') {
         if (userData.role === 'main_admin' || userData.role === 'owner') {
           navigate('/main.admin', { replace: true });
         } else {

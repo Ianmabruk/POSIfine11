@@ -454,8 +454,8 @@ export const AuthProvider = ({ children }) => {
     }
   }, [user]);
 
-  const isUltraPackage = useCallback(() => user && (user.plan === 'ultra'), [user]);
-  const isBasicPackage = useCallback(() => user && (user.plan === 'basic'), [user]);
+  const isStarterPackage = useCallback(() => user && (user.plan === 'starter'), [user]);
+  const isBusinessPackage = useCallback(() => user && (user.plan === 'business'), [user]);
   const canEditStock = useCallback(() => user && (user.role === 'admin' || user.role === 'main_admin' || user.role === 'cashier'), [user]);
   const canManageUsers = useCallback(() => user && (user.role === 'admin' || user.role === 'main_admin'), [user]);
   const canViewAnalytics = useCallback(() => user && (user.role === 'admin' || user.role === 'main_admin'), [user]);
@@ -486,8 +486,8 @@ export const AuthProvider = ({ children }) => {
     isAdmin,
     isCashier,
     getDashboardUrl,
-    isUltraPackage,
-    isBasicPackage,
+    isStarterPackage,
+    isBusinessPackage,
     canEditStock,
     canManageUsers,
     canViewAnalytics,
@@ -495,7 +495,7 @@ export const AuthProvider = ({ children }) => {
     isCashierUserManagementEnabled,
     clearAuthStorage,
   }), [user, loading, isInitialized, authError, isRefreshing, appSettings, subscriptionStatus, isAuthenticated,
-      hasRole, isOwner, isAdmin, isCashier, getDashboardUrl, isUltraPackage, isBasicPackage,
+      hasRole, isOwner, isAdmin, isCashier, getDashboardUrl,       isStarterPackage, isBusinessPackage,
       canEditStock, canManageUsers, canViewAnalytics, loadAppSettings, checkSubscriptionStatus,
       clearAuthStorage]);
 

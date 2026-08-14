@@ -31,7 +31,7 @@ const WWProtectedRoute = lazy(() => import('./pages/windatawind/ProtectedRoute')
 const SuperAdminLogin = lazy(() => import('./pages/super-admin/ControlCenterLogin'));
 const SuperAdminDashboard = lazy(() => import('./pages/super-admin/PosifyControlCenter'));
 
-function ProtectedRoute({ children, adminOnly = false, ultraOnly = false, ownerOnly = false }) {
+function ProtectedRoute({ children, adminOnly = false, businessOnly = false, ownerOnly = false }) {
   const { user, loading } = useAuth();
   const [showReminders, setShowReminders] = useState(false);
   const reminderChecked = useRef(false);
@@ -73,7 +73,7 @@ function ProtectedRoute({ children, adminOnly = false, ultraOnly = false, ownerO
     if (!user || !hasToken) return <Navigate to="/auth/login" replace />;
     if (!user.active) return <Navigate to="/choose-subscription" replace />;
     if (adminOnly && !['admin', 'main_admin'].includes(user.role)) return <Navigate to="/dashboard/cashier" replace />;
-    if (ultraOnly && (user.role !== 'admin' || user.plan !== 'ultra')) return <Navigate to="/dashboard/cashier" replace />;
+    if (businessOnly && (user.role !== 'admin' || user.plan !== 'business')) return <Navigate to="/dashboard/cashier" replace />;
   }
   
   return (
@@ -88,19 +88,22 @@ function ProtectedRoute({ children, adminOnly = false, ultraOnly = false, ownerO
 
 function DashboardRouter() {
   const { user, loading } = useAuth();
-  
+  const adminViewingCashier = localStorage.getItem('adminViewingCashier');
+
   if (loading) return <LogoPreloader text="Loading..." />;
   if (!user || !user.active) return <Navigate to="/choose-subscription" />;
-  
-  // Route based on ROLE
+
+  if (adminViewingCashier && (user.role === 'admin' || user.role === 'main_admin' || user.role === 'owner')) {
+    return <Navigate to="/dashboard/cashier" />;
+  }
+
   if (user.role === 'main_admin') {
     return <Navigate to="/main.admin" />;
   }
   if (user.role === 'admin') {
     return <Navigate to="/admin" />;
   }
-  
-  // All non-admin users go to cashier dashboard
+
   return <Navigate to="/dashboard/cashier" />;
 }
 

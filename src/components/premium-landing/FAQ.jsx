@@ -6,15 +6,15 @@ import SEO from "../SEO";
 const faqs = [
   {
     question: "How much does Posify cost?",
-    answer: "Posify offers flexible pricing starting with a free Starter plan for small businesses. Our Professional plan is KES 2,499/month and Enterprise is KES 4,999/month. All plans include a 30-day free trial with no credit card required.",
+    answer: "Posify offers flexible pricing starting with the Starter plan at KES 1,000/month for small businesses. The Business plan is KES 1,500/month for growing teams. All plans include a 30-day free trial with no credit card required.",
   },
   {
     question: "How does MPESA integration work?",
     answer: "Our MPESA integration allows you to accept M-PESA payments directly in your POS with automatic reconciliation, receipt generation, and daily summaries. Setup takes less than 5 minutes and works seamlessly with your existing M-PESA account.",
   },
   {
-    question: "Can I manage multiple branches?",
-    answer: "Yes, the Professional plan supports up to 10 branches while the Enterprise plan offers unlimited branches. You get centralized control, consolidated reporting, and the ability to transfer stock between locations instantly.",
+    question: "Can I manage multiple cashiers?",
+    answer: "Yes, the Starter plan includes 1 cashier, while the Business plan supports multiple cashiers. Admins can create and manage cashiers, and all sales are recorded and visible in the admin dashboard.",
   },
   {
     question: "Does Posify work offline?",
@@ -22,7 +22,7 @@ const faqs = [
   },
   {
     question: "What kind of support do you offer?",
-    answer: "We offer email support for all plans, priority support for Professional customers, and a dedicated account manager for Enterprise clients. Our average response time is under 2 hours during business hours.",
+    answer: "We offer email support for all plans and priority support for Business customers. Our average response time is under 2 hours during business hours.",
   },
   {
     question: "How secure is my business data?",
@@ -30,11 +30,11 @@ const faqs = [
   },
   {
     question: "How long is the free trial?",
-    answer: "Our free trial lasts for 30 days and gives you full access to all Professional plan features. No credit card is required to sign up, and you won't be charged unless you choose to subscribe.",
+    answer: "Our free trial lasts for 30 days and gives you full access to your selected plan features. No credit card is required to sign up, and you won't be charged unless you choose to subscribe.",
   },
   {
     question: "Can I customize the POS for my business?",
-    answer: "Yes, Posify is highly customizable. You can configure receipts, add custom fields to products, set up role-based permissions, and create custom reports. Enterprise customers also get API access for deeper integrations.",
+    answer: "Yes, Posify is highly customizable. You can configure receipts, add custom fields to products, set up role-based permissions, and create custom reports. Custom plan customers also get dedicated support for deeper integrations.",
   },
 ];
 

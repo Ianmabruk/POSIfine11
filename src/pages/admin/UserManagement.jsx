@@ -45,8 +45,8 @@ export default function UserManagement() {
     { id: 'supermarket', name: 'Supermarket', icon: Building, roles: ['cashier', 'manager', 'stock_clerk'] }
   ];
 
-  // Check if current user is on Pro plan
-  const isProPlan = currentUser?.plan === 'pro';
+  // Check if current user is on Business or Custom plan
+  const isProPlan = currentUser?.plan === 'business' || currentUser?.plan === 'custom';
 
   useEffect(() => {
     loadUsers();
@@ -854,10 +854,10 @@ export default function UserManagement() {
               {/* Business Type Selection for Pro Plan */}
               {isProPlan && (
                 <div className="border-t pt-4">
-                  <h4 className="font-semibold mb-3 text-sm flex items-center gap-2">
-                    <Building className="w-4 h-4" />
-                    Business Settings (Pro Plan)
-                  </h4>
+                     <h4 className="font-semibold mb-3 text-sm flex items-center gap-2">
+                      <Building className="w-4 h-4" />
+                      Business Settings
+                    </h4>
                   <div className="space-y-3">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">

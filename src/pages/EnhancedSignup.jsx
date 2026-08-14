@@ -39,15 +39,15 @@ export default function EnhancedSignup() {
   }, [location.state]);
 
   const planIcons = {
-    basic: Package,
-    ultra: TrendingUp,
-    pro: Crown
+    starter: Package,
+    business: TrendingUp,
+    custom: Crown
   };
 
   const planColors = {
-    basic: 'from-blue-500 to-blue-600',
-    ultra: 'from-pink-500 to-pink-600',
-    pro: 'from-red-500 to-red-600'
+    starter: 'from-blue-500 to-blue-600',
+    business: 'from-pink-500 to-pink-600',
+    custom: 'from-red-500 to-red-600'
   };
 
   const validateForm = () => {
@@ -105,7 +105,7 @@ export default function EnhancedSignup() {
         password: formData.password,
         businessName: formData.businessName,
         businessType: formData.businessType || planData?.industry || 'retail',
-        plan: planData?.plan || 'basic',
+        plan: planData?.plan || 'starter',
         billingCycle: planData?.billingCycle || 'monthly',
         trialEndDate: trialEndDate.toISOString(),
         isTrialActive: true

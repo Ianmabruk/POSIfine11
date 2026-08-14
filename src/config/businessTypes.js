@@ -347,9 +347,11 @@ export const AVAILABLE_FEATURES = {
  * Maps subscription plan to available features
  */
 export const PLAN_FEATURES = {
-  basic: {
-    name: 'Basic',
+  starter: {
+    name: 'Starter',
     price: 1000,
+    max_admins: 1,
+    max_cashiers: 1,
     features: [
       'basic_pos',
       'inventory_management',
@@ -357,22 +359,28 @@ export const PLAN_FEATURES = {
       'admin_dashboard'
     ]
   },
-  ultra: {
-    name: 'Ultra',
-    price: 2500,
+  business: {
+    name: 'Business',
+    price: 1500,
+    max_admins: null,
+    max_cashiers: null,
     features: [
       'basic_pos',
       'inventory_management',
       'sales_tracking',
       'admin_dashboard',
-      'user_management'
+      'user_management',
+      'advanced_analytics',
+      'expense_tracking'
     ]
   },
   custom: {
     name: 'Custom',
-    price: 3500,
-    features: 'all', // All features unlocked
-    description: 'Unlock Business Builder to customize features'
+    price: null,
+    max_admins: null,
+    max_cashiers: null,
+    features: 'all',
+    description: 'Customized solution based on requirements'
   }
 };
 

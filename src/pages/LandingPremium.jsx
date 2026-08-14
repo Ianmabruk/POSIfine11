@@ -24,21 +24,21 @@ const landingJsonLd = {
     {
       "@type": "Offer",
       "name": "Starter",
-      "price": "999",
+      "price": "1000",
       "priceCurrency": "KES",
       "billingIncrement": "P1M"
     },
     {
       "@type": "Offer",
-      "name": "Professional",
-      "price": "2499",
+      "name": "Business",
+      "price": "1500",
       "priceCurrency": "KES",
       "billingIncrement": "P1M"
     },
     {
       "@type": "Offer",
-      "name": "Enterprise",
-      "price": "4999",
+      "name": "Custom",
+      "price": "0",
       "priceCurrency": "KES",
       "billingIncrement": "P1M"
     }
@@ -53,7 +53,7 @@ export default function LandingPremium() {
   return (
     <div className="font-sans bg-cream-50 text-slate-900 antialiased safe-top overflow-x-hidden">
       <SEO
-        title="POSIFY - Enterprise POS Platform for African Businesses"
+        title="POSIFY - Modern POS Platform for African Businesses"
         description="Modern POS platform for African businesses. Manage sales, inventory, staff, and analytics in one system. 15-day free trial. M-PESA integration."
         canonical="https://posifine22.onrender.com/"
         jsonLd={landingJsonLd}

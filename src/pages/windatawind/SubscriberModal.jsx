@@ -23,7 +23,7 @@ export default function SubscriberModal({ subscriber, onClose }) {
     { label: 'Email', value: subscriber.email },
     { label: 'Phone', value: subscriber.phone },
     { label: 'Package', value: subscriber.package },
-    ...(subscriber.package?.toLowerCase() === 'pro' ? [{ label: 'Business Type', value: subscriber.businessType || '—' }] : []),
+    ...(subscriber.package?.toLowerCase() === 'custom' ? [{ label: 'Business Type', value: subscriber.businessType || '—' }] : []),
     { label: 'Start Date', value: subscriber.startDate },
     { label: 'End Date', value: getEndDate(subscriber.startDate, subscriber.duration) },
     { label: 'Duration', value: `${subscriber.duration} days` },

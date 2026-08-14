@@ -131,7 +131,7 @@ export default function AuthPage() {
           email: formData.email,
           password: formData.password,
           name: formData.name,
-          plan: planId || planData?.id || 'trial',
+          plan: planId || planData?.id || 'starter',
         });
         if (res.token && res.user) {
           await login(res);

@@ -159,7 +159,7 @@ const AuthEnterprise = () => {
         }
       } else {
         const selectedPlan = getSelectedPlan();
-        const planId = localStorage.getItem("planId") || selectedPlan?.id || "basic";
+        const planId = localStorage.getItem("planId") || selectedPlan?.id || "starter";
         const selectedFeatures = localStorage.getItem("selectedFeatures");
         res = await auth.signup({
           email: formData.email,
@@ -212,7 +212,7 @@ const AuthEnterprise = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   }, []);
 
-  const seoTitle = mode === "signup" ? "Create Your Posify Account - 15-Day Free Trial" : "Sign In to Posify - Enterprise POS Platform";
+  const seoTitle = mode === "signup" ? "Create Your Posify Account - 30-Day Free Trial" : "Sign In to Posify - Modern POS Platform";
   const seoDescription = mode === "signup"
     ? "Create your Posify account and start your 15-day free trial. No credit card required."
     : "Sign in to your Posify account to access sales, inventory, staff, and analytics.";

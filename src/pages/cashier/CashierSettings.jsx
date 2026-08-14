@@ -7,16 +7,16 @@ export default function CashierSettings() {
   const { user, updateUser, logout } = useAuth();
   const navigate = useNavigate();
   const [showPlanModal, setShowPlanModal] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState(user?.plan || 'basic');
+  const [selectedPlan, setSelectedPlan] = useState(user?.plan || 'starter');
 
   const plans = [
-    { id: 'basic', name: 'Basic Package', price: 900, features: ['Cashier Dashboard', 'Sales Tracking', 'Product Management', 'Basic Reports'] },
-    { id: 'ultra', name: 'Ultra Package', price: 1600, features: ['Admin Dashboard', 'Recipe Builder', 'User Management', 'Advanced Analytics', 'Expense Tracking'] }
+    { id: 'starter', name: 'Starter Package', price: 1000, features: ['Cashier Dashboard', 'Sales Tracking', 'Product Management', 'Basic Reports'] },
+    { id: 'business', name: 'Business Package', price: 1500, features: ['Admin Dashboard', 'Recipe Builder', 'User Management', 'Advanced Analytics', 'Expense Tracking'] }
   ];
 
   const handleChangePlan = async () => {
     const plan = plans.find(p => p.id === selectedPlan);
-    const role = selectedPlan === 'ultra' ? 'admin' : 'cashier';
+    const role = selectedPlan === 'business' ? 'admin' : 'cashier';
     await updateUser({ ...user, role, plan: selectedPlan, price: plan.price });
     setShowPlanModal(false);
     setTimeout(() => window.location.href = role === 'admin' ? '/admin' : '/cashier', 500);

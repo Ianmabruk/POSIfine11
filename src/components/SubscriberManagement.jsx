@@ -183,8 +183,8 @@ export default function SubscriberManagement() {
             className="bg-gray-700 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="all">All Plans</option>
-            <option value="basic">Basic</option>
-            <option value="ultra">Ultra</option>
+            <option value="starter">Starter</option>
+            <option value="business">Business</option>
             <option value="custom">Custom</option>
           </select>
 
@@ -224,9 +224,10 @@ export default function SubscriberManagement() {
                   <td className="px-4 py-3">{subscriber.businessName}</td>
                   <td className="px-4 py-3">{subscriber.name}</td>
                   <td className="px-4 py-3">
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      subscriber.plan === 'basic' ? 'bg-blue-900 text-blue-200' :
-                      subscriber.plan === 'ultra' ? 'bg-purple-900 text-purple-200' :
+                     <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      subscriber.plan === 'starter' ? 'bg-blue-900 text-blue-200' :
+                      subscriber.plan === 'business' ? 'bg-purple-900 text-purple-200' :
+                      subscriber.plan === 'custom' ? 'bg-amber-900 text-amber-200' :
                       'bg-green-900 text-green-200'
                     }`}>
                       {subscriber.plan?.toUpperCase()}

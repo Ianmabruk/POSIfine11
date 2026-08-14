@@ -5,7 +5,7 @@ import { Check, Crown, Zap, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function Subscription() {
-  const [selected, setSelected] = useState('ultra');
+  const [selected, setSelected] = useState('starter');
   const [showDemoForm, setShowDemoForm] = useState(false);
   const [demoData, setDemoData] = useState({ name: '', email: '', company: '' });
   const navigate = useNavigate();
@@ -14,8 +14,8 @@ export default function Subscription() {
 
   const plans = [
     {
-      id: 'basic',
-      name: 'Basic',
+      id: 'starter',
+      name: 'Starter',
       price: 1000,
       icon: Zap,
       color: 'from-[#22c55e] to-[#16a34a]',
@@ -27,13 +27,13 @@ export default function Subscription() {
         '✓ Daily/Weekly Reports',
         '✓ Basic Profit/Loss View',
         '✓ Email Support',
-        '✓ 1 Cashier Only'
+        '✓ 1 Admin + 1 Cashier'
       ]
     },
     {
-      id: 'ultra',
-      name: 'Ultra',
-      price: 2500,
+      id: 'business',
+      name: 'Business',
+      price: 1500,
       icon: Crown,
       color: 'from-[#2d4cff] to-[#3b82f6]',
       popular: true,

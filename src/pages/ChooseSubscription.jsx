@@ -7,19 +7,19 @@ import { Check, X, Crown, Zap, Shield, TrendingUp, Users, Package, BarChart3, St
 export default function ChooseSubscription() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [selectedPlan, setSelectedPlan] = useState('basic');
+  const [selectedPlan, setSelectedPlan] = useState('starter');
   const [selectedIndustry, setSelectedIndustry] = useState('');
   const [showIndustryModal, setShowIndustryModal] = useState(false);
   const [billingCycle, setBillingCycle] = useState('monthly');
 
   const plans = {
-    basic: {
-      name: 'Basic',
-      price: { monthly: 1200, yearly: 12000 },
+    starter: {
+      name: 'Starter',
+      price: { monthly: 1000, yearly: 10000 },
       description: 'Perfect for small businesses getting started',
       features: [
         'Admin Dashboard with real-time analytics',
-        'Add unlimited cashiers',
+        '1 Admin + 1 Cashier',
         'Basic inventory management',
         'Sales tracking and reporting',
         'Customer support',
@@ -31,12 +31,13 @@ export default function ChooseSubscription() {
       icon: Package,
       popular: false
     },
-    ultra: {
-      name: 'Ultra',
-      price: { monthly: 2400, yearly: 24000 },
+    business: {
+      name: 'Business',
+      price: { monthly: 1500, yearly: 15000 },
       description: 'Advanced features for growing businesses',
       features: [
-        'Everything in Basic',
+        'Everything in Starter',
+        'Multiple Admins and Cashiers',
         'Advanced analytics & forecasting',
         'Multi-location support',
         'Advanced inventory alerts',
@@ -51,26 +52,24 @@ export default function ChooseSubscription() {
       icon: TrendingUp,
       popular: true
     },
-    pro: {
-      name: 'Pro',
-      price: { monthly: 3600, yearly: 36000 },
-      description: 'Industry-specific solutions for enterprises',
+    custom: {
+      name: 'Custom',
+      price: { monthly: 0, yearly: 0 },
+      description: 'Tailored solutions for your business needs',
       features: [
-        'Everything in Ultra',
-        'Industry-specific dashboards',
-        'Custom business workflows',
-        'Advanced AI insights',
-        'White-label options',
+        'Custom pricing based on requirements',
         'Dedicated account manager',
         'Custom integrations',
         'Advanced security features',
         'Compliance tools',
-        'Custom training sessions'
+        'Custom training sessions',
+        'White-label options',
+        'SLA support'
       ],
       color: 'from-red-500 to-red-600',
       icon: Crown,
       popular: false,
-      requiresIndustry: true
+      custom: true
     }
   };
 
@@ -451,7 +450,7 @@ export default function ChooseSubscription() {
                     onClick={() => {
                       setSelectedIndustry('');
                       setShowIndustryModal(false);
-                      setSelectedPlan('ultra');
+                       setSelectedPlan('business');
                     }}
                     className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-all"
                   >

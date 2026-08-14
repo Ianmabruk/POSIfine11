@@ -2,7 +2,7 @@
  * Dashboard Routing Utility
  * 
  * Determines the correct dashboard route based on user attributes:
- * - subscription (basic, ultra)
+ * - subscription (starter, business, custom)
  * - role (main_admin, admin, cashier)
  */
 
@@ -52,7 +52,7 @@ export function hasBusinessType(user) {
 export function isProUser(user) {
   if (!user) return false;
   const plan = user.plan || user.subscription || user.account_plan;
-  return plan === 'pro' || plan === 'custom' || plan === 'premium';
+  return plan === 'business' || plan === 'custom';
 }
 
 export function getBusinessDashboardComponent(user) {

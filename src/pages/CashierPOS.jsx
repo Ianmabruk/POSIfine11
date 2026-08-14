@@ -1121,6 +1121,21 @@ export default function CashierPOS() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col">
+      {/* Admin Impersonation Banner */}
+      {localStorage.getItem('adminViewingCashier') && (user?.role === 'admin' || user?.role === 'main_admin' || user?.role === 'owner') && (
+        <div className="bg-amber-500 text-white px-4 py-2 flex items-center justify-between">
+          <span className="text-sm font-semibold">👁️ Admin View: You are viewing the cashier dashboard as {user?.name}</span>
+          <button
+            onClick={() => {
+              localStorage.removeItem('adminViewingCashier');
+              window.location.href = '/admin';
+            }}
+            className="px-3 py-1 bg-white text-amber-600 rounded-lg text-sm font-semibold hover:bg-amber-50"
+          >
+            Exit Cashier View
+          </button>
+        </div>
+      )}
       {/* Sale Toast Notification — non-blocking, auto-dismisses */}
       {saleToast && (
         <div

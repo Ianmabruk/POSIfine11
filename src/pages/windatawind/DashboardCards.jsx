@@ -10,7 +10,7 @@ export default function DashboardCards({ subscribers }) {
   const expired = subscribers.length - active.length;
   const revenue = subscribers.reduce((sum, s) => {
     const pkg = (s.package || '').toLowerCase();
-    const price = pkg === 'pro' ? 5000 : pkg === 'ultra' ? 3000 : 1500;
+    const price = pkg === 'business' ? 1500 : pkg === 'custom' ? 0 : 1000;
     return sum + price;
   }, 0);
 

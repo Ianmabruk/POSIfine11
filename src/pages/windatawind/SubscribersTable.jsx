@@ -16,12 +16,12 @@ function StatusBadge({ days }) {
 
 function PackageBadge({ pkg }) {
   const styles = {
-    basic: 'bg-slate-50 text-slate-700 border-slate-200',
-    ultra: 'bg-blue-50 text-blue-700 border-blue-200',
-    pro: 'bg-violet-50 text-violet-700 border-violet-200',
+    starter: 'bg-slate-50 text-slate-700 border-slate-200',
+    business: 'bg-blue-50 text-blue-700 border-blue-200',
+    custom: 'bg-violet-50 text-violet-700 border-violet-200',
   };
   return (
-    <span className={`px-2.5 py-1 text-xs font-medium rounded-full border ${styles[(pkg || '').toLowerCase()] || styles.basic}`}>
+    <span className={`px-2.5 py-1 text-xs font-medium rounded-full border ${styles[(pkg || '').toLowerCase()] || styles.starter}`}>
       {pkg}
     </span>
   );
@@ -75,9 +75,9 @@ export default function SubscribersTable({ subscribers, onView, onEdit, onDelete
               className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             >
               <option value="all">All Packages</option>
-              <option value="basic">Basic</option>
-              <option value="ultra">Ultra</option>
-              <option value="pro">Pro</option>
+              <option value="starter">Starter</option>
+              <option value="business">Business</option>
+              <option value="custom">Custom</option>
             </select>
             <select
               value={filterStatus}

@@ -9,11 +9,12 @@ const plans = [
     icon: Zap,
     color: "from-slate-500 to-slate-600",
     bgColor: "bg-slate-50",
-    price: null,
+    price: "KES 1,000",
+    period: "/month",
     description: "Perfect for small businesses just getting started.",
     features: [
-      "Single business location",
-      "Up to 3 users",
+      "1 Admin account",
+      "1 Cashier account",
       "Basic inventory management",
       "Sales & orders",
       "Daily reports",
@@ -26,12 +27,12 @@ const plans = [
     icon: Zap,
     color: "from-primary-500 to-primary-600",
     bgColor: "bg-primary-50",
-    price: "KES 2,499",
+    price: "KES 1,500",
     period: "/month",
     description: "For growing businesses that need more power.",
     features: [
-      "Up to 10 branches",
-      "Up to 10 users",
+      "Multiple Admin accounts",
+      "Multiple Cashier accounts",
       "Advanced inventory & recipes",
       "Full admin dashboard",
       "CRM & customer profiles",
@@ -41,25 +42,23 @@ const plans = [
     popular: true,
   },
   {
-    id: "enterprise",
-    name: "ENTERPRISE",
+    id: "custom",
+    name: "CUSTOM",
     icon: Crown,
-    color: "from-orange-500 to-orange-600",
-    bgColor: "bg-orange-50",
-    price: "KES 4,999",
-    period: "/month",
-    description: "For large organizations with advanced needs.",
+    color: "from-brand-500 to-brand-600",
+    bgColor: "bg-brand-50",
+    price: null,
+    period: "",
+    description: "A customized POS/web solution based on your requirements.",
     features: [
-      "Unlimited branches",
-      "Unlimited users",
-      "Advanced inventory & recipes",
-      "Full admin dashboard",
-      "CRM & customer profiles",
-      "Advanced analytics",
+      "Custom business type setup",
+      "Specialized modules",
+      "Industry-specific features",
+      "Custom reporting",
       "Priority support",
-      "Custom integrations",
-      "Dedicated account manager",
+      "Custom invoice generation",
     ],
+    custom: true,
   },
 ];
 
@@ -133,10 +132,12 @@ export default function Pricing() {
                 className={`w-full py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2 ${
                   plan.popular
                     ? "bg-primary-500 hover:bg-primary-600 text-white shadow-lg shadow-primary-500/25"
+                    : plan.custom
+                    ? "bg-brand-500 hover:bg-brand-600 text-white shadow-lg shadow-brand-500/25"
                     : "bg-slate-100 hover:bg-slate-200 text-slate-700"
                 }`}
               >
-                Start Free Trial
+                {plan.custom ? 'Request Custom Plan' : 'Start Free Trial'}
                 <ChevronRight className="w-4 h-4" />
               </button>
 

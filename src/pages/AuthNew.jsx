@@ -117,7 +117,7 @@ export default function AuthNew() {
         }
       } else {
         const selectedPlan = getSelectedPlan();
-        const planId = localStorage.getItem('planId') || selectedPlan?.id || 'basic';
+        const planId = localStorage.getItem('planId') || selectedPlan?.id || 'starter';
         const selectedFeatures = localStorage.getItem('selectedFeatures');
         
         res = await auth.signup({
