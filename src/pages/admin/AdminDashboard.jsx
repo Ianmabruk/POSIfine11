@@ -35,6 +35,8 @@ export default function AdminDashboard() {
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [aiAnswer, setAiAnswer] = useState('');
+  const [aiError, setAiError] = useState('');
   // Seed appSettings from context (which reads localStorage + backend on login)
   const [appSettings, setAppSettings] = useState(() => {
     try {
