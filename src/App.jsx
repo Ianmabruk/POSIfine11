@@ -106,9 +106,6 @@ function DashboardRouter() {
     return <Navigate to="/main.admin" />;
   }
   if (user.role === 'admin') {
-    if (screenMode === 'phone') {
-      return <Navigate to="/admin" />;
-    }
     return <Navigate to="/admin" />;
   }
 
@@ -116,7 +113,7 @@ function DashboardRouter() {
     if (screenMode === 'phone') {
       return <Navigate to="/dashboard/cashier" />;
     }
-    return <Navigate to="/dashboard/cashier" />;
+    return <Navigate to="/cashier" />;
   }
 
   return <Navigate to="/dashboard/cashier" />;

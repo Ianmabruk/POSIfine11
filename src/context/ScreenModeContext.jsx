@@ -29,10 +29,13 @@ export const ScreenModeProvider = ({ children }) => {
         });
         if (res.ok) {
           const data = await res.json();
-          const mode = data?.screenMode || localStorage.getItem('screenMode') || 'desktop';
+          const cached = localStorage.getItem('screenMode');
+          const mode = data?.screenMode || cached || 'desktop';
           if (mounted) {
             setScreenMode(mode);
-            localStorage.setItem('screenMode', mode);
+            if (!cached) {
+              localStorage.setItem('screenMode', mode);
+            }
           }
         }
       } catch {

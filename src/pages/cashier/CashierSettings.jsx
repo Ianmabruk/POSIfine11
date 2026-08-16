@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useScreenMode } from '../../context/ScreenModeContext';
 import { Bell, CreditCard, User, Shield, Check, ArrowLeft } from 'lucide-react';
 
 export default function CashierSettings() {
   const { user, updateUser, logout } = useAuth();
+  const { screenMode } = useScreenMode();
   const navigate = useNavigate();
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(user?.plan || 'starter');
@@ -19,7 +21,23 @@ export default function CashierSettings() {
     const role = selectedPlan === 'business' ? 'admin' : 'cashier';
     await updateUser({ ...user, role, plan: selectedPlan, price: plan.price });
     setShowPlanModal(false);
-    setTimeout(() => window.location.href = role === 'admin' ? '/admin' : '/cashier', 500);
+    setTimeout(() => {
+      if (role === 'admin') {
+        window.location.href = '/admin';
+      } else if (screenMode === 'phone') {
+        window.location.href = '/dashboard/cashier';
+      } else {
+        window.location.href = '/cashier';
+      }
+    }, 500);
+  };
+
+  const handleBack = () => {
+    if (screenMode === 'phone') {
+      navigate('/dashboard/cashier');
+    } else {
+      navigate('/cashier');
+    }
   };
 
   return (
@@ -27,7 +45,7 @@ export default function CashierSettings() {
       <nav className="bg-white/80 backdrop-blur-md border-b border-gray-200 px-6 py-4 sticky top-0 z-50 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <button onClick={() => navigate('/cashier')} className="p-2 hover:bg-gray-100 rounded-lg">
+            <button onClick={handleBack} className="p-2 hover:bg-gray-100 rounded-lg">
               <ArrowLeft className="w-5 h-5" />
             </button>
             <h1 className="text-2xl font-bold">Settings</h1>
