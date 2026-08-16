@@ -2,13 +2,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useScreenMode } from '../../context/ScreenModeContext';
 
-import { Bell, User, Shield, Check, Upload, Image as ImageIcon, Users, RefreshCw, Settings, Eye, EyeOff, Lock } from 'lucide-react';
+import { Bell, User, Shield, Check, Upload, Image as ImageIcon, Users, RefreshCw, Settings, Eye, EyeOff, Lock, Smartphone, Monitor } from 'lucide-react';
 import { settings as settingsApi, auth } from '../../services/api';
 
 
 export default function SettingsPage() {
   const { user, updateUser } = useAuth();
+  const { screenMode, setScreenMode } = useScreenMode();
   const navigate = useNavigate();
   const [appSettings, setAppSettings] = useState({});
   const [logoPreview, setLogoPreview] = useState(null);
@@ -85,16 +87,19 @@ export default function SettingsPage() {
     setRealTimeProductSync(newValue);
     const success = await saveSettings({ realTimeProductSync: newValue });
     if (success) {
-      // Broadcast change to other components
       window.dispatchEvent(new CustomEvent('settingsChanged', { 
         detail: { realTimeProductSync: newValue } 
       }));
       alert(`✅ Real-time Product Sync ${newValue ? 'ENABLED' : 'DISABLED'}`);
     } else {
-      // Revert on failure
       setRealTimeProductSync(!newValue);
       alert('❌ Failed to save setting. Please try again.');
     }
+  };
+
+  const handleScreenModeChange = async (mode) => {
+    await setScreenMode(mode);
+    alert(`✅ Screen mode changed to ${mode === 'phone' ? 'Phone' : 'Desktop'}. The dashboard will update on your next visit.`);
   };
 
   const handleLogoUpload = async (e) => {
@@ -346,6 +351,43 @@ export default function SettingsPage() {
                 }
               </p>
             </div>
+          </div>
+        </div>
+
+        {/* Screen Mode */}
+        <div className="card">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center">
+              <Monitor className="w-5 h-5 text-indigo-600" />
+            </div>
+            <h3 className="text-lg font-semibold">Screen Experience</h3>
+          </div>
+          <p className="text-xs text-gray-500 mb-4">Choose how you want to use Posify. This affects your dashboard and POS experience.</p>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => handleScreenModeChange('phone')}
+              className={`p-4 rounded-xl border-2 transition-all ${
+                screenMode === 'phone'
+                  ? 'border-indigo-500 bg-indigo-50 shadow-md'
+                  : 'border-gray-200 bg-white hover:border-gray-300'
+              }`}
+            >
+              <Smartphone className={`w-6 h-6 mx-auto mb-2 ${screenMode === 'phone' ? 'text-indigo-600' : 'text-gray-400'}`} />
+              <p className="text-sm font-semibold text-center">Phone</p>
+              <p className="text-xs text-gray-500 text-center mt-1">Mobile POS</p>
+            </button>
+            <button
+              onClick={() => handleScreenModeChange('desktop')}
+              className={`p-4 rounded-xl border-2 transition-all ${
+                screenMode === 'desktop'
+                  ? 'border-indigo-500 bg-indigo-50 shadow-md'
+                  : 'border-gray-200 bg-white hover:border-gray-300'
+              }`}
+            >
+              <Monitor className={`w-6 h-6 mx-auto mb-2 ${screenMode === 'desktop' ? 'text-indigo-600' : 'text-gray-400'}`} />
+              <p className="text-sm font-semibold text-center">Desktop</p>
+              <p className="text-xs text-gray-500 text-center mt-1">Full POS</p>
+            </button>
           </div>
         </div>
 
