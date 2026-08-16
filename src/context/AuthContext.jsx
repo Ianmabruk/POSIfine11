@@ -22,6 +22,7 @@ export const AuthProvider = ({ children }) => {
   });
 
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
+  const [screenMode, setScreenMode] = useState(() => localStorage.getItem('screenMode') || 'desktop');
 
   const normalizeUser = useCallback((rawUser) => {
     if (!rawUser) return rawUser;
@@ -132,6 +133,24 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       setSubscriptionStatus(null);
+    }
+  }, []);
+
+  const loadScreenMode = useCallback(async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    try {
+      const response = await fetch(`${BASE_API_URL}/settings`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const mode = data?.screenMode || localStorage.getItem('screenMode') || 'desktop';
+        setScreenMode(mode);
+        localStorage.setItem('screenMode', mode);
+      }
+    } catch {
+      // use cached
     }
   }, []);
 
@@ -318,6 +337,7 @@ export const AuthProvider = ({ children }) => {
         setUser(normalized);
         setTimeout(() => loadAppSettings(), 0);
         setTimeout(() => checkSubscriptionStatus(), 0);
+        setTimeout(() => loadScreenMode(), 0);
         return payload;
       }
 
@@ -335,6 +355,7 @@ export const AuthProvider = ({ children }) => {
         setUser(normalized);
         setTimeout(() => loadAppSettings(), 0);
         setTimeout(() => checkSubscriptionStatus(), 0);
+        setTimeout(() => loadScreenMode(), 0);
         return response;
       }
       throw new Error('Invalid response from server');
@@ -360,6 +381,7 @@ export const AuthProvider = ({ children }) => {
         setUser(normalized);
         setTimeout(() => loadAppSettings(), 0);
         setTimeout(() => checkSubscriptionStatus(), 0);
+        setTimeout(() => loadScreenMode(), 0);
         return response;
       }
       throw new Error('Invalid response from server');
@@ -476,6 +498,9 @@ export const AuthProvider = ({ children }) => {
     loadAppSettings,
     subscriptionStatus,
     checkSubscriptionStatus,
+    screenMode,
+    setScreenMode,
+    loadScreenMode,
     login,
     signup,
     updateUser,
@@ -494,9 +519,9 @@ export const AuthProvider = ({ children }) => {
     isRealTimeProductSyncEnabled,
     isCashierUserManagementEnabled,
     clearAuthStorage,
-  }), [user, loading, isInitialized, authError, isRefreshing, appSettings, subscriptionStatus, isAuthenticated,
+  }), [user, loading, isInitialized, authError, isRefreshing, appSettings, subscriptionStatus, screenMode, isAuthenticated,
       hasRole, isOwner, isAdmin, isCashier, getDashboardUrl,       isStarterPackage, isBusinessPackage,
-      canEditStock, canManageUsers, canViewAnalytics, loadAppSettings, checkSubscriptionStatus,
+      canEditStock, canManageUsers, canViewAnalytics, loadAppSettings, checkSubscriptionStatus, loadScreenMode,
       clearAuthStorage]);
 
   return (

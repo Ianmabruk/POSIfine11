@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ProductsProvider } from './context/ProductsContext';
+import { ScreenModeProvider, useScreenMode } from './context/ScreenModeContext';
 import { ProtectedRoute as RouteGuard, AdminGuard, CashierGuard } from './components/RouteGuards';
 import ReminderModal from './components/ReminderModal';
 import SubscriptionReminderBar from './components/SubscriptionReminderBar';
@@ -16,6 +17,7 @@ const SubscriptionEnterprise = lazy(() => import('./pages/SubscriptionEnterprise
 const SubscriptionExpired = lazy(() => import('./pages/SubscriptionExpired'));
 const LoggedOut = lazy(() => import('./pages/LoggedOut'));
 const PosifyControlCenter = lazy(() => import('./pages/super-admin/PosifyControlCenter'));
+const SelectScreenMode = lazy(() => import('./pages/SelectScreenMode'));
 
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const BuildPOS = lazy(() => import('./pages/BuildPOS'));
@@ -91,6 +93,7 @@ function ProtectedRoute({ children, adminOnly = false, businessOnly = false, own
 function DashboardRouter() {
   const { user, loading } = useAuth();
   const adminViewingCashier = localStorage.getItem('adminViewingCashier');
+  const { screenMode } = useScreenMode();
 
   if (loading) return <LogoPreloader text="Loading..." />;
   if (!user || !user.active) return <Navigate to="/choose-subscription" />;
@@ -103,7 +106,17 @@ function DashboardRouter() {
     return <Navigate to="/main.admin" />;
   }
   if (user.role === 'admin') {
+    if (screenMode === 'phone') {
+      return <Navigate to="/admin" />;
+    }
     return <Navigate to="/admin" />;
+  }
+
+  if (user.role === 'cashier') {
+    if (screenMode === 'phone') {
+      return <Navigate to="/dashboard/cashier" />;
+    }
+    return <Navigate to="/dashboard/cashier" />;
   }
 
   return <Navigate to="/dashboard/cashier" />;
@@ -111,19 +124,21 @@ function DashboardRouter() {
 
 function App() {
   return (
-    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <ErrorBoundary>
-        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-primary-600 focus:text-white focus:rounded-lg focus:text-sm focus:font-medium">
-          Skip to main content
-        </a>
-        <AuthProvider>
-          <ProductsProvider>
-              <Suspense fallback={<LogoPreloader text="Loading..." />}>
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <ErrorBoundary>
+            <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-primary-600 focus:text-white focus:rounded-lg focus:text-sm focus:font-medium">
+              Skip to main content
+            </a>
+            <AuthProvider>
+              <ProductsProvider>
+                <ScreenModeProvider>
+                  <Suspense fallback={<LogoPreloader text="Loading..." />}>
                 <div id="main-content">
                 <Routes>
                 <Route path="/" element={<LandingPremium />} />
                 <Route path="/get-started" element={<LandingPremium />} />
                 <Route path="/choose-subscription" element={<SubscriptionEnterprise />} />
+                <Route path="/select-screen-mode" element={<SelectScreenMode />} />
                 <Route path="/subscription-expired" element={<SubscriptionExpired />} />
                 <Route path="/auth/login" element={<AuthPage />} />
                 <Route path="/auth/signup" element={<AuthPage />} />
@@ -206,9 +221,10 @@ function App() {
                  } />
                  </Routes>
                  </div>
-               </Suspense>
-             </ProductsProvider>
-           </AuthProvider>
+                </Suspense>
+                </ScreenModeProvider>
+              </ProductsProvider>
+            </AuthProvider>
            <CookieConsent />
          </ErrorBoundary>
        </BrowserRouter>

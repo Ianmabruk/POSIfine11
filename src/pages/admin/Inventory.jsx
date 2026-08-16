@@ -1,6 +1,6 @@
 
 
-import { useState, useEffect, useMemo, useCallback, Fragment } from 'react';
+import { useState, useEffect, useMemo, useCallback, Fragment, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useProducts } from '../../context/ProductsContext';
 import { products, batches } from '../../services/api';
@@ -32,6 +32,8 @@ export default function Inventory() {
   const [isAddingProduct, setIsAddingProduct] = useState(false);
   const [isUpdatingProduct, setIsUpdatingProduct] = useState(false);
   const [isAddingStock, setIsAddingStock] = useState(false);
+  const [isImageLoading, setIsImageLoading] = useState(false);
+  const addProductRef = useRef(false);
   const [newProduct, setNewProduct] = useState({
     name: '',
     price: '',
@@ -225,23 +227,26 @@ export default function Inventory() {
   const handleImageUpload = (e, isNewProduct = true) => {
     const file = e.target.files[0];
     if (file) {
-      // Check file size (limit to 2MB for fast loading)
       if (file.size > 2 * 1024 * 1024) {
         showNotification('Image must be smaller than 2MB', 'error');
         return;
       }
 
+      setIsImageLoading(true);
       const reader = new FileReader();
       reader.onload = (e) => {
         const base64 = e.target.result;
         setImagePreview(base64);
         if (isNewProduct) {
-          // Use functional updates to avoid clobbering newer form fields while FileReader resolves.
           setNewProduct(prev => ({ ...prev, image: base64 }));
         } else {
-          // Update image in state — it will be included when user clicks Save
           setEditProduct(prev => ({ ...prev, image: base64 }));
         }
+        setIsImageLoading(false);
+      };
+      reader.onerror = () => {
+        showNotification('Failed to read image file', 'error');
+        setIsImageLoading(false);
       };
       reader.readAsDataURL(file);
     }
@@ -299,9 +304,10 @@ export default function Inventory() {
 
   const handleAddProduct = async (e) => {
     e.preventDefault();
-    if (isAddingProduct) return;
+    if (isAddingProduct || addProductRef.current) return;
 
     try {
+      addProductRef.current = true;
       setIsAddingProduct(true);
       const parsedPrice = Number(newProduct.price);
       const parsedCost = newProduct.cost === '' ? null : Number(newProduct.cost);
@@ -339,7 +345,6 @@ export default function Inventory() {
       showNotification('⚡ Adding product...', 'info');
       const result = await products.create(productData);
 
-      // API success first, then UI state update.
       setProductList(prev => mergeProductsById(prev, [result]));
       upsertProducts(result);
       setNewProduct({
@@ -379,6 +384,7 @@ export default function Inventory() {
       showNotification(`❌ Failed to add product: ${error.message || 'Unknown error'}`, 'error');
     } finally {
       setIsAddingProduct(false);
+      addProductRef.current = false;
     }
   };
 
@@ -1286,14 +1292,14 @@ export default function Inventory() {
                 )}
               </div>
               <div className="flex gap-2">
-                <button type="submit" className="btn-primary flex-1" disabled={isAddingProduct}>
-                  {isAddingProduct ? 'Adding...' : 'Add Product'}
+                <button type="submit" className="btn-primary flex-1" disabled={isAddingProduct || isImageLoading}>
+                  {isAddingProduct ? 'Adding...' : isImageLoading ? 'Processing Image...' : 'Add Product'}
                 </button>
                 <button type="button" onClick={() => {
                   setShowAddModal(false);
                   setImagePreview('');
                   setNewProduct({ name: '', price: '', cost: '', category: 'finished', unit: 'pcs', expenseOnly: false, image: '', visibleToCashier: true, reorder_level: '' });
-                }} className="btn-secondary" disabled={isAddingProduct}>Cancel</button>
+                }} className="btn-secondary" disabled={isAddingProduct || isImageLoading}>Cancel</button>
               </div>
             </form>
           </div>

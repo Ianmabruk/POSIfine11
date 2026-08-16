@@ -69,15 +69,12 @@ export default function SubscriptionEnterprise() {
     
     try {
       await api.createTrial(selectedPlan);
-      setTrialStarted(true);
-      setStep('success');
     } catch (error) {
       console.error('Failed to create trial:', error);
       localStorage.setItem('isTrial', 'true');
       localStorage.setItem('trialEndsAt', new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString());
-      setTrialStarted(true);
-      setStep('success');
     }
+    navigate('/select-screen-mode');
   };
 
   const handlePayment = async () => {

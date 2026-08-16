@@ -1,0 +1,73 @@
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+
+const ScreenModeContext = createContext();
+
+export const useScreenMode = () => useContext(ScreenModeContext);
+
+export const ScreenModeProvider = ({ children }) => {
+  const [screenMode, setScreenMode] = useState(() => {
+    try {
+      return localStorage.getItem('screenMode') || 'desktop';
+    } catch {
+      return 'desktop';
+    }
+  });
+
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          if (mounted) setLoading(false);
+          return;
+        }
+        const res = await fetch(`${import.meta.env.VITE_API_BASE || 'https://posifine22.onrender.com/api'}/settings`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const mode = data?.screenMode || localStorage.getItem('screenMode') || 'desktop';
+          if (mounted) {
+            setScreenMode(mode);
+            localStorage.setItem('screenMode', mode);
+          }
+        }
+      } catch {
+        // use cached
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    load();
+    return () => { mounted = false; };
+  }, []);
+
+  const updateScreenMode = useCallback(async (mode) => {
+    setScreenMode(mode);
+    localStorage.setItem('screenMode', mode);
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        await fetch(`${import.meta.env.VITE_API_BASE || 'https://posifine22.onrender.com/api'}/settings`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ screenMode: mode })
+        });
+      }
+    } catch {
+      // best effort
+    }
+  }, []);
+
+  return (
+    <ScreenModeContext.Provider value={{ screenMode, setScreenMode: updateScreenMode, loading }}>
+      {children}
+    </ScreenModeContext.Provider>
+  );
+};
