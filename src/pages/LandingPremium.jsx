@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import Navbar from "../components/premium-landing/Navbar";
-import Hero from "../components/premium-landing/Hero";
+import HeroCinematic from "../components/premium-landing/HeroCinematic";
 import ParallaxBackground from "../components/premium-landing/ParallaxBackground";
 import Features from "../components/premium-landing/Features";
 import Benefits from "../components/premium-landing/Benefits";
@@ -60,7 +60,7 @@ export default function LandingPremium() {
       />
       <Navbar />
       <main>
-        <Hero />
+        <HeroCinematic />
         <ParallaxBackground />
         <Features />
         <Benefits />
