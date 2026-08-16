@@ -208,7 +208,8 @@ export const completeSaleTransaction = async (
         tax: saleData.tax || 0,
         taxType: saleData.taxType || 'exclusive',
         paymentMethod: saleData.paymentMethod || 'cash',
-        shiftId: saleData.shiftId
+        shiftId: saleData.shiftId,
+        amountPaid: saleData.amountReceived || null
       })
     });
 

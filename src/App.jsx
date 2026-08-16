@@ -20,6 +20,7 @@ const PosifyControlCenter = lazy(() => import('./pages/super-admin/PosifyControl
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const BuildPOS = lazy(() => import('./pages/BuildPOS'));
 const CashierPOS = lazy(() => import('./pages/CashierPOS'));
+const MobileCashier = lazy(() => import('./pages/MobileCashier'));
 const StudentDashboard = lazy(() => import('./pages/dashboards/StudentDashboard'));
 const CanteenStaffDashboard = lazy(() => import('./pages/cashier/CanteenStaffDashboard'));
 const ShopStaffDashboard = lazy(() => import('./pages/cashier/ShopStaffDashboard'));
@@ -168,8 +169,11 @@ function App() {
                 <Route path="/subscription" element={<Navigate to="/choose-subscription" />} />
                 <Route path="/payment" element={<Navigate to="/choose-subscription" />} />
                 
-                {/* Cashier POS - Cashier only */}
+                {/* Cashier POS - Desktop */}
                 <Route path="/cashier" element={<ProtectedRoute><CashierGuard><CashierPOS /></CashierGuard></ProtectedRoute>} />
+
+                {/* Mobile Cashier - Mobile first with bottom navigation */}
+                <Route path="/dashboard/cashier/mobile" element={<ProtectedRoute><CashierGuard><MobileCashier /></CashierGuard></ProtectedRoute>} />
 
                 {/* 404 Catch-all */}
                 <Route path="*" element={
