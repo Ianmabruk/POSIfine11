@@ -20,6 +20,7 @@ const PosifyControlCenter = lazy(() => import('./pages/super-admin/PosifyControl
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const BuildPOS = lazy(() => import('./pages/BuildPOS'));
 const CashierPOS = lazy(() => import('./pages/CashierPOS'));
+const CashierPOSResponsive = lazy(() => import('./pages/CashierPOSResponsive'));
 const MobileCashier = lazy(() => import('./pages/MobileCashier'));
 const StudentDashboard = lazy(() => import('./pages/dashboards/StudentDashboard'));
 const CanteenStaffDashboard = lazy(() => import('./pages/cashier/CanteenStaffDashboard'));
@@ -132,7 +133,7 @@ function App() {
                 
                 {/* Regular User Routes */}
                 <Route path="/dashboard" element={<ProtectedRoute><DashboardRouter /></ProtectedRoute>} />
-                <Route path="/dashboard/cashier" element={<ProtectedRoute><CashierPOS /></ProtectedRoute>} />
+                <Route path="/dashboard/cashier" element={<ProtectedRoute><CashierPOSResponsive /></ProtectedRoute>} />
                 
                 {/* Admin Dashboard - Business Admin only */}
                 <Route path="/admin/*" element={<ProtectedRoute><AdminGuard><AdminDashboard /></AdminGuard></ProtectedRoute>} />
