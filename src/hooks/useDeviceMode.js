@@ -67,6 +67,3 @@ export const useDeviceMode = () => {
 
   return deviceMode;
 };
-
-export { useDeviceMode, getDeviceMode, setDeviceMode };
-export default useDeviceMode;
