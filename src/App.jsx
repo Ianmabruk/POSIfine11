@@ -34,6 +34,15 @@ const MobileCashierLayout = lazy(() => import('./components/MobileCashierLayout'
 const MobileAdminSales = lazy(() => import('./pages/mobile/MobileAdminSales'));
 const MobileAdminInventory = lazy(() => import('./pages/mobile/MobileAdminInventory'));
 const MobileAdminSettings = lazy(() => import('./pages/mobile/MobileAdminSettings'));
+const MobileStockDashboard = lazy(() => import('./pages/mobile/MobileStockDashboard'));
+const MobileRecipes = lazy(() => import('./pages/mobile/MobileRecipes'));
+const MobileExpenses = lazy(() => import('./pages/mobile/MobileExpenses'));
+const MobileVendors = lazy(() => import('./pages/mobile/MobileVendors'));
+const MobileUsers = lazy(() => import('./pages/mobile/MobileUsers'));
+const MobileTimeTracking = lazy(() => import('./pages/mobile/MobileTimeTracking'));
+const MobileReminders = lazy(() => import('./pages/mobile/MobileReminders'));
+const MobileDiscounts = lazy(() => import('./pages/mobile/MobileDiscounts'));
+const MobileCreditRequests = lazy(() => import('./pages/mobile/MobileCreditRequests'));
 const MobileCashierProducts = lazy(() => import('./pages/mobile/MobileCashierProducts'));
 const MobileCashierCart = lazy(() => import('./pages/mobile/MobileCashierCart'));
 const MobileCashierSettings = lazy(() => import('./pages/mobile/MobileCashierSettings'));
@@ -202,9 +211,18 @@ function App() {
                 <Route path="/cashier" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="desktop"><CashierGuard><CashierPOS /></CashierGuard></DeviceRouteGuard></ProtectedRoute>} />
 
                 {/* Mobile Routes */}
-                <Route path="/mobile" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><AdminGuard><AdminMobileDashboard /></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
+                <Route path="/mobile" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><AdminMobileDashboard /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
                 <Route path="/mobile/sales" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><MobileAdminSales /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
                 <Route path="/mobile/inventory" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><MobileAdminInventory /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
+                <Route path="/mobile/stock" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><MobileStockDashboard /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
+                <Route path="/mobile/recipes" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><MobileRecipes /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
+                <Route path="/mobile/expenses" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><MobileExpenses /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
+                <Route path="/mobile/vendors" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><MobileVendors /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
+                <Route path="/mobile/users" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><MobileUsers /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
+                <Route path="/mobile/time-tracking" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><MobileTimeTracking /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
+                <Route path="/mobile/reminders" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><MobileReminders /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
+                <Route path="/mobile/discounts" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><MobileDiscounts /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
+                <Route path="/mobile/credit-requests" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><MobileCreditRequests /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
                 <Route path="/mobile/settings" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><MobileAdminSettings /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
 
                 <Route path="/mobile/cashier" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><CashierGuard><MobileCashier /></CashierGuard></DeviceRouteGuard></ProtectedRoute>} />

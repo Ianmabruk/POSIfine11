@@ -1,12 +1,32 @@
 import { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, ShoppingBag, Package, Menu, X, Bell, LogOut } from 'lucide-react';
+import {
+  LayoutDashboard, ShoppingBag, Package, Menu, X, Bell, LogOut,
+  BarChart3, Layers, TrendingDown, Truck, Users, Clock,
+  BellRing, Tag, CreditCard, Settings, BookOpen, FileText
+} from 'lucide-react';
 
-const adminMobileNavItems = [
+const mainNavItems = [
   { id: 'home', label: 'Home', icon: LayoutDashboard, path: '/mobile' },
   { id: 'sales', label: 'Sales', icon: ShoppingBag, path: '/mobile/sales' },
   { id: 'inventory', label: 'Inventory', icon: Package, path: '/mobile/inventory' },
-  { id: 'more', label: 'More', icon: Menu, path: '/mobile/settings' },
+  { id: 'more', label: 'More', icon: Menu, path: '' },
+];
+
+const sidebarNavItems = [
+  { id: 'home', label: 'Home', icon: LayoutDashboard, path: '/mobile' },
+  { id: 'sales', label: 'Sales', icon: ShoppingBag, path: '/mobile/sales' },
+  { id: 'inventory', label: 'Inventory', icon: Package, path: '/mobile/inventory' },
+  { id: 'stock', label: 'Stock', icon: BarChart3, path: '/mobile/stock' },
+  { id: 'recipes', label: 'Recipes', icon: Layers, path: '/mobile/recipes' },
+  { id: 'expenses', label: 'Expenses', icon: TrendingDown, path: '/mobile/expenses' },
+  { id: 'vendors', label: 'Vendors', icon: Truck, path: '/mobile/vendors' },
+  { id: 'users', label: 'Users', icon: Users, path: '/mobile/users' },
+  { id: 'time', label: 'Time Tracking', icon: Clock, path: '/mobile/time-tracking' },
+  { id: 'reminders', label: 'Reminders', icon: BellRing, path: '/mobile/reminders' },
+  { id: 'discounts', label: 'Discounts', icon: Tag, path: '/mobile/discounts' },
+  { id: 'credit-requests', label: 'Credit Requests', icon: CreditCard, path: '/mobile/credit-requests' },
+  { id: 'settings', label: 'Settings', icon: Settings, path: '/mobile/settings' },
 ];
 
 export default function MobileAdminLayout() {
@@ -15,12 +35,16 @@ export default function MobileAdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const isActive = (path) => {
+    if (!path) return false;
     if (path === '/mobile') return location.pathname === '/mobile';
     return location.pathname.startsWith(path);
   };
 
   const handleNav = (item) => {
-    navigate(item.path);
+    if (item.path) {
+      navigate(item.path);
+    }
+    setSidebarOpen(false);
   };
 
   return (
@@ -73,13 +97,13 @@ export default function MobileAdminLayout() {
               </button>
             </div>
             <nav className="flex-1 p-3 space-y-1 overflow-y-auto" style={{ height: 'calc(100vh - 140px)' }}>
-              {adminMobileNavItems.map((item) => {
+              {sidebarNavItems.map((item) => {
                 const Icon = item.icon;
                 const active = isActive(item.path);
                 return (
                   <button
                     key={item.id}
-                    onClick={() => { handleNav(item); setSidebarOpen(false); }}
+                    onClick={() => handleNav(item)}
                     className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 ${
                       active
                         ? 'bg-gradient-to-r from-primary-600 to-brand-600 text-white shadow-lg'
@@ -131,13 +155,13 @@ export default function MobileAdminLayout() {
         style={{ height: 'auto' }}
       >
         <div className="flex items-center justify-around h-16 px-2">
-          {adminMobileNavItems.map((item) => {
+          {mainNavItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.path);
             return (
               <button
                 key={item.id}
-                onClick={() => handleNav(item)}
+                onClick={() => item.path && handleNav(item)}
                 type="button"
                 className={`flex flex-col items-center justify-center min-w-[44px] min-h-[44px] py-2 rounded-lg transition-all duration-200 touch-manipulation ${
                   active ? 'text-primary-600' : 'text-gray-400'
