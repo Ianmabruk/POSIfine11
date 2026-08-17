@@ -15,12 +15,12 @@
   }
 
   body {
-    @apply bg-white text-slate-900 font-sans antialiased;
+    @apply bg-vanilla-200 text-slate-900 font-sans antialiased;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   }
 
   ::selection {
-    @apply bg-primary-100 text-primary-900;
+    @apply bg-vanilla-300 text-slate-900;
   }
 }
 
@@ -69,6 +69,50 @@
 
   .glass-card-premium {
     @apply bg-white/90 backdrop-blur-2xl border border-white/40 shadow-glass-premium rounded-3xl;
+  }
+
+  .glass-vanilla {
+    background: rgba(255, 255, 255, 0.30);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    box-shadow:
+      0 20px 60px rgba(0, 0, 0, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  }
+
+  .glass-vanilla-strong {
+    background: rgba(255, 255, 255, 0.48);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    box-shadow:
+      0 20px 60px rgba(0, 0, 0, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  }
+
+  .glass-vanilla-input {
+    background: rgba(255, 255, 255, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  }
+
+  .glass-vanilla-input:focus {
+    background: rgba(255, 255, 255, 0.45);
+    border-color: rgba(255, 255, 255, 0.7);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.5),
+      0 0 0 3px rgba(241, 254, 200, 0.4);
+    outline: none;
+  }
+
+  .glass-vanilla-strong:focus-within {
+    border-color: rgba(255, 255, 255, 0.7);
+    box-shadow:
+      0 20px 60px rgba(0, 0, 0, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.7);
   }
 
   .gradient-text {
