@@ -602,8 +602,8 @@ export default function SubscriptionEnterprise() {
                     transition={{ duration: 0.5, delay: 0.6 }}
                     className="flex flex-col sm:flex-row items-center justify-center gap-3"
                   >
-                    <button onClick={() => navigate('/auth/signup')} className="btn-primary inline-flex items-center gap-2 px-8 py-4">
-                      Create Account <ArrowRight className="w-5 h-5" />
+                    <button onClick={() => navigate('/select-screen-mode')} className="btn-primary inline-flex items-center gap-2 px-8 py-4">
+                      Choose Experience <ArrowRight className="w-5 h-5" />
                     </button>
                     <button onClick={() => navigate('/')} className="btn-secondary inline-flex items-center gap-2 px-8 py-4">
                       Back to Home
