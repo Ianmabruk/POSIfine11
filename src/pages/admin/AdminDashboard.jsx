@@ -3,14 +3,12 @@ import { useState, useEffect, lazy, Suspense } from 'react';
 import { BASE_API_URL } from '../../services/api';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { useScreenMode } from '../../context/ScreenModeContext';
 import {
   LayoutDashboard, ShoppingBag, Package, Layers, TrendingDown, TrendingUp,
   Users, Settings, LogOut, Menu, X, ExternalLink, Clock, Bell, DollarSign, Tag, CreditCard, Truck, MessageSquare, BarChart3, Search
 } from 'lucide-react';
 import ReminderModal from '../../components/ReminderModal';
 import SkeletonCard from '../../components/ui/SkeletonCard';
-import AdminMobileDashboard from './AdminMobileDashboard';
 
 const Overview = lazy(() => import('./Overview'));
 const Analytics = lazy(() => import('./Analytics'));
@@ -32,7 +30,6 @@ const StockDashboard = lazy(() => import('./StockDashboard'));
 
 export default function AdminDashboard() {
   const { user, logout, isCashierUserManagementEnabled, appSettings: ctxSettings } = useAuth();
-  const { screenMode } = useScreenMode();
   const navigate = useNavigate();
   const location = useLocation();
   const [showReminderModal, setShowReminderModal] = useState(false);
@@ -47,10 +44,6 @@ export default function AdminDashboard() {
       return cached ? { logo: cached } : {};
     } catch { return {}; }
   });
-
-  if (screenMode === 'phone') {
-    return <AdminMobileDashboard />;
-  }
 
   // Sync from AuthContext appSettings whenever it changes
   useEffect(() => {

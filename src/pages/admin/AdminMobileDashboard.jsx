@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { useScreenMode } from '../../context/ScreenModeContext';
 import { stats, sales as salesApi, products } from '../../services/api';
 import { BASE_API_URL } from '../../services/api';
 import {
@@ -12,34 +11,19 @@ import {
 } from 'lucide-react';
 
 const menuItems = [
-  { id: 'overview', label: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
-  { id: 'analytics', label: 'Analytics', icon: TrendingUp, path: '/admin/analytics' },
-  { id: 'sales', label: 'Sales', icon: ShoppingBag, path: '/admin/sales' },
-  { id: 'inventory', label: 'Inventory', icon: Package, path: '/admin/inventory' },
-  { id: 'stock', label: 'Stock Dashboard', icon: BarChart3, path: '/admin/stock' },
-  { id: 'recipes', label: 'Recipes/BOM', icon: Layers, path: '/admin/recipes' },
-  { id: 'expenses', label: 'Expenses', icon: TrendingDown, path: '/admin/expenses' },
-  { id: 'vendors', label: 'Vendors', icon: Truck, path: '/admin/vendors' },
-  { id: 'users', label: 'Users', icon: Users, path: '/admin/users' },
-  { id: 'time', label: 'Time Tracking', icon: Clock, path: '/admin/time' },
-  { id: 'reminders', label: 'Reminders', icon: Bell, path: '/admin/reminders' },
-  { id: 'service-fees', label: 'Service Fees', icon: DollarSign, path: '/admin/service-fees' },
-  { id: 'discounts', label: 'Discounts', icon: Tag, path: '/admin/discounts' },
-  { id: 'credit-requests', label: 'Credit Requests', icon: CreditCard, path: '/admin/credit-requests' },
-  { id: 'support', label: 'Support Chat', icon: MessageSquare, path: '/admin/support' },
-  { id: 'settings', label: 'Settings', icon: Settings, path: '/admin/settings' }
+  { id: 'overview', label: 'Dashboard', icon: LayoutDashboard, path: '/mobile' },
+  { id: 'sales', label: 'Sales', icon: ShoppingBag, path: '/mobile/sales' },
+  { id: 'inventory', label: 'Inventory', icon: Package, path: '/mobile/inventory' },
+  { id: 'settings', label: 'Settings', icon: Settings, path: '/mobile/settings' }
 ];
 
 const menuGroups = [
-  { key: 'main', label: 'MAIN', items: menuItems.filter(i => ['overview','analytics','sales','inventory','stock'].includes(i.id)) },
-  { key: 'management', label: 'MANAGEMENT', items: menuItems.filter(i => ['recipes','expenses','vendors','users','time','reminders'].includes(i.id)) },
-  { key: 'financial', label: 'FINANCIAL', items: menuItems.filter(i => ['service-fees','discounts','credit-requests'].includes(i.id)) },
-  { key: 'system', label: 'SYSTEM', items: menuItems.filter(i => ['support','settings'].includes(i.id)) },
+  { key: 'main', label: 'MAIN', items: menuItems.filter(i => ['overview','sales','inventory'].includes(i.id)) },
+  { key: 'system', label: 'SYSTEM', items: menuItems.filter(i => ['settings'].includes(i.id)) },
 ];
 
 export default function AdminMobileDashboard() {
   const { user, logout, isCashierUserManagementEnabled } = useAuth();
-  const { screenMode, setScreenMode } = useScreenMode();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -88,35 +72,29 @@ export default function AdminMobileDashboard() {
   };
 
   const handleOpenPOS = () => {
-    if (screenMode === 'phone') {
-      navigate('/dashboard/cashier');
-    } else {
-      window.open('/cashier', '_blank');
-    }
+    navigate('/mobile/cashier');
   };
 
   const quickActions = [
-    { label: 'Add Product', icon: Plus, path: '/admin/inventory', color: 'bg-blue-500' },
-    { label: 'New Expense', icon: TrendingDown, path: '/admin/expenses', color: 'bg-red-500' },
-    { label: 'Stock Check', icon: Package, path: '/admin/stock', color: 'bg-orange-500' },
-    { label: 'View Reports', icon: BarChart3, path: '/admin/analytics', color: 'bg-purple-500' },
+    { label: 'Add Product', icon: Plus, path: '/mobile/inventory', color: 'bg-blue-500' },
+    { label: 'View Reports', icon: BarChart3, path: '/mobile/sales', color: 'bg-purple-500' },
   ];
 
   const bottomNavItems = [
     { id: 'home', label: 'Home', icon: Home },
     { id: 'sales', label: 'Sales', icon: ShoppingBag },
-    { id: 'cart', label: 'Cart', icon: Package },
+    { id: 'cart', label: 'Inventory', icon: Package },
     { id: 'more', label: 'More', icon: Menu },
   ];
 
   const handleBottomNav = (tab) => {
     setActiveTab(tab);
     if (tab === 'home') {
-      navigate('/admin');
+      navigate('/mobile');
     } else if (tab === 'sales') {
-      navigate('/admin/sales');
+      navigate('/mobile/sales');
     } else if (tab === 'cart') {
-      navigate('/admin/inventory');
+      navigate('/mobile/inventory');
     } else if (tab === 'more') {
       setSidebarOpen(true);
     }

@@ -61,21 +61,6 @@ export const ScreenModeProvider = ({ children }) => {
     setScreenMode(mode);
     localStorage.setItem('screenMode', mode);
     setDeviceMode(mode);
-    try {
-      const token = localStorage.getItem('token');
-      if (token) {
-        await fetch(`${import.meta.env.VITE_API_BASE || 'https://posifine22.onrender.com/api'}/settings`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify({ screenMode: mode })
-        });
-      }
-    } catch {
-      // best effort
-    }
   }, []);
 
   return (

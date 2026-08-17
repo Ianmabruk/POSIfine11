@@ -1,12 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { useScreenMode } from '../../context/ScreenModeContext';
 import { Bell, CreditCard, User, Shield, Check, ArrowLeft } from 'lucide-react';
 
 export default function CashierSettings() {
   const { user, updateUser, logout } = useAuth();
-  const { screenMode } = useScreenMode();
   const navigate = useNavigate();
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(user?.plan || 'starter');
@@ -24,8 +22,6 @@ export default function CashierSettings() {
     setTimeout(() => {
       if (role === 'admin') {
         window.location.href = '/admin';
-      } else if (screenMode === 'phone') {
-        window.location.href = '/dashboard/cashier';
       } else {
         window.location.href = '/cashier';
       }
@@ -33,11 +29,7 @@ export default function CashierSettings() {
   };
 
   const handleBack = () => {
-    if (screenMode === 'phone') {
-      navigate('/dashboard/cashier');
-    } else {
-      navigate('/cashier');
-    }
+    navigate('/cashier');
   };
 
   return (

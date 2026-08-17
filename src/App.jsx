@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ProductsProvider } from './context/ProductsContext';
-import { ScreenModeProvider, useScreenMode } from './context/ScreenModeContext';
+import { ScreenModeProvider } from './context/ScreenModeContext';
 import { ProtectedRoute as RouteGuard, AdminGuard, CashierGuard } from './components/RouteGuards';
 import ReminderModal from './components/ReminderModal';
 import SubscriptionReminderBar from './components/SubscriptionReminderBar';
@@ -17,16 +17,24 @@ const SubscriptionEnterprise = lazy(() => import('./pages/SubscriptionEnterprise
 const SubscriptionExpired = lazy(() => import('./pages/SubscriptionExpired'));
 const LoggedOut = lazy(() => import('./pages/LoggedOut'));
 const PosifyControlCenter = lazy(() => import('./pages/super-admin/PosifyControlCenter'));
-const SelectScreenMode = lazy(() => import('./pages/SelectScreenMode'));
 
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const BuildPOS = lazy(() => import('./pages/BuildPOS'));
 const CashierPOS = lazy(() => import('./pages/CashierPOS'));
 const CashierPOSResponsive = lazy(() => import('./pages/CashierPOSResponsive'));
 const MobileCashier = lazy(() => import('./pages/MobileCashier'));
+const AdminMobileDashboard = lazy(() => import('./pages/admin/AdminMobileDashboard'));
 const StudentDashboard = lazy(() => import('./pages/dashboards/StudentDashboard'));
 const CanteenStaffDashboard = lazy(() => import('./pages/cashier/CanteenStaffDashboard'));
 const ShopStaffDashboard = lazy(() => import('./pages/cashier/ShopStaffDashboard'));
+const MobileAdminLayout = lazy(() => import('./components/MobileAdminLayout'));
+const MobileCashierLayout = lazy(() => import('./components/MobileCashierLayout'));
+const MobileAdminSales = lazy(() => import('./pages/mobile/MobileAdminSales'));
+const MobileAdminInventory = lazy(() => import('./pages/mobile/MobileAdminInventory'));
+const MobileAdminSettings = lazy(() => import('./pages/mobile/MobileAdminSettings'));
+const MobileCashierProducts = lazy(() => import('./pages/mobile/MobileCashierProducts'));
+const MobileCashierCart = lazy(() => import('./pages/mobile/MobileCashierCart'));
+const MobileCashierSettings = lazy(() => import('./pages/mobile/MobileCashierSettings'));
 
 // WindataWind - Subscription Management
 const WindataWindAuth = lazy(() => import('./pages/windatawind/AuthPage'));
@@ -39,10 +47,9 @@ function ProtectedRoute({ children, adminOnly = false, businessOnly = false, own
   const { user, loading } = useAuth();
   const [showReminders, setShowReminders] = useState(false);
   const reminderChecked = useRef(false);
-  
-  // Security: verify a token actually exists alongside the user object.
+
   const hasToken = !!localStorage.getItem('token');
-  
+
   useEffect(() => {
     if (reminderChecked.current) return;
     if (user && hasToken && !ownerOnly) {
@@ -54,12 +61,11 @@ function ProtectedRoute({ children, adminOnly = false, businessOnly = false, own
       }
     }
   }, [user, hasToken, ownerOnly]);
-  
+
   if (loading && !ownerOnly) {
     return <LogoPreloader text="Loading..." />;
   }
-  
-  // Owner route protection (main.admin)
+
   if (ownerOnly) {
     const ownerToken = localStorage.getItem('mainAdminToken') || localStorage.getItem('ownerToken');
     const ownerUser = localStorage.getItem('mainAdminUser') || localStorage.getItem('ownerUser');
@@ -73,13 +79,12 @@ function ProtectedRoute({ children, adminOnly = false, businessOnly = false, own
       return <Navigate to="/windatawind" replace />;
     }
   } else {
-    // Regular route protection — MUST have both user object AND a valid token
     if (!user || !hasToken) return <Navigate to="/auth/login" replace />;
     if (!user.active) return <Navigate to="/choose-subscription" replace />;
     if (adminOnly && !['admin', 'main_admin'].includes(user.role)) return <Navigate to="/dashboard/cashier" replace />;
     if (businessOnly && (user.role !== 'admin' || user.plan !== 'business')) return <Navigate to="/dashboard/cashier" replace />;
   }
-  
+
   return (
     <>
       <SubscriptionReminderBar />
@@ -93,7 +98,6 @@ function ProtectedRoute({ children, adminOnly = false, businessOnly = false, own
 function DashboardRouter() {
   const { user, loading } = useAuth();
   const adminViewingCashier = localStorage.getItem('adminViewingCashier');
-  const { screenMode } = useScreenMode();
 
   if (loading) return <LogoPreloader text="Loading..." />;
   if (!user || !user.active) return <Navigate to="/choose-subscription" />;
@@ -110,9 +114,6 @@ function DashboardRouter() {
   }
 
   if (user.role === 'cashier') {
-    if (screenMode === 'phone') {
-      return <Navigate to="/dashboard/cashier" />;
-    }
     return <Navigate to="/cashier" />;
   }
 
@@ -135,22 +136,21 @@ function App() {
                 <Route path="/" element={<LandingPremium />} />
                 <Route path="/get-started" element={<LandingPremium />} />
                 <Route path="/choose-subscription" element={<SubscriptionEnterprise />} />
-                <Route path="/select-screen-mode" element={<SelectScreenMode />} />
                 <Route path="/subscription-expired" element={<SubscriptionExpired />} />
                 <Route path="/auth/login" element={<AuthPage />} />
                 <Route path="/auth/signup" element={<AuthPage />} />
                 <Route path="/logged-out" element={<LoggedOut />} />
                 <Route path="/plans" element={<Navigate to="/choose-subscription" />} />
                 <Route path="/build-pos" element={<ProtectedRoute><BuildPOS /></ProtectedRoute>} />
-                
+
                 {/* Regular User Routes */}
                 <Route path="/dashboard" element={<ProtectedRoute><DashboardRouter /></ProtectedRoute>} />
                 <Route path="/dashboard/cashier" element={<ProtectedRoute><CashierPOSResponsive /></ProtectedRoute>} />
-                
+
                 {/* Admin Dashboard - Business Admin only */}
-                <Route path="/admin/*" element={<ProtectedRoute><AdminGuard><AdminDashboard /></AdminGuard></ProtectedRoute>} />
                 <Route path="/admin" element={<ProtectedRoute><AdminGuard><AdminDashboard /></AdminGuard></ProtectedRoute>} />
-                
+                <Route path="/admin/*" element={<ProtectedRoute><AdminGuard><AdminDashboard /></AdminGuard></ProtectedRoute>} />
+
                 {/* Student routes */}
                 <Route path="/student" element={<ProtectedRoute><RouteGuard><StudentDashboard /></RouteGuard></ProtectedRoute>} />
                 <Route path="/student/*" element={<ProtectedRoute><RouteGuard><StudentDashboard /></RouteGuard></ProtectedRoute>} />
@@ -163,13 +163,13 @@ function App() {
                 <Route path="/main.admin" element={
                   <ProtectedRoute ownerOnly><PosifyControlCenter /></ProtectedRoute>
                 } />
-                
+
                 {/* Super Admin API routes - use SuperAdminLogin for auth */}
                 <Route path="/super-admin/login" element={<SuperAdminLogin />} />
                 <Route path="/super-admin/dashboard" element={
                   <ProtectedRoute ownerOnly><PosifyControlCenter /></ProtectedRoute>
                 } />
-                
+
                 {/* Posify Control Center */}
                 <Route path="/control-center" element={<SuperAdminLogin />} />
                 <Route path="/control-center/dashboard" element={
@@ -181,12 +181,20 @@ function App() {
                 <Route path="/signup" element={<Navigate to="/auth/signup" />} />
                 <Route path="/subscription" element={<Navigate to="/choose-subscription" />} />
                 <Route path="/payment" element={<Navigate to="/choose-subscription" />} />
-                
+
                 {/* Cashier POS - Desktop */}
                 <Route path="/cashier" element={<ProtectedRoute><CashierGuard><CashierPOS /></CashierGuard></ProtectedRoute>} />
 
-                {/* Mobile Cashier - Mobile first with bottom navigation */}
-                <Route path="/dashboard/cashier/mobile" element={<ProtectedRoute><CashierGuard><MobileCashier /></CashierGuard></ProtectedRoute>} />
+                {/* Mobile Routes */}
+                <Route path="/mobile" element={<ProtectedRoute><AdminGuard><AdminMobileDashboard /></AdminGuard></ProtectedRoute>} />
+                <Route path="/mobile/sales" element={<ProtectedRoute><AdminGuard><MobileAdminLayout><MobileAdminSales /></MobileAdminLayout></AdminGuard></ProtectedRoute>} />
+                <Route path="/mobile/inventory" element={<ProtectedRoute><AdminGuard><MobileAdminLayout><MobileAdminInventory /></MobileAdminLayout></AdminGuard></ProtectedRoute>} />
+                <Route path="/mobile/settings" element={<ProtectedRoute><AdminGuard><MobileAdminLayout><MobileAdminSettings /></MobileAdminLayout></AdminGuard></ProtectedRoute>} />
+
+                <Route path="/mobile/cashier" element={<ProtectedRoute><CashierGuard><MobileCashier /></CashierGuard></ProtectedRoute>} />
+                <Route path="/mobile/cashier/products" element={<ProtectedRoute><CashierGuard><MobileCashierLayout><MobileCashierProducts /></MobileCashierLayout></CashierGuard></ProtectedRoute>} />
+                <Route path="/mobile/cashier/cart" element={<ProtectedRoute><CashierGuard><MobileCashierLayout><MobileCashierCart /></MobileCashierLayout></CashierGuard></ProtectedRoute>} />
+                <Route path="/mobile/cashier/settings" element={<ProtectedRoute><CashierGuard><MobileCashierLayout><MobileCashierSettings /></MobileCashierLayout></CashierGuard></ProtectedRoute>} />
 
                 {/* 404 Catch-all */}
                 <Route path="*" element={
@@ -223,8 +231,8 @@ function App() {
               </ProductsProvider>
             </AuthProvider>
            <CookieConsent />
-         </ErrorBoundary>
-       </BrowserRouter>
+          </ErrorBoundary>
+        </BrowserRouter>
   );
 }
 
