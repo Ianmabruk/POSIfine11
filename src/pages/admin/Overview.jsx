@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { stats, sales as salesApi, products } from '../../services/api';
+import { BASE_API_URL } from '../../services/api';
 import { DollarSign, TrendingUp, TrendingDown, ShoppingBag, Package, AlertCircle, BarChart3 } from 'lucide-react';
 import StatCard from '../../components/ui/StatCard';
 import SkeletonCard from '../../components/ui/SkeletonCard';
