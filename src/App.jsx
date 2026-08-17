@@ -2,13 +2,15 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ProductsProvider } from './context/ProductsContext';
 import { ScreenModeProvider } from './context/ScreenModeContext';
-import { ProtectedRoute as RouteGuard, AdminGuard, CashierGuard } from './components/RouteGuards';
+import { DeviceModeProvider, useDeviceMode } from './context/DeviceModeContext';
+import { ProtectedRoute as RouteGuard, AdminGuard, CashierGuard, DeviceRouteGuard } from './components/RouteGuards';
 import ReminderModal from './components/ReminderModal';
 import SubscriptionReminderBar from './components/SubscriptionReminderBar';
 import StockUpdateListener from './components/StockUpdateListener';
 import ErrorBoundary from './components/ErrorBoundary';
 import CookieConsent from './components/CookieConsent';
 import LogoPreloader from './components/LogoPreloader';
+import ChooseDevice from './pages/ChooseDevice';
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 
 const LandingPremium = lazy(() => import('./pages/LandingPremium'));
@@ -97,27 +99,39 @@ function ProtectedRoute({ children, adminOnly = false, businessOnly = false, own
 
 function DashboardRouter() {
   const { user, loading } = useAuth();
+  const { getEffectiveDeviceMode } = useDeviceMode();
   const adminViewingCashier = localStorage.getItem('adminViewingCashier');
 
   if (loading) return <LogoPreloader text="Loading..." />;
   if (!user || !user.active) return <Navigate to="/choose-subscription" />;
 
+  const deviceMode = getEffectiveDeviceMode(user);
+
   if (adminViewingCashier && (user.role === 'admin' || user.role === 'main_admin' || user.role === 'owner')) {
-    return <Navigate to="/dashboard/cashier" />;
+    if (deviceMode === 'mobile') {
+      return <Navigate to="/mobile/cashier" replace />;
+    }
+    return <Navigate to="/dashboard/cashier" replace />;
   }
 
   if (user.role === 'main_admin') {
-    return <Navigate to="/main.admin" />;
+    return <Navigate to="/main.admin" replace />;
   }
   if (user.role === 'admin') {
-    return <Navigate to="/admin" />;
+    if (deviceMode === 'mobile') {
+      return <Navigate to="/mobile" replace />;
+    }
+    return <Navigate to="/admin" replace />;
   }
 
   if (user.role === 'cashier') {
-    return <Navigate to="/cashier" />;
+    if (deviceMode === 'mobile') {
+      return <Navigate to="/mobile/cashier" replace />;
+    }
+    return <Navigate to="/cashier" replace />;
   }
 
-  return <Navigate to="/dashboard/cashier" />;
+  return <Navigate to="/dashboard/cashier" replace />;
 }
 
 function App() {
@@ -130,11 +144,13 @@ function App() {
             <AuthProvider>
               <ProductsProvider>
                 <ScreenModeProvider>
+                  <DeviceModeProvider>
                   <Suspense fallback={<LogoPreloader text="Loading..." />}>
                 <div id="main-content">
                 <Routes>
                 <Route path="/" element={<LandingPremium />} />
                 <Route path="/get-started" element={<LandingPremium />} />
+                <Route path="/choose-device" element={<ChooseDevice />} />
                 <Route path="/choose-subscription" element={<SubscriptionEnterprise />} />
                 <Route path="/subscription-expired" element={<SubscriptionExpired />} />
                 <Route path="/auth/login" element={<AuthPage />} />
@@ -145,11 +161,11 @@ function App() {
 
                 {/* Regular User Routes */}
                 <Route path="/dashboard" element={<ProtectedRoute><DashboardRouter /></ProtectedRoute>} />
-                <Route path="/dashboard/cashier" element={<ProtectedRoute><CashierPOSResponsive /></ProtectedRoute>} />
+                <Route path="/dashboard/cashier" element={<ProtectedRoute><DeviceRouteGuard expectedRole="cashier" expectedDeviceMode="desktop"><CashierGuard><CashierPOSResponsive /></CashierGuard></DeviceRouteGuard></ProtectedRoute>} />
 
                 {/* Admin Dashboard - Business Admin only */}
-                <Route path="/admin" element={<ProtectedRoute><AdminGuard><AdminDashboard /></AdminGuard></ProtectedRoute>} />
-                <Route path="/admin/*" element={<ProtectedRoute><AdminGuard><AdminDashboard /></AdminGuard></ProtectedRoute>} />
+                <Route path="/admin" element={<ProtectedRoute><DeviceRouteGuard expectedRole="admin" expectedDeviceMode="desktop"><AdminGuard><AdminDashboard /></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
+                <Route path="/admin/*" element={<ProtectedRoute><DeviceRouteGuard expectedRole="admin" expectedDeviceMode="desktop"><AdminGuard><AdminDashboard /></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
 
                 {/* Student routes */}
                 <Route path="/student" element={<ProtectedRoute><RouteGuard><StudentDashboard /></RouteGuard></ProtectedRoute>} />
@@ -183,18 +199,18 @@ function App() {
                 <Route path="/payment" element={<Navigate to="/choose-subscription" />} />
 
                 {/* Cashier POS - Desktop */}
-                <Route path="/cashier" element={<ProtectedRoute><CashierGuard><CashierPOS /></CashierGuard></ProtectedRoute>} />
+                <Route path="/cashier" element={<ProtectedRoute><DeviceRouteGuard expectedRole="cashier" expectedDeviceMode="desktop"><CashierGuard><CashierPOS /></CashierGuard></DeviceRouteGuard></ProtectedRoute>} />
 
                 {/* Mobile Routes */}
-                <Route path="/mobile" element={<ProtectedRoute><AdminGuard><AdminMobileDashboard /></AdminGuard></ProtectedRoute>} />
-                <Route path="/mobile/sales" element={<ProtectedRoute><AdminGuard><MobileAdminLayout><MobileAdminSales /></MobileAdminLayout></AdminGuard></ProtectedRoute>} />
-                <Route path="/mobile/inventory" element={<ProtectedRoute><AdminGuard><MobileAdminLayout><MobileAdminInventory /></MobileAdminLayout></AdminGuard></ProtectedRoute>} />
-                <Route path="/mobile/settings" element={<ProtectedRoute><AdminGuard><MobileAdminLayout><MobileAdminSettings /></MobileAdminLayout></AdminGuard></ProtectedRoute>} />
+                <Route path="/mobile" element={<ProtectedRoute><DeviceRouteGuard expectedRole="admin" expectedDeviceMode="mobile"><AdminGuard><AdminMobileDashboard /></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
+                <Route path="/mobile/sales" element={<ProtectedRoute><DeviceRouteGuard expectedRole="admin" expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><MobileAdminSales /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
+                <Route path="/mobile/inventory" element={<ProtectedRoute><DeviceRouteGuard expectedRole="admin" expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><MobileAdminInventory /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
+                <Route path="/mobile/settings" element={<ProtectedRoute><DeviceRouteGuard expectedRole="admin" expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><MobileAdminSettings /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
 
-                <Route path="/mobile/cashier" element={<ProtectedRoute><CashierGuard><MobileCashier /></CashierGuard></ProtectedRoute>} />
-                <Route path="/mobile/cashier/products" element={<ProtectedRoute><CashierGuard><MobileCashierLayout><MobileCashierProducts /></MobileCashierLayout></CashierGuard></ProtectedRoute>} />
-                <Route path="/mobile/cashier/cart" element={<ProtectedRoute><CashierGuard><MobileCashierLayout><MobileCashierCart /></MobileCashierLayout></CashierGuard></ProtectedRoute>} />
-                <Route path="/mobile/cashier/settings" element={<ProtectedRoute><CashierGuard><MobileCashierLayout><MobileCashierSettings /></MobileCashierLayout></CashierGuard></ProtectedRoute>} />
+                <Route path="/mobile/cashier" element={<ProtectedRoute><DeviceRouteGuard expectedRole="cashier" expectedDeviceMode="mobile"><CashierGuard><MobileCashier /></CashierGuard></DeviceRouteGuard></ProtectedRoute>} />
+                <Route path="/mobile/cashier/products" element={<ProtectedRoute><DeviceRouteGuard expectedRole="cashier" expectedDeviceMode="mobile"><CashierGuard><MobileCashierLayout><MobileCashierProducts /></MobileCashierLayout></CashierGuard></DeviceRouteGuard></ProtectedRoute>} />
+                <Route path="/mobile/cashier/cart" element={<ProtectedRoute><DeviceRouteGuard expectedRole="cashier" expectedDeviceMode="mobile"><CashierGuard><MobileCashierLayout><MobileCashierCart /></MobileCashierLayout></CashierGuard></DeviceRouteGuard></ProtectedRoute>} />
+                <Route path="/mobile/cashier/settings" element={<ProtectedRoute><DeviceRouteGuard expectedRole="cashier" expectedDeviceMode="mobile"><CashierGuard><MobileCashierLayout><MobileCashierSettings /></MobileCashierLayout></CashierGuard></DeviceRouteGuard></ProtectedRoute>} />
 
                 {/* 404 Catch-all */}
                 <Route path="*" element={
@@ -226,7 +242,8 @@ function App() {
                  } />
                  </Routes>
                  </div>
-                </Suspense>
+                 </Suspense>
+                  </DeviceModeProvider>
                 </ScreenModeProvider>
               </ProductsProvider>
             </AuthProvider>

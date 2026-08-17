@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { auth } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useDeviceMode } from '../context/DeviceModeContext';
 import { Mail, Lock, User, Eye, EyeOff, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { getDashboardRoute } from '../utils/dashboardRouting';
 import PosifyLogo from '../components/PosifyLogo';
@@ -11,6 +12,7 @@ export default function AuthPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { login, signup, user, loading: authLoading } = useAuth();
+  const { tempDeviceMode, getEffectiveDeviceMode } = useDeviceMode();
 
   const isLogin = location.pathname === '/auth/login';
   const [formData, setFormData] = useState({
@@ -133,6 +135,7 @@ export default function AuthPage() {
           password: formData.password,
           name: formData.name,
           plan: planId || planData?.id || 'starter',
+          deviceMode: tempDeviceMode,
         });
         if (res.token && res.user) {
           await login(res);

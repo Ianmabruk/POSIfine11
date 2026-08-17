@@ -31,6 +31,7 @@ export const AuthProvider = ({ children }) => {
     const businessLogo = rawUser.business_logo ?? rawUser.businessLogo ?? null;
     const businessType = rawUser.business_type ?? rawUser.businessType ?? null;
     const accountId = rawUser.account_id ?? rawUser.accountId ?? null;
+    const deviceMode = rawUser.device_mode ?? rawUser.deviceMode ?? null;
     return {
       ...rawUser,
       active,
@@ -43,6 +44,8 @@ export const AuthProvider = ({ children }) => {
       businessType,
       account_id: accountId,
       accountId,
+      device_mode: deviceMode,
+      deviceMode,
     };
   }, []);
 

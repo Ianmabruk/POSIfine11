@@ -68,7 +68,7 @@ export default function SubscriptionEnterprise() {
       localStorage.setItem('isTrial', 'true');
       localStorage.setItem('trialEndsAt', new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString());
     }
-    navigate('/');
+    navigate('/choose-device');
   };
 
   const handlePayment = async () => {

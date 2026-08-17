@@ -1,5 +1,6 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useDeviceMode } from '../context/DeviceModeContext';
 import LogoPreloader from './LogoPreloader';
 
 /**
@@ -15,6 +16,46 @@ export function ProtectedRoute({ children }) {
 
   if (!user || !hasToken) {
     return <Navigate to="/auth/login" replace />;
+  }
+
+  return children;
+}
+
+/**
+ * Device Route Guard - Redirects users to the correct interface based on role + deviceMode
+ */
+export function DeviceRouteGuard({ children, expectedRole, expectedDeviceMode }) {
+  const { user, loading } = useAuth();
+  const { getEffectiveDeviceMode } = useDeviceMode();
+
+  if (loading) {
+    return <LogoPreloader text="Loading..." />;
+  }
+
+  if (!user) {
+    return <Navigate to="/auth/login" replace />;
+  }
+
+  const deviceMode = getEffectiveDeviceMode(user);
+  const role = user.role;
+
+  if (role !== expectedRole) {
+    return <Navigate to="/auth/login" replace />;
+  }
+
+  if (deviceMode !== expectedDeviceMode) {
+    if (role === 'admin' || role === 'main_admin') {
+      if (deviceMode === 'mobile') {
+        return <Navigate to="/mobile" replace />;
+      }
+      return <Navigate to="/admin" replace />;
+    }
+    if (role === 'cashier') {
+      if (deviceMode === 'mobile') {
+        return <Navigate to="/mobile/cashier" replace />;
+      }
+      return <Navigate to="/cashier" replace />;
+    }
   }
 
   return children;

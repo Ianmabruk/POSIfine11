@@ -228,7 +228,15 @@ export default function AdminDashboard() {
 
         <div className="p-3 md:p-4 border-t border-gray-200/60 space-y-1.5">
           <button
-            onClick={() => { localStorage.setItem('adminViewingCashier', 'true'); window.open('/cashier', '_blank'); setSidebarOpen(false); }}
+            onClick={() => {
+              const deviceMode = user?.deviceMode || user?.device_mode || 'desktop';
+              const posRoute = deviceMode === 'mobile' ? '/mobile/cashier' : '/cashier';
+              if (deviceMode === 'desktop') {
+                localStorage.setItem('adminViewingCashier', 'true');
+              }
+              window.open(posRoute, '_blank');
+              setSidebarOpen(false);
+            }}
             className="w-full flex items-center gap-3 px-3 md:px-4 py-3 rounded-xl text-gray-600 hover:bg-gray-100/80 transition-colors group"
           >
             <div className="w-8 h-8 rounded-lg bg-gray-100 group-hover:bg-white group-hover:shadow-sm flex items-center justify-center transition-all">

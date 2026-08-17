@@ -1,10 +1,37 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import PosifyLogo from "../components/PosifyLogo";
 import SEO from "../components/SEO";
 
+const testimonials = [
+  {
+    quote: "Possify transformed how we manage our shop. Sales are up and inventory is finally under control.",
+    author: "James M.",
+    role: "Retail Store Owner",
+  },
+  {
+    quote: "The mobile dashboard is a game changer. I can track everything from my phone while on the go.",
+    author: "Grace K.",
+    role: "Cafe Manager",
+  },
+  {
+    quote: "Switched from a complicated system to Possify and never looked back. Simple, fast, reliable.",
+    author: "David O.",
+    role: "Supermarket Operator",
+  },
+];
+
 export default function LandingPremium() {
   const navigate = useNavigate();
+  const [current, setCurrent] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrent((prev) => (prev + 1) % testimonials.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
 
   return (
     <div className="min-h-screen bg-vanilla-200 text-slate-900 antialiased overflow-x-hidden">
@@ -65,8 +92,8 @@ export default function LandingPremium() {
       </header>
 
       {/* Hero */}
-      <main className="relative z-10 flex items-center justify-center px-4 sm:px-6 min-h-screen">
-        <div className="w-full max-w-3xl pt-24 sm:pt-28 pb-16">
+      <main className="relative z-10 flex items-center justify-center px-4 sm:px-6">
+        <div className="w-full max-w-3xl pt-24 sm:pt-28 pb-12">
           <div className="glass-vanilla rounded-[2rem] sm:rounded-[2.5rem] p-8 sm:p-12 md:p-16 text-center">
             <p className="text-xs sm:text-sm font-semibold tracking-widest uppercase text-slate-500 mb-4 sm:mb-6">
               POS &middot; Inventory &middot; Payments
@@ -95,6 +122,43 @@ export default function LandingPremium() {
               </button>
             </div>
           </div>
+
+          {/* Testimonials */}
+          <div className="mt-8 sm:mt-10">
+            <div className="glass-vanilla rounded-2xl p-6 sm:p-8 relative overflow-hidden">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={current}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -12 }}
+                  transition={{ duration: 0.4 }}
+                  className="text-center"
+                >
+                    <p className="text-sm sm:text-base text-slate-700 leading-relaxed mb-4">
+                      "{testimonials[current].quote}"
+                    </p>
+                    <div>
+                      <p className="text-sm font-bold text-slate-900">{testimonials[current].author}</p>
+                      <p className="text-xs text-slate-500">{testimonials[current].role}</p>
+                    </div>
+                </motion.div>
+              </AnimatePresence>
+
+              <div className="mt-5 flex items-center justify-center gap-2">
+                {testimonials.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setCurrent(i)}
+                    className={`h-1.5 rounded-full transition-all duration-300 ${
+                      i === current ? 'w-6 bg-slate-900' : 'w-1.5 bg-slate-300 hover:bg-slate-400'
+                    }`}
+                    aria-label={`Testimonial ${i + 1}`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </main>
 
@@ -102,34 +166,13 @@ export default function LandingPremium() {
       <footer className="relative z-10 px-4 sm:px-6 pb-8 sm:pb-12">
         <div className="max-w-3xl mx-auto">
           <div className="glass-vanilla rounded-2xl p-6 sm:p-8">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-2.5">
-                <PosifyLogo size="sm" />
-              </div>
-
+            <div className="flex flex-col items-center text-center gap-3">
+              <PosifyLogo size="sm" />
               <p className="text-xs sm:text-sm text-slate-500">
-                Simple tools for running your business.
+                Built by Mabricksel Technologies
               </p>
-
-              <nav className="flex items-center gap-4 sm:gap-6">
-                <button
-                  onClick={() => navigate("/auth/login")}
-                  className="text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
-                >
-                  Login
-                </button>
-                <button
-                  onClick={() => navigate("/choose-subscription")}
-                  className="text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
-                >
-                  Plans
-                </button>
-              </nav>
-            </div>
-
-            <div className="mt-4 pt-4 border-t border-white/40 text-center">
-              <p className="text-xs text-slate-500">
-                &copy; {new Date().getFullYear()} Possify. All rights reserved.
+              <p className="text-xs text-slate-400">
+                &copy; 2026 Mabricksel Technologies. All rights reserved.
               </p>
             </div>
           </div>

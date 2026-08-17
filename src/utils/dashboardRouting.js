@@ -9,7 +9,7 @@
 /**
  * Get the correct dashboard route for a user
  * 
- * @param {Object} user - User object with subscription, role
+ * @param {Object} user - User object with subscription, role, deviceMode
  * @returns {string} - Dashboard route path
  */
 export function getDashboardRoute(user) {
@@ -19,9 +19,11 @@ export function getDashboardRoute(user) {
   }
 
   const role = user.role || 'cashier';
+  const deviceMode = user.deviceMode || user.device_mode || 'desktop';
 
   console.log('[getDashboardRoute] Evaluating:', {
     role,
+    deviceMode,
     user: user.email
   });
 
@@ -31,12 +33,20 @@ export function getDashboardRoute(user) {
   }
 
   if (role === 'admin') {
-    console.log('[getDashboardRoute] → /admin (Admin)');
+    if (deviceMode === 'mobile') {
+      console.log('[getDashboardRoute] → /mobile (Mobile Admin)');
+      return '/mobile';
+    }
+    console.log('[getDashboardRoute] → /admin (Desktop Admin)');
     return '/admin';
   }
 
   if (role === 'cashier') {
-    console.log('[getDashboardRoute] → /dashboard/cashier (Cashier)');
+    if (deviceMode === 'mobile') {
+      console.log('[getDashboardRoute] → /mobile/cashier (Mobile Cashier)');
+      return '/mobile/cashier';
+    }
+    console.log('[getDashboardRoute] → /dashboard/cashier (Desktop Cashier)');
     return '/dashboard/cashier';
   }
 
