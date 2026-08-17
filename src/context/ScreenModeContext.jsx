@@ -1,13 +1,22 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useDeviceMode, getDeviceMode, setDeviceMode } from '../hooks/useDeviceMode';
 
 const ScreenModeContext = createContext();
 
 export const useScreenMode = () => useContext(ScreenModeContext);
 
 export const ScreenModeProvider = ({ children }) => {
+  const deviceMode = useDeviceMode();
   const [screenMode, setScreenMode] = useState(() => {
     try {
-      return localStorage.getItem('screenMode') || 'desktop';
+      const cached = localStorage.getItem('screenMode');
+      if (cached) return cached;
+      const device = getDeviceMode();
+      if (device) {
+        localStorage.setItem('screenMode', device);
+        return device;
+      }
+      return 'desktop';
     } catch {
       return 'desktop';
     }
@@ -30,7 +39,7 @@ export const ScreenModeProvider = ({ children }) => {
         if (res.ok) {
           const data = await res.json();
           const cached = localStorage.getItem('screenMode');
-          const mode = data?.screenMode || cached || 'desktop';
+          const mode = data?.screenMode || cached || deviceMode || 'desktop';
           if (mounted) {
             setScreenMode(mode);
             if (!cached) {
@@ -46,11 +55,12 @@ export const ScreenModeProvider = ({ children }) => {
     };
     load();
     return () => { mounted = false; };
-  }, []);
+  }, [deviceMode]);
 
   const updateScreenMode = useCallback(async (mode) => {
     setScreenMode(mode);
     localStorage.setItem('screenMode', mode);
+    setDeviceMode(mode);
     try {
       const token = localStorage.getItem('token');
       if (token) {
