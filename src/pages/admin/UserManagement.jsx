@@ -113,6 +113,33 @@ export default function UserManagement() {
     return Math.floor(1000 + Math.random() * 9000).toString();
   };
 
+  const [showPINModal, setShowPINModal] = useState(false);
+  const [selectedUserForPIN, setSelectedUserForPIN] = useState(null);
+  const [newPIN, setNewPIN] = useState('');
+
+  const handleResetPIN = (user) => {
+    setSelectedUserForPIN(user);
+    setNewPIN(generatePIN());
+    setShowPINModal(true);
+  };
+
+  const handleConfirmPINReset = async () => {
+    if (!selectedUserForPIN || !newPIN) return;
+    try {
+      setLoading(true);
+      await usersApi.setPin(selectedUserForPIN.id, newPIN);
+      setUsers(prev => prev.map(u => u.id === selectedUserForPIN.id ? { ...u, pin: newPIN } : u));
+      setShowPINModal(false);
+      setSelectedUserForPIN(null);
+      setNewPIN('');
+    } catch (error) {
+      console.error('Failed to reset PIN:', error);
+      alert('Failed to reset PIN. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleAddUser = async (e) => {
     e.preventDefault();
     

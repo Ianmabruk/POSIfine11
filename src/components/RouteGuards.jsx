@@ -22,9 +22,10 @@ export function ProtectedRoute({ children }) {
 }
 
 /**
- * Device Route Guard - Redirects users to the correct interface based on role + deviceMode
+ * Device Route Guard - Redirects users to the correct interface based on deviceMode.
+ * Role checking is delegated to inner guards (AdminGuard, CashierGuard).
  */
-export function DeviceRouteGuard({ children, expectedRole, expectedDeviceMode }) {
+export function DeviceRouteGuard({ children, expectedDeviceMode }) {
   const { user, loading } = useAuth();
   const { getEffectiveDeviceMode } = useDeviceMode();
 
@@ -37,13 +38,9 @@ export function DeviceRouteGuard({ children, expectedRole, expectedDeviceMode })
   }
 
   const deviceMode = getEffectiveDeviceMode(user);
-  const role = user.role;
-
-  if (role !== expectedRole) {
-    return <Navigate to="/auth/login" replace />;
-  }
 
   if (deviceMode !== expectedDeviceMode) {
+    const role = user.role;
     if (role === 'admin' || role === 'main_admin') {
       if (deviceMode === 'mobile') {
         return <Navigate to="/mobile" replace />;

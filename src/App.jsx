@@ -161,11 +161,11 @@ function App() {
 
                 {/* Regular User Routes */}
                 <Route path="/dashboard" element={<ProtectedRoute><DashboardRouter /></ProtectedRoute>} />
-                <Route path="/dashboard/cashier" element={<ProtectedRoute><DeviceRouteGuard expectedRole="cashier" expectedDeviceMode="desktop"><CashierGuard><CashierPOSResponsive /></CashierGuard></DeviceRouteGuard></ProtectedRoute>} />
+                <Route path="/dashboard/cashier" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="desktop"><CashierGuard><CashierPOSResponsive /></CashierGuard></DeviceRouteGuard></ProtectedRoute>} />
 
                 {/* Admin Dashboard - Business Admin only */}
-                <Route path="/admin" element={<ProtectedRoute><DeviceRouteGuard expectedRole="admin" expectedDeviceMode="desktop"><AdminGuard><AdminDashboard /></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
-                <Route path="/admin/*" element={<ProtectedRoute><DeviceRouteGuard expectedRole="admin" expectedDeviceMode="desktop"><AdminGuard><AdminDashboard /></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
+                <Route path="/admin" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="desktop"><AdminGuard><AdminDashboard /></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
+                <Route path="/admin/*" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="desktop"><AdminGuard><AdminDashboard /></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
 
                 {/* Student routes */}
                 <Route path="/student" element={<ProtectedRoute><RouteGuard><StudentDashboard /></RouteGuard></ProtectedRoute>} />
@@ -199,18 +199,18 @@ function App() {
                 <Route path="/payment" element={<Navigate to="/choose-subscription" />} />
 
                 {/* Cashier POS - Desktop */}
-                <Route path="/cashier" element={<ProtectedRoute><DeviceRouteGuard expectedRole="cashier" expectedDeviceMode="desktop"><CashierGuard><CashierPOS /></CashierGuard></DeviceRouteGuard></ProtectedRoute>} />
+                <Route path="/cashier" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="desktop"><CashierGuard><CashierPOS /></CashierGuard></DeviceRouteGuard></ProtectedRoute>} />
 
                 {/* Mobile Routes */}
-                <Route path="/mobile" element={<ProtectedRoute><DeviceRouteGuard expectedRole="admin" expectedDeviceMode="mobile"><AdminGuard><AdminMobileDashboard /></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
-                <Route path="/mobile/sales" element={<ProtectedRoute><DeviceRouteGuard expectedRole="admin" expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><MobileAdminSales /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
-                <Route path="/mobile/inventory" element={<ProtectedRoute><DeviceRouteGuard expectedRole="admin" expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><MobileAdminInventory /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
-                <Route path="/mobile/settings" element={<ProtectedRoute><DeviceRouteGuard expectedRole="admin" expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><MobileAdminSettings /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
+                <Route path="/mobile" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><AdminGuard><AdminMobileDashboard /></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
+                <Route path="/mobile/sales" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><MobileAdminSales /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
+                <Route path="/mobile/inventory" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><MobileAdminInventory /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
+                <Route path="/mobile/settings" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><MobileAdminSettings /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
 
-                <Route path="/mobile/cashier" element={<ProtectedRoute><DeviceRouteGuard expectedRole="cashier" expectedDeviceMode="mobile"><CashierGuard><MobileCashier /></CashierGuard></DeviceRouteGuard></ProtectedRoute>} />
-                <Route path="/mobile/cashier/products" element={<ProtectedRoute><DeviceRouteGuard expectedRole="cashier" expectedDeviceMode="mobile"><CashierGuard><MobileCashierLayout><MobileCashierProducts /></MobileCashierLayout></CashierGuard></DeviceRouteGuard></ProtectedRoute>} />
-                <Route path="/mobile/cashier/cart" element={<ProtectedRoute><DeviceRouteGuard expectedRole="cashier" expectedDeviceMode="mobile"><CashierGuard><MobileCashierLayout><MobileCashierCart /></MobileCashierLayout></CashierGuard></DeviceRouteGuard></ProtectedRoute>} />
-                <Route path="/mobile/cashier/settings" element={<ProtectedRoute><DeviceRouteGuard expectedRole="cashier" expectedDeviceMode="mobile"><CashierGuard><MobileCashierLayout><MobileCashierSettings /></MobileCashierLayout></CashierGuard></DeviceRouteGuard></ProtectedRoute>} />
+                <Route path="/mobile/cashier" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><CashierGuard><MobileCashier /></CashierGuard></DeviceRouteGuard></ProtectedRoute>} />
+                <Route path="/mobile/cashier/products" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><CashierGuard><MobileCashierLayout><MobileCashierProducts /></MobileCashierLayout></CashierGuard></DeviceRouteGuard></ProtectedRoute>} />
+                <Route path="/mobile/cashier/cart" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><CashierGuard><MobileCashierLayout><MobileCashierCart /></MobileCashierLayout></CashierGuard></DeviceRouteGuard></ProtectedRoute>} />
+                <Route path="/mobile/cashier/settings" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><CashierGuard><MobileCashierLayout><MobileCashierSettings /></MobileCashierLayout></CashierGuard></DeviceRouteGuard></ProtectedRoute>} />
 
                 {/* 404 Catch-all */}
                 <Route path="*" element={
