@@ -169,11 +169,89 @@ const requestWithRetry = async (endpoint, options = {}, retryCount = 0, maxRetri
       throw new Error('Server error - please try again');
     }
 
+const SNAKE_TO_CAMEL = {
+  created_at: 'createdAt',
+  updated_at: 'updatedAt',
+  payment_method: 'paymentMethod',
+  cashier_name: 'cashierName',
+  total_cost: 'totalCost',
+  gross_profit: 'grossProfit',
+  net_profit: 'netProfit',
+  discount_amount: 'discountAmount',
+  service_fee: 'serviceFee',
+  tax_amount: 'taxAmount',
+  payment_status: 'paymentStatus',
+  transactionstatus: 'transactionStatus',
+  business_type: 'businessType',
+  business_role: 'businessRole',
+  profile_picture: 'profilePicture',
+  hourly_rate: 'hourlyRate',
+  reorder_level: 'reorderLevel',
+  max_stock_level: 'maxStockLevel',
+  cost_per_unit: 'costPerUnit',
+  is_composite: 'isComposite',
+  visible_to_cashier: 'visibleToCashier',
+  enable_weight_pricing: 'enableWeightPricing',
+  screen_locked: 'screenLocked',
+  is_locked: 'isLocked',
+  is_active: 'isActive',
+  last_login: 'lastLogin',
+  created_by: 'createdBy',
+  customer_name: 'customerName',
+  valid_from: 'validFrom',
+  valid_to: 'validTo',
+  min_purchase_amount: 'minPurchaseAmount',
+  active_only: 'activeOnly',
+  package_size: 'packageSize',
+  receipt_number: 'receiptNumber',
+  amount_paid: 'amountPaid',
+  stock_level: 'stockLevel',
+  last_restocked: 'lastRestocked',
+};
+
+const CAMEL_TO_SNAKE = Object.fromEntries(
+  Object.entries(SNAKE_TO_CAMEL).map(([k, v]) => [v, k])
+);
+
+function normalizeKeys(value, toCamel) {
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizeKeys(item, toCamel));
+  }
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    const out = {};
+    for (const [key, val] of Object.entries(value)) {
+      const mapped = toCamel ? SNAKE_TO_CAMEL[key] : CAMEL_TO_SNAKE[key];
+      const newKey = mapped || key;
+      out[newKey] = normalizeKeys(val, toCamel);
+    }
+    return out;
+  }
+  return value;
+}
+
+function normalizeResponse(json, method) {
+  if (Array.isArray(json)) {
+    return json.map((item) => normalizeKeys(item, method === 'GET' || method === 'HEAD'));
+  }
+  if (!json || typeof json !== 'object') return json;
+  if (method === 'GET' || method === 'HEAD') {
+    return normalizeKeys(json, true);
+  }
+  if (method === 'POST' || method === 'PUT' || method === 'PATCH') {
+    return normalizeKeys(json, false);
+  }
+  return json;
+}
+
     if (response.ok) {
       if (response.status === 204) {
         return { success: true };
       }
-      const json = await response.json();
+      let json = await response.json();
+      if ((method === 'GET' || method === 'HEAD') && json && typeof json === 'object' && !Array.isArray(json) && Array.isArray(json.items)) {
+        json = json.items;
+      }
+      json = normalizeResponse(json, method);
       if (method === 'GET' || method === 'HEAD') {
         cacheSet(cacheKey, json, 30_000);
       } else {

@@ -1842,6 +1842,21 @@ export default function MobileCashier() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {localStorage.getItem('adminViewingCashier') && (user?.role === 'admin' || user?.role === 'main_admin' || user?.role === 'owner') && (
+        <div className="bg-amber-500 text-white px-4 py-2 flex items-center justify-between">
+          <span className="text-sm font-semibold">Admin View: Operating POS</span>
+          <button
+            onClick={() => {
+              localStorage.removeItem('adminViewingCashier');
+              window.location.href = '/mobile';
+            }}
+            className="px-3 py-1 bg-white text-amber-600 rounded-lg text-sm font-semibold hover:bg-amber-50"
+          >
+            Exit
+          </button>
+        </div>
+      )}
+
       {/* Bottom Navigation Bar - always visible on mobile */}
       <BottomNavBar
         activeTab={activeTab}

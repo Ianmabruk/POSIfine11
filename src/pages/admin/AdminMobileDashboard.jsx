@@ -1,24 +1,34 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { stats, sales as salesApi, products } from '../../services/api';
+import { stats, sales as salesApi, products, users } from '../../services/api';
 import { BASE_API_URL } from '../../services/api';
 import {
   LayoutDashboard, ShoppingBag, Package, Layers, TrendingDown, TrendingUp,
   Users, Settings, LogOut, Menu, X, ExternalLink, Clock, Bell, DollarSign,
   Tag, CreditCard, Truck, MessageSquare, BarChart3, Search, Smartphone,
-  Monitor, Home, Plus, ChevronRight, BellRing
+  Monitor, Home, Plus, ChevronRight, BellRing, User, Loader2
 } from 'lucide-react';
 
 const menuItems = [
   { id: 'overview', label: 'Dashboard', icon: LayoutDashboard, path: '/mobile' },
   { id: 'sales', label: 'Sales', icon: ShoppingBag, path: '/mobile/sales' },
   { id: 'inventory', label: 'Inventory', icon: Package, path: '/mobile/inventory' },
+  { id: 'stock', label: 'Stock', icon: BarChart3, path: '/mobile/stock' },
+  { id: 'recipes', label: 'Recipes', icon: Layers, path: '/mobile/recipes' },
+  { id: 'expenses', label: 'Expenses', icon: TrendingDown, path: '/mobile/expenses' },
+  { id: 'vendors', label: 'Vendors', icon: Truck, path: '/mobile/vendors' },
+  ...(isCashierUserManagementEnabled() ? [{ id: 'users', label: 'Users', icon: Users, path: '/mobile/users' }] : []),
+  { id: 'time', label: 'Time Tracking', icon: Clock, path: '/mobile/time-tracking' },
+  { id: 'reminders', label: 'Reminders', icon: Bell, path: '/mobile/reminders' },
+  { id: 'discounts', label: 'Discounts', icon: Tag, path: '/mobile/discounts' },
+  { id: 'credit-requests', label: 'Credit Requests', icon: CreditCard, path: '/mobile/credit-requests' },
+  { id: 'analytics', label: 'Analytics', icon: BarChart3, path: '/mobile/analytics' },
   { id: 'settings', label: 'Settings', icon: Settings, path: '/mobile/settings' }
 ];
 
 const menuGroups = [
-  { key: 'main', label: 'MAIN', items: menuItems.filter(i => ['overview','sales','inventory'].includes(i.id)) },
+  { key: 'main', label: 'MAIN', items: menuItems.filter(i => ['overview','sales','inventory','stock','recipes','expenses','vendors','users','time','reminders','discounts','credit-requests','analytics'].includes(i.id)) },
   { key: 'system', label: 'SYSTEM', items: menuItems.filter(i => ['settings'].includes(i.id)) },
 ];
 
@@ -34,6 +44,36 @@ export default function AdminMobileDashboard() {
   });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('home');
+  const [showCashierSelect, setShowCashierSelect] = useState(false);
+  const [cashierList, setCashierList] = useState([]);
+  const [cashierLoading, setCashierLoading] = useState(false);
+
+  const loadCashiers = async () => {
+    setCashierLoading(true);
+    try {
+      const data = await users.getAll();
+      const cashiers = (Array.isArray(data) ? data : []).filter(
+        (u) => u.role === 'cashier' && u.isActive !== false
+      );
+      setCashierList(cashiers);
+    } catch (error) {
+      console.error('Failed to load cashiers:', error);
+      setCashierList([]);
+    } finally {
+      setCashierLoading(false);
+    }
+  };
+
+  const handleOpenPOS = () => {
+    setShowCashierSelect(true);
+    loadCashiers();
+  };
+
+  const handleSelectCashier = (cashier) => {
+    localStorage.setItem('adminViewingCashier', String(cashier.id));
+    setShowCashierSelect(false);
+    navigate('/mobile/cashier');
+  };
 
   const loadData = async () => {
     try {
@@ -69,10 +109,6 @@ export default function AdminMobileDashboard() {
 
   const handleLogout = async () => {
     await logout();
-  };
-
-  const handleOpenPOS = () => {
-    navigate('/mobile/cashier');
   };
 
   const quickActions = [
@@ -289,7 +325,7 @@ export default function AdminMobileDashboard() {
         <div>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-lg font-semibold text-gray-900">Recent Sales</h3>
-            <button onClick={() => navigate('/admin/sales')} className="text-sm text-primary-600 font-medium">
+            <button onClick={() => navigate('/mobile/sales')} className="text-sm text-primary-600 font-medium">
               View All
             </button>
           </div>
@@ -365,6 +401,50 @@ export default function AdminMobileDashboard() {
           })}
         </div>
       </nav>
+
+      {/* Cashier Selection Modal for Open POS */}
+      {showCashierSelect && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowCashierSelect(false)} />
+          <div className="relative bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-lg max-h-[80vh] flex flex-col shadow-2xl">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="text-lg font-bold text-gray-900">Select Cashier for POS</h3>
+              <button onClick={() => setShowCashierSelect(false)} className="p-2 text-gray-400 hover:text-gray-700 rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+              {cashierLoading ? (
+                <div className="flex items-center justify-center py-8 text-gray-500">
+                  <Loader2 className="w-6 h-6 animate-spin mr-2" />
+                  Loading cashiers...
+                </div>
+              ) : cashierList.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <User className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                  <p>No cashiers found</p>
+                </div>
+              ) : (
+                cashierList.map((cashier) => (
+                  <button
+                    key={cashier.id}
+                    onClick={() => handleSelectCashier(cashier)}
+                    className="w-full flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:border-primary-300 hover:bg-primary-50 transition-colors text-left"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold">
+                      {cashier.name?.[0]?.toUpperCase() || 'C'}
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">{cashier.name || 'Cashier'}</p>
+                      <p className="text-xs text-gray-500">{cashier.email}</p>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

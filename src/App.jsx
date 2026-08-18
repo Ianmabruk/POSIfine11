@@ -43,6 +43,7 @@ const MobileTimeTracking = lazy(() => import('./pages/mobile/MobileTimeTracking'
 const MobileReminders = lazy(() => import('./pages/mobile/MobileReminders'));
 const MobileDiscounts = lazy(() => import('./pages/mobile/MobileDiscounts'));
 const MobileCreditRequests = lazy(() => import('./pages/mobile/MobileCreditRequests'));
+const MobileAnalytics = lazy(() => import('./pages/mobile/MobileAnalytics'));
 const MobileCashierProducts = lazy(() => import('./pages/mobile/MobileCashierProducts'));
 const MobileCashierCart = lazy(() => import('./pages/mobile/MobileCashierCart'));
 const MobileCashierSettings = lazy(() => import('./pages/mobile/MobileCashierSettings'));
@@ -223,6 +224,7 @@ function App() {
                 <Route path="/mobile/reminders" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><MobileReminders /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
                 <Route path="/mobile/discounts" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><MobileDiscounts /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
                 <Route path="/mobile/credit-requests" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><MobileCreditRequests /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
+                <Route path="/mobile/analytics" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><MobileAnalytics /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
                 <Route path="/mobile/settings" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><MobileAdminSettings /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
 
                 <Route path="/mobile/cashier" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><CashierGuard><MobileCashier /></CashierGuard></DeviceRouteGuard></ProtectedRoute>} />
