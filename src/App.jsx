@@ -212,25 +212,67 @@ function App() {
                 <Route path="/cashier" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="desktop"><CashierGuard><CashierPOS /></CashierGuard></DeviceRouteGuard></ProtectedRoute>} />
 
                 {/* Mobile Routes */}
-                <Route path="/mobile" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><AdminMobileDashboard /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
-                <Route path="/mobile/sales" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><MobileAdminSales /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
-                <Route path="/mobile/inventory" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><MobileAdminInventory /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
-                <Route path="/mobile/stock" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><MobileStockDashboard /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
-                <Route path="/mobile/recipes" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><MobileRecipes /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
-                <Route path="/mobile/expenses" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><MobileExpenses /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
-                <Route path="/mobile/vendors" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><MobileVendors /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
-                <Route path="/mobile/users" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><MobileUsers /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
-                <Route path="/mobile/time-tracking" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><MobileTimeTracking /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
-                <Route path="/mobile/reminders" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><MobileReminders /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
-                <Route path="/mobile/discounts" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><MobileDiscounts /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
-                <Route path="/mobile/credit-requests" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><MobileCreditRequests /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
-                <Route path="/mobile/analytics" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><MobileAnalytics /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
-                <Route path="/mobile/settings" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><AdminGuard><MobileAdminLayout><MobileAdminSettings /></MobileAdminLayout></AdminGuard></DeviceRouteGuard></ProtectedRoute>} />
+                {/* Mobile Admin Home - self-contained dashboard */}
+                <Route path="/mobile" element={
+                  <ProtectedRoute>
+                    <DeviceRouteGuard expectedDeviceMode="mobile">
+                      <AdminGuard>
+                        <AdminMobileDashboard />
+                      </AdminGuard>
+                    </DeviceRouteGuard>
+                  </ProtectedRoute>
+                } />
 
-                <Route path="/mobile/cashier" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><CashierGuard><MobileCashier /></CashierGuard></DeviceRouteGuard></ProtectedRoute>} />
-                <Route path="/mobile/cashier/products" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><CashierGuard><MobileCashierLayout><MobileCashierProducts /></MobileCashierLayout></CashierGuard></DeviceRouteGuard></ProtectedRoute>} />
-                <Route path="/mobile/cashier/cart" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><CashierGuard><MobileCashierLayout><MobileCashierCart /></MobileCashierLayout></CashierGuard></DeviceRouteGuard></ProtectedRoute>} />
-                <Route path="/mobile/cashier/settings" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="mobile"><CashierGuard><MobileCashierLayout><MobileCashierSettings /></MobileCashierLayout></CashierGuard></DeviceRouteGuard></ProtectedRoute>} />
+                {/* Mobile Admin sub-pages with layout */}
+                <Route path="/mobile" element={
+                  <ProtectedRoute>
+                    <DeviceRouteGuard expectedDeviceMode="mobile">
+                      <AdminGuard>
+                        <MobileAdminLayout />
+                      </AdminGuard>
+                    </DeviceRouteGuard>
+                  </ProtectedRoute>
+                }>
+                  <Route path="sales" element={<MobileAdminSales />} />
+                  <Route path="inventory" element={<MobileAdminInventory />} />
+                  <Route path="stock" element={<MobileStockDashboard />} />
+                  <Route path="recipes" element={<MobileRecipes />} />
+                  <Route path="expenses" element={<MobileExpenses />} />
+                  <Route path="vendors" element={<MobileVendors />} />
+                  <Route path="users" element={<MobileUsers />} />
+                  <Route path="time-tracking" element={<MobileTimeTracking />} />
+                  <Route path="reminders" element={<MobileReminders />} />
+                  <Route path="discounts" element={<MobileDiscounts />} />
+                  <Route path="credit-requests" element={<MobileCreditRequests />} />
+                  <Route path="analytics" element={<MobileAnalytics />} />
+                  <Route path="settings" element={<MobileAdminSettings />} />
+                </Route>
+
+                {/* Mobile Cashier Home - self-contained dashboard */}
+                <Route path="/mobile/cashier" element={
+                  <ProtectedRoute>
+                    <DeviceRouteGuard expectedDeviceMode="mobile">
+                      <CashierGuard>
+                        <MobileCashier />
+                      </CashierGuard>
+                    </DeviceRouteGuard>
+                  </ProtectedRoute>
+                } />
+
+                {/* Mobile Cashier sub-pages with layout */}
+                <Route path="/mobile/cashier" element={
+                  <ProtectedRoute>
+                    <DeviceRouteGuard expectedDeviceMode="mobile">
+                      <CashierGuard>
+                        <MobileCashierLayout />
+                      </CashierGuard>
+                    </DeviceRouteGuard>
+                  </ProtectedRoute>
+                }>
+                  <Route path="products" element={<MobileCashierProducts />} />
+                  <Route path="cart" element={<MobileCashierCart />} />
+                  <Route path="settings" element={<MobileCashierSettings />} />
+                </Route>
 
                 {/* 404 Catch-all */}
                 <Route path="*" element={

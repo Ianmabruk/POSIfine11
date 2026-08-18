@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { settings as settingsApi } from '../../services/api';
-import { Settings, LogOut, Shield, Bell, ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { Settings, LogOut, Shield, Bell, ArrowLeft, Save, Loader2, Users, RefreshCw } from 'lucide-react';
 
 export default function MobileAdminSettings() {
   const navigate = useNavigate();

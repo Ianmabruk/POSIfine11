@@ -10,28 +10,6 @@ import {
   Monitor, Home, Plus, ChevronRight, BellRing, User, Loader2
 } from 'lucide-react';
 
-const menuItems = [
-  { id: 'overview', label: 'Dashboard', icon: LayoutDashboard, path: '/mobile' },
-  { id: 'sales', label: 'Sales', icon: ShoppingBag, path: '/mobile/sales' },
-  { id: 'inventory', label: 'Inventory', icon: Package, path: '/mobile/inventory' },
-  { id: 'stock', label: 'Stock', icon: BarChart3, path: '/mobile/stock' },
-  { id: 'recipes', label: 'Recipes', icon: Layers, path: '/mobile/recipes' },
-  { id: 'expenses', label: 'Expenses', icon: TrendingDown, path: '/mobile/expenses' },
-  { id: 'vendors', label: 'Vendors', icon: Truck, path: '/mobile/vendors' },
-  ...(isCashierUserManagementEnabled() ? [{ id: 'users', label: 'Users', icon: Users, path: '/mobile/users' }] : []),
-  { id: 'time', label: 'Time Tracking', icon: Clock, path: '/mobile/time-tracking' },
-  { id: 'reminders', label: 'Reminders', icon: Bell, path: '/mobile/reminders' },
-  { id: 'discounts', label: 'Discounts', icon: Tag, path: '/mobile/discounts' },
-  { id: 'credit-requests', label: 'Credit Requests', icon: CreditCard, path: '/mobile/credit-requests' },
-  { id: 'analytics', label: 'Analytics', icon: BarChart3, path: '/mobile/analytics' },
-  { id: 'settings', label: 'Settings', icon: Settings, path: '/mobile/settings' }
-];
-
-const menuGroups = [
-  { key: 'main', label: 'MAIN', items: menuItems.filter(i => ['overview','sales','inventory','stock','recipes','expenses','vendors','users','time','reminders','discounts','credit-requests','analytics'].includes(i.id)) },
-  { key: 'system', label: 'SYSTEM', items: menuItems.filter(i => ['settings'].includes(i.id)) },
-];
-
 export default function AdminMobileDashboard() {
   const { user, logout, isCashierUserManagementEnabled } = useAuth();
   const navigate = useNavigate();
@@ -47,6 +25,28 @@ export default function AdminMobileDashboard() {
   const [showCashierSelect, setShowCashierSelect] = useState(false);
   const [cashierList, setCashierList] = useState([]);
   const [cashierLoading, setCashierLoading] = useState(false);
+
+  const menuItems = [
+    { id: 'overview', label: 'Dashboard', icon: LayoutDashboard, path: '/mobile' },
+    { id: 'sales', label: 'Sales', icon: ShoppingBag, path: '/mobile/sales' },
+    { id: 'inventory', label: 'Inventory', icon: Package, path: '/mobile/inventory' },
+    { id: 'stock', label: 'Stock', icon: BarChart3, path: '/mobile/stock' },
+    { id: 'recipes', label: 'Recipes', icon: Layers, path: '/mobile/recipes' },
+    { id: 'expenses', label: 'Expenses', icon: TrendingDown, path: '/mobile/expenses' },
+    { id: 'vendors', label: 'Vendors', icon: Truck, path: '/mobile/vendors' },
+    ...(isCashierUserManagementEnabled() ? [{ id: 'users', label: 'Users', icon: Users, path: '/mobile/users' }] : []),
+    { id: 'time', label: 'Time Tracking', icon: Clock, path: '/mobile/time-tracking' },
+    { id: 'reminders', label: 'Reminders', icon: Bell, path: '/mobile/reminders' },
+    { id: 'discounts', label: 'Discounts', icon: Tag, path: '/mobile/discounts' },
+    { id: 'credit-requests', label: 'Credit Requests', icon: CreditCard, path: '/mobile/credit-requests' },
+    { id: 'analytics', label: 'Analytics', icon: BarChart3, path: '/mobile/analytics' },
+    { id: 'settings', label: 'Settings', icon: Settings, path: '/mobile/settings' }
+  ];
+
+  const menuGroups = [
+    { key: 'main', label: 'MAIN', items: menuItems.filter(i => ['overview','sales','inventory','stock','recipes','expenses','vendors','users','time','reminders','discounts','credit-requests','analytics'].includes(i.id)) },
+    { key: 'system', label: 'SYSTEM', items: menuItems.filter(i => ['settings'].includes(i.id)) },
+  ];
 
   const loadCashiers = async () => {
     setCashierLoading(true);
