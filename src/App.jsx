@@ -212,18 +212,7 @@ function App() {
                 <Route path="/cashier" element={<ProtectedRoute><DeviceRouteGuard expectedDeviceMode="desktop"><CashierGuard><CashierPOS /></CashierGuard></DeviceRouteGuard></ProtectedRoute>} />
 
                 {/* Mobile Routes */}
-                {/* Mobile Admin Home - self-contained dashboard */}
-                <Route path="/mobile" element={
-                  <ProtectedRoute>
-                    <DeviceRouteGuard expectedDeviceMode="mobile">
-                      <AdminGuard>
-                        <AdminMobileDashboard />
-                      </AdminGuard>
-                    </DeviceRouteGuard>
-                  </ProtectedRoute>
-                } />
-
-                {/* Mobile Admin sub-pages with layout */}
+                {/* Mobile Admin with layout */}
                 <Route path="/mobile" element={
                   <ProtectedRoute>
                     <DeviceRouteGuard expectedDeviceMode="mobile">
@@ -233,6 +222,7 @@ function App() {
                     </DeviceRouteGuard>
                   </ProtectedRoute>
                 }>
+                  <Route index element={<AdminMobileDashboard />} />
                   <Route path="sales" element={<MobileAdminSales />} />
                   <Route path="inventory" element={<MobileAdminInventory />} />
                   <Route path="stock" element={<MobileStockDashboard />} />
@@ -248,18 +238,7 @@ function App() {
                   <Route path="settings" element={<MobileAdminSettings />} />
                 </Route>
 
-                {/* Mobile Cashier Home - self-contained dashboard */}
-                <Route path="/mobile/cashier" element={
-                  <ProtectedRoute>
-                    <DeviceRouteGuard expectedDeviceMode="mobile">
-                      <CashierGuard>
-                        <MobileCashier />
-                      </CashierGuard>
-                    </DeviceRouteGuard>
-                  </ProtectedRoute>
-                } />
-
-                {/* Mobile Cashier sub-pages with layout */}
+                {/* Mobile Cashier with layout */}
                 <Route path="/mobile/cashier" element={
                   <ProtectedRoute>
                     <DeviceRouteGuard expectedDeviceMode="mobile">
@@ -269,6 +248,7 @@ function App() {
                     </DeviceRouteGuard>
                   </ProtectedRoute>
                 }>
+                  <Route index element={<MobileCashier />} />
                   <Route path="products" element={<MobileCashierProducts />} />
                   <Route path="cart" element={<MobileCashierCart />} />
                   <Route path="settings" element={<MobileCashierSettings />} />

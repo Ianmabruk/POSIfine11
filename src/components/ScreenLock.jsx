@@ -38,7 +38,7 @@ export default function ScreenLock({ onUnlock, userType = 'user', logo = '' }) {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
-        throw new Error('No authentication token found');
+        return null;
       }
 
       // SECURITY: PIN validation happens on BACKEND ONLY (not frontend)
