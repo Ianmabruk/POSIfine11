@@ -17,6 +17,7 @@ export default function MobileUsers() {
     role: 'cashier',
     permissions: { viewSales: true, viewInventory: true, viewExpenses: false, manageProducts: false }
   });
+  const [error, setError] = useState('');
 
   useEffect(() => {
     loadUsers();
@@ -35,14 +36,31 @@ export default function MobileUsers() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    
+    const name = formData.name.trim();
+    const email = formData.email.trim().toLowerCase();
+    const password = formData.password.trim();
+    
+    if (!name || !email) {
+      setError('Please fill in all required fields');
+      return;
+    }
+    
+    if (!editingUser && (!password || password.length < 6)) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+
     try {
       const payload = {
-        name: formData.name,
-        email: formData.email,
-        role: formData.role,
+        name,
+        email,
+        role: 'cashier',
         permissions: formData.permissions,
-        ...(formData.password && { password: formData.password })
+        ...(password ? { password } : {})
       };
+      
       if (editingUser) {
         await users.update(editingUser.id, payload);
       } else {
@@ -54,7 +72,18 @@ export default function MobileUsers() {
       setFormData({ name: '', email: '', password: '', role: 'cashier', permissions: { viewSales: true, viewInventory: true, viewExpenses: false, manageProducts: false } });
     } catch (err) {
       console.error('Failed to save user:', err);
-      alert('Failed to save user');
+      const msg = (err.message || '').toLowerCase();
+      if (msg.includes('unauthorized') || err.status === 401) {
+        setError('Session expired. Please refresh and try again.');
+      } else if (msg.includes('email') || msg.includes('already exists')) {
+        setError('This email is already in use.');
+      } else if (msg.includes('network') || msg.includes('fetch') || msg.includes('connect')) {
+        setError('Network error. Please check your connection.');
+      } else if (err.message) {
+        setError(err.message);
+      } else {
+        setError('Failed to save user. Please try again.');
+      }
     }
   };
 
@@ -147,6 +176,11 @@ export default function MobileUsers() {
         <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
           <div className="bg-white rounded-t-2xl sm:rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-bold mb-4">{editingUser ? 'Edit User' : 'Add User'}</h3>
+            {error && (
+              <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700">
+                {error}
+              </div>
+            )}
             <form onSubmit={handleSubmit} className="space-y-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
