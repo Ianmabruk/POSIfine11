@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { products } from '../../services/api';
+import MobileAddProductModal from '../../components/MobileAddProductModal';
 import { Package, Search, Plus, ArrowLeft } from 'lucide-react';
 
 export default function MobileAdminInventory() {
@@ -8,20 +9,22 @@ export default function MobileAdminInventory() {
   const [productList, setProductList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showAddProduct, setShowAddProduct] = useState(false);
+
+  const loadProducts = useCallback(async () => {
+    try {
+      const data = await products.getAll();
+      setProductList(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Failed to load products:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const loadProducts = async () => {
-      try {
-        const data = await products.getAll();
-        setProductList(Array.isArray(data) ? data : []);
-      } catch (error) {
-        console.error('Failed to load products:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
     loadProducts();
-  }, []);
+  }, [loadProducts]);
 
   const filtered = productList.filter(p =>
     p.name?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -73,6 +76,22 @@ export default function MobileAdminInventory() {
           ))}
         </div>
       )}
+
+      {/* Add Product FAB */}
+      <button
+        type="button"
+        onClick={() => setShowAddProduct(true)}
+        className="fixed bottom-20 right-4 z-40 w-14 h-14 rounded-full bg-primary-600 text-white shadow-lg flex items-center justify-center hover:bg-primary-700 transition-colors"
+        aria-label="Add Product"
+      >
+        <Plus className="w-7 h-7" />
+      </button>
+
+      <MobileAddProductModal
+        isOpen={showAddProduct}
+        onClose={() => setShowAddProduct(false)}
+        onProductCreated={loadProducts}
+      />
     </div>
   );
 }

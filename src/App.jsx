@@ -4,13 +4,6 @@ import { ProductsProvider } from './context/ProductsContext';
 import { ScreenModeProvider } from './context/ScreenModeContext';
 import { DeviceModeProvider, useDeviceMode } from './context/DeviceModeContext';
 import { ProtectedRoute as RouteGuard, AdminGuard, CashierGuard, DeviceRouteGuard } from './components/RouteGuards';
-import ReminderModal from './components/ReminderModal';
-import SubscriptionReminderBar from './components/SubscriptionReminderBar';
-import StockUpdateListener from './components/StockUpdateListener';
-import ErrorBoundary from './components/ErrorBoundary';
-import CookieConsent from './components/CookieConsent';
-import LogoPreloader from './components/LogoPreloader';
-import ChooseDevice from './pages/ChooseDevice';
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 
 const LandingPremium = lazy(() => import('./pages/LandingPremium'));
@@ -48,12 +41,19 @@ const MobileCashierProducts = lazy(() => import('./pages/mobile/MobileCashierPro
 const MobileCashierCart = lazy(() => import('./pages/mobile/MobileCashierCart'));
 const MobileCashierSettings = lazy(() => import('./pages/mobile/MobileCashierSettings'));
 
-// WindataWind - Subscription Management
 const WindataWindAuth = lazy(() => import('./pages/windatawind/AuthPage'));
 const WindataWind = lazy(() => import('./pages/windatawind/WindataWind'));
 const WWProtectedRoute = lazy(() => import('./pages/windatawind/ProtectedRoute'));
 const SuperAdminLogin = lazy(() => import('./pages/super-admin/ControlCenterLogin'));
 const SuperAdminDashboard = lazy(() => import('./pages/super-admin/PosifyControlCenter'));
+
+const ReminderModal = lazy(() => import('./components/ReminderModal'));
+const SubscriptionReminderBar = lazy(() => import('./components/SubscriptionReminderBar'));
+const StockUpdateListener = lazy(() => import('./components/StockUpdateListener'));
+const ErrorBoundary = lazy(() => import('./components/ErrorBoundary'));
+const CookieConsent = lazy(() => import('./components/CookieConsent'));
+const LogoPreloader = lazy(() => import('./components/LogoPreloader'));
+const ChooseDevice = lazy(() => import('./pages/ChooseDevice'));
 
 function ProtectedRoute({ children, adminOnly = false, businessOnly = false, ownerOnly = false }) {
   const { user, loading } = useAuth();

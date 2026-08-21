@@ -1,6 +1,9 @@
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 export default function FinalCTA() {
+  const navigate = useNavigate();
+
   return (
     <section className="relative py-16 sm:py-24 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-hidden">
       <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-accent-500/15 rounded-full blur-[120px]" />
@@ -23,6 +26,7 @@ export default function FinalCTA() {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
+              onClick={() => navigate('/choose-subscription')}
               className="px-8 py-4 bg-gradient-to-r from-accent-500 to-orange-600 text-white rounded-2xl font-semibold shadow-xl shadow-accent-500/25 hover:shadow-accent-500/40 transition-all duration-300 flex items-center justify-center gap-2 text-lg"
             >
               Start Free Demo
@@ -30,6 +34,7 @@ export default function FinalCTA() {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
+              onClick={() => navigate('/choose-subscription')}
               className="px-8 py-4 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-2xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 text-lg backdrop-blur-sm"
             >
               Contact Sales

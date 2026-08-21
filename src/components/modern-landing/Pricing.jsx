@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { Check, Zap, Crown, ChevronRight } from "lucide-react";
+import { Check, Zap, Crown, ChevronRight, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import PosifyLogo from "../PosifyLogo";
 
@@ -61,6 +62,15 @@ const plans = [
 
 export default function Pricing() {
   const navigate = useNavigate();
+  const [showCustomForm, setShowCustomForm] = useState(false);
+  const [customData, setCustomData] = useState({ name: "", email: "", business: "", requirements: "" });
+
+  const handleCustomSubmit = (e) => {
+    e.preventDefault();
+    alert("Thanks! Our team will reach out about your custom solution.");
+    setShowCustomForm(false);
+    setCustomData({ name: "", email: "", business: "", requirements: "" });
+  };
 
   return (
     <section id="pricing" className="py-24 px-6 md:px-12 lg:px-20 bg-white">
@@ -164,12 +174,15 @@ export default function Pricing() {
                 </ul>
 
                 {plan.custom ? (
-                  <button className="w-full py-4 bg-white text-emerald-700 rounded-2xl font-bold hover:shadow-lg transition-all">
+                  <button
+                    onClick={() => setShowCustomForm(true)}
+                    className="w-full py-4 bg-white text-emerald-700 rounded-2xl font-bold hover:shadow-lg transition-all"
+                  >
                     Request Custom Solution
                   </button>
                 ) : (
                   <button
-                    onClick={() => navigate('/auth/signup')}
+                    onClick={() => navigate('/choose-subscription')}
                     className={`w-full py-4 rounded-2xl font-bold transition-all ${
                       plan.popular || plan.custom
                         ? "bg-white text-primary-700 hover:shadow-lg"
@@ -201,6 +214,67 @@ export default function Pricing() {
           </div>
         </motion.div>
       </div>
+
+      {showCustomForm && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+          <div className="relative bg-white rounded-3xl shadow-2xl max-w-md w-full p-8">
+            <button
+              onClick={() => setShowCustomForm(false)}
+              className="absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h3 className="text-2xl font-bold text-slate-900 mb-1">Custom Solution</h3>
+            <p className="text-sm text-slate-500 mb-6">Tell us about your requirements and we'll build a tailored POS.</p>
+            <form onSubmit={handleCustomSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Full Name</label>
+                <input
+                  type="text"
+                  required
+                  value={customData.name}
+                  onChange={(e) => setCustomData({ ...customData, name: e.target.value })}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
+                <input
+                  type="email"
+                  required
+                  value={customData.email}
+                  onChange={(e) => setCustomData({ ...customData, email: e.target.value })}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Business Name</label>
+                <input
+                  type="text"
+                  value={customData.business}
+                  onChange={(e) => setCustomData({ ...customData, business: e.target.value })}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Requirements</label>
+                <textarea
+                  rows={3}
+                  value={customData.requirements}
+                  onChange={(e) => setCustomData({ ...customData, requirements: e.target.value })}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full py-3 bg-gradient-to-r from-success to-emerald-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all"
+              >
+                Submit Request
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

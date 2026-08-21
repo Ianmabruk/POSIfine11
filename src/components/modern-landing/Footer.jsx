@@ -1,7 +1,9 @@
 import { motion } from "framer-motion";
 import { Mail, Phone, MapPin, Twitter, Facebook, Instagram, Linkedin, ArrowRight, Zap } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function Footer() {
+  const navigate = useNavigate();
   const currentYear = new Date().getFullYear();
 
   const footerLinks = {
@@ -67,12 +69,12 @@ export default function Footer() {
             </h2>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 flex-shrink-0">
-            <a
-              href="/auth/signup"
+            <button
+              onClick={() => navigate('/choose-subscription')}
               className="flex items-center gap-2 bg-gradient-to-r from-[#7c3aed] to-[#2563eb] hover:from-[#6d28d9] hover:to-[#1d4ed8] text-white font-semibold px-6 py-3 rounded-xl transition-all shadow-lg shadow-purple-900/40 hover:shadow-purple-900/60"
             >
               Start Free Trial <ArrowRight className="w-4 h-4" />
-            </a>
+            </button>
             <a
               href="/auth/login"
               className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-semibold px-6 py-3 rounded-xl transition-all"

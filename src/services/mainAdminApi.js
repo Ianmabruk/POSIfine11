@@ -1,4 +1,5 @@
 import { getToken } from './api';
+import { refreshAuthSession } from '../utils/authRefresh';
 
 const getMainAdminToken = () => {
   return localStorage.getItem('mainAdminToken') || localStorage.getItem('ownerToken') || localStorage.getItem('token');
@@ -8,32 +9,14 @@ const getRefreshToken = () => localStorage.getItem('refreshToken');
 const getCsrfToken = () => localStorage.getItem('csrfToken');
 
 const refreshAuth = async () => {
-  const refreshToken = getRefreshToken();
-  if (!refreshToken) return false;
-
-  const baseUrl = (import.meta.env.VITE_API_BASE || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5000') + '/api').replace(/\/$/, '');
-
-  const resp = await fetch(`${baseUrl}/auth/refresh`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(getCsrfToken() ? { 'X-CSRF-Token': getCsrfToken() } : {}),
-    },
-    body: JSON.stringify({ refreshToken }),
-  });
-
-  if (!resp.ok) return false;
-
-  const data = await resp.json();
-  if (data.token) {
-    localStorage.setItem('mainAdminToken', data.token);
-    if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
-    if (data.csrfToken) localStorage.setItem('csrfToken', data.csrfToken);
-    if (data.user) localStorage.setItem('mainAdminUser', JSON.stringify(data.user));
+  const refreshed = await refreshAuthSession();
+  if (refreshed?.token) {
+    localStorage.setItem('mainAdminToken', refreshed.token);
+    if (refreshed.refreshToken) localStorage.setItem('refreshToken', refreshed.refreshToken);
+    if (refreshed.csrfToken) localStorage.setItem('csrfToken', refreshed.csrfToken);
+    if (refreshed.user) localStorage.setItem('mainAdminUser', JSON.stringify(refreshed.user));
     return true;
   }
-
   return false;
 };
 

@@ -1,4 +1,7 @@
+import {useNavigate} from "react-router-dom"
+
 export default function Navbar(){
+ const navigate = useNavigate();
  return(
   <header className="flex justify-between items-center px-12 py-6 shadow-sm">
 
@@ -14,11 +17,11 @@ export default function Navbar(){
     </nav>
 
     <div className="flex gap-3">
-      <button className="px-5 py-2 border rounded-lg">
+      <button onClick={() => navigate('/auth/login')} className="px-5 py-2 border rounded-lg">
         Login
       </button>
 
-      <button className="px-5 py-2 bg-green-600 text-white rounded-lg">
+      <button onClick={() => navigate('/choose-subscription')} className="px-5 py-2 bg-green-600 text-white rounded-lg">
         Get Started
       </button>
     </div>

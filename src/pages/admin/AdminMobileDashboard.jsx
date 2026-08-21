@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { stats, sales as salesApi, products, users } from '../../services/api';
 import { BASE_API_URL } from '../../services/api';
+import MobileAddProductModal from '../../components/MobileAddProductModal';
 import {
   LayoutDashboard, ShoppingBag, Package, Layers, TrendingDown, TrendingUp,
   Users, Settings, LogOut, Menu, X, ExternalLink, Clock, Bell, DollarSign,
@@ -25,6 +26,7 @@ export default function AdminMobileDashboard() {
   const [showCashierSelect, setShowCashierSelect] = useState(false);
   const [cashierList, setCashierList] = useState([]);
   const [cashierLoading, setCashierLoading] = useState(false);
+  const [showAddProduct, setShowAddProduct] = useState(false);
 
   const menuItems = [
     { id: 'overview', label: 'Dashboard', icon: LayoutDashboard, path: '/mobile' },
@@ -112,7 +114,7 @@ export default function AdminMobileDashboard() {
   };
 
   const quickActions = [
-    { label: 'Add Product', icon: Plus, path: '/mobile/inventory', color: 'bg-blue-500' },
+    { label: 'Add Product', icon: Plus, action: () => setShowAddProduct(true), color: 'bg-blue-500' },
     { label: 'View Reports', icon: BarChart3, path: '/mobile/sales', color: 'bg-purple-500' },
   ];
 
@@ -366,7 +368,7 @@ export default function AdminMobileDashboard() {
               return (
                 <button
                   key={action.label}
-                  onClick={() => navigate(action.path)}
+                  onClick={() => action.action ? action.action() : navigate(action.path)}
                   className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex flex-col items-center gap-2 hover:shadow-md transition-shadow"
                 >
                   <div className={`w-10 h-10 rounded-xl ${action.color} flex items-center justify-center`}>
@@ -401,6 +403,13 @@ export default function AdminMobileDashboard() {
           })}
         </div>
       </nav>
+
+      {/* Add Product Modal */}
+      <MobileAddProductModal
+        isOpen={showAddProduct}
+        onClose={() => setShowAddProduct(false)}
+        onProductCreated={loadData}
+      />
 
       {/* Cashier Selection Modal for Open POS */}
       {showCashierSelect && (

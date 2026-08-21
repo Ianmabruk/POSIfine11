@@ -2,6 +2,7 @@
 // Updated API Service Layer - Connected to Deployed Backend
 
 import { cacheGet, cacheSet, cacheClear } from '../utils/apiCache';
+import { refreshAuthSession as sharedRefreshAuthSession } from '../utils/authRefresh';
 
 const getBaseUrl = () => {
   if (import.meta.env.VITE_API_BASE) {
@@ -18,7 +19,6 @@ const getBaseUrl = () => {
 };
 
 const BASE_API_URL = getBaseUrl();
-let refreshPromise = null;
 
 const getToken = () => localStorage.getItem('token') || localStorage.getItem('ownerToken') || localStorage.getItem('mainAdminToken');
 const getRefreshToken = () => localStorage.getItem('refreshToken');
@@ -44,46 +44,7 @@ function buildCacheKey(endpoint, options = {}) {
   return parts.join('|');
 }
 
-const refreshAuthSession = async (csrfToken) => {
-  if (!refreshPromise) {
-    const refreshToken = getRefreshToken();
-    if (!refreshToken) {
-      return null;
-    }
-
-    refreshPromise = fetch(`${BASE_API_URL}/auth/refresh`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(csrfToken && { 'X-CSRF-Token': csrfToken })
-      },
-      body: JSON.stringify({ refreshToken })
-    })
-      .then(async (refreshResp) => {
-        if (!refreshResp.ok) {
-          return null;
-        }
-        const refreshData = await refreshResp.json();
-        if (refreshData.token) {
-          localStorage.setItem('token', refreshData.token);
-        }
-        if (refreshData.refreshToken) {
-          localStorage.setItem('refreshToken', refreshData.refreshToken);
-        }
-        if (refreshData.csrfToken) {
-          localStorage.setItem('csrfToken', refreshData.csrfToken);
-        }
-        return refreshData;
-      })
-      .catch(() => null)
-      .finally(() => {
-        refreshPromise = null;
-      });
-  }
-
-  return refreshPromise;
-};
+const refreshAuthSession = sharedRefreshAuthSession;
 
 const invalidateEndpointCache = (endpoint) => {
     try {

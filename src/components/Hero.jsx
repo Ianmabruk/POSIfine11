@@ -1,6 +1,8 @@
 import {motion} from "framer-motion"
+import {useNavigate} from "react-router-dom"
 
 export default function Hero(){
+ const navigate = useNavigate();
  return(
 <section className="flex items-center justify-between px-12 py-20">
 
@@ -21,7 +23,7 @@ Streamline Your Business
 Powerful POS platform to manage sales, inventory and payments seamlessly.
 </p>
 
-<button className="mt-8 bg-green-600 text-white px-8 py-3 rounded-lg shadow hover:scale-105 transition">
+<button onClick={() => navigate('/choose-subscription')} className="mt-8 bg-green-600 text-white px-8 py-3 rounded-lg shadow hover:scale-105 transition">
 Get Started
 </button>
 

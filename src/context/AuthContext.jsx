@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useMemo, useCallback, u
 import { auth, users, BASE_API_URL } from '../services/api';
 import { useNavigate, useLocation } from 'react-router-dom';
 import LockedAccount from '../components/LockedAccount';
+import { refreshAuthSession } from '../utils/authRefresh';
 
 const AuthContext = createContext();
 
@@ -55,6 +56,10 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('csrfToken');
     localStorage.removeItem('appLogo');
+    localStorage.removeItem('mainAdminToken');
+    localStorage.removeItem('ownerToken');
+    localStorage.removeItem('mainAdminUser');
+    localStorage.removeItem('ownerUser');
     const prefixes = ['products_cache_', 'settings_cache_', 'subscription_cache_', 'api_cache_'];
     const keysToRemove = [];
     for (let i = 0; i < localStorage.length; i++) {
@@ -122,6 +127,7 @@ export const AuthProvider = ({ children }) => {
     }
     try {
       const response = await fetch(`${BASE_API_URL}/subscription/status`, {
+        credentials: 'include',
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.ok) {
@@ -153,7 +159,7 @@ export const AuthProvider = ({ children }) => {
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
 
       const response = await fetch(`${BASE_API_URL}/auth/me`, {
         credentials: 'include',
@@ -169,82 +175,55 @@ export const AuthProvider = ({ children }) => {
         setUser(normalized);
         localStorage.setItem('user', JSON.stringify(normalized));
       } else if (response.status === 401) {
-        const refreshToken = localStorage.getItem('refreshToken');
-        const csrfToken = localStorage.getItem('csrfToken');
-        if (refreshToken) {
+        const refreshed = await refreshAuthSession();
+        if (refreshed?.token) {
           try {
-            setIsRefreshing(true);
-            const refreshHeaders = { 'Content-Type': 'application/json' };
-            if (csrfToken) refreshHeaders['X-CSRF-Token'] = csrfToken;
-            const refreshResp = await fetch(`${BASE_API_URL}/auth/refresh`, {
-              method: 'POST',
+            const verifyResp = await fetch(`${BASE_API_URL}/auth/me`, {
               credentials: 'include',
-              headers: refreshHeaders,
-              body: JSON.stringify({ refreshToken }),
+              headers: { Authorization: `Bearer ${refreshed.token}`, 'Content-Type': 'application/json' },
             });
-            if (refreshResp.ok) {
-              const refreshed = await refreshResp.json();
-              if (refreshed?.token && refreshed?.user) {
-                const normalized = normalizeUser(refreshed.user);
-                localStorage.setItem('token', refreshed.token);
-                if (refreshed.refreshToken) localStorage.setItem('refreshToken', refreshed.refreshToken);
-                if (refreshed.csrfToken) localStorage.setItem('csrfToken', refreshed.csrfToken);
-                localStorage.setItem('user', JSON.stringify(normalized));
-                setUser(normalized);
-                setIsRefreshing(false);
-                return;
-              }
+            if (verifyResp.ok) {
+              const data = await verifyResp.json();
+              const normalized = normalizeUser(data);
+              setUser(normalized);
+              localStorage.setItem('user', JSON.stringify(normalized));
+            } else {
+              clearAuthStorage();
+              setUser(null);
+              setAuthError('Session expired. Please sign in again.');
             }
-          } catch (refreshErr) {
-            console.warn('Refresh failed:', refreshErr);
+          } catch {
+            clearAuthStorage();
+            setUser(null);
           }
-          setIsRefreshing(false);
+        } else {
+          clearAuthStorage();
+          setUser(null);
+          setAuthError('Session expired. Please sign in again.');
         }
-        clearAuthStorage();
-        setUser(null);
-        setAuthError('Session expired. Please sign in again.');
       } else {
         setUser(null);
         setAuthError('Unable to verify session. Please try again.');
       }
     } catch (error) {
       if (error.name === 'AbortError') {
-        const savedUser = localStorage.getItem('user');
-        if (savedUser) {
+        const refreshed = await refreshAuthSession();
+        if (refreshed?.token) {
           try {
-            const parsed = JSON.parse(savedUser);
-            const cachedUser = normalizeUser(parsed);
-            const cachedToken = localStorage.getItem('token');
-            if (cachedToken && cachedUser?.id) {
-              const verifyController = new AbortController();
-              const verifyTimeout = setTimeout(() => verifyController.abort(), 5000);
-              try {
-                const verifyResp = await fetch(`${BASE_API_URL}/auth/me`, {
-                  credentials: 'include',
-                  headers: { Authorization: `Bearer ${cachedToken}`, 'Content-Type': 'application/json' },
-                  signal: verifyController.signal,
-                });
-                clearTimeout(verifyTimeout);
-                if (verifyResp.ok) {
-                  const data = await verifyResp.json();
-                  const normalized = normalizeUser(data);
-                  setUser(normalized);
-                  localStorage.setItem('user', JSON.stringify(normalized));
-                  setAuthError(null);
-                } else {
-                  clearAuthStorage();
-                  setUser(null);
-                  setAuthError('Session expired. Please sign in again.');
-                }
-              } catch (verifyError) {
-                clearTimeout(verifyTimeout);
-                clearAuthStorage();
-                setUser(null);
-                setAuthError('Session expired. Please sign in again.');
-              }
+            const verifyResp = await fetch(`${BASE_API_URL}/auth/me`, {
+              credentials: 'include',
+              headers: { Authorization: `Bearer ${refreshed.token}`, 'Content-Type': 'application/json' },
+            });
+            if (verifyResp.ok) {
+              const data = await verifyResp.json();
+              const normalized = normalizeUser(data);
+              setUser(normalized);
+              localStorage.setItem('user', JSON.stringify(normalized));
+              setAuthError(null);
             } else {
               clearAuthStorage();
               setUser(null);
+              setAuthError('Session expired. Please sign in again.');
             }
           } catch {
             clearAuthStorage();

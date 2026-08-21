@@ -16,6 +16,7 @@
  */
 
 import { requestWithSWR } from './requestCache';
+import { refreshAuthSession } from '../utils/authRefresh';
 
 const API_BASE =
   import.meta.env.VITE_API_URL ||
@@ -68,31 +69,10 @@ const apiRequest = async (endpoint, options = {}) => {
     });
 
     if (response.status === 401) {
-      const refreshToken = getRefreshToken();
-      if (refreshToken) {
-        try {
-          const refreshResp = await fetch(`${API_BASE}/api/auth/refresh`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ refreshToken })
-          });
-          if (refreshResp.ok) {
-            const refreshData = await refreshResp.json();
-            if (refreshData.token) {
-              localStorage.setItem('token', refreshData.token);
-              cachedToken = refreshData.token;
-            }
-            if (refreshData.refreshToken) {
-              localStorage.setItem('refreshToken', refreshData.refreshToken);
-            }
-            if (refreshData.csrfToken) {
-              localStorage.setItem('csrfToken', refreshData.csrfToken);
-            }
-            return apiRequest(endpoint, options);
-          }
-        } catch (e) {
-          // fall through
-        }
+      const refreshed = await refreshAuthSession();
+      if (refreshed?.token) {
+        cachedToken = refreshed.token;
+        return apiRequest(endpoint, options);
       }
     }
 

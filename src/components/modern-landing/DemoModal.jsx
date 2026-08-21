@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { X, Play, CheckCircle2, UserPlus, Store, Users, ShoppingCart, BarChart3, Send, Package, Building2, Receipt, TrendingUp, FileText, Settings, Mail, Phone, Building } from "lucide-react";
 
 const demoSteps = [
@@ -61,6 +62,7 @@ const demoSteps = [
 ];
 
 export default function DemoModal({ isOpen, onClose }) {
+  const navigate = useNavigate();
   if (!isOpen) return null;
 
   return (
@@ -135,7 +137,10 @@ export default function DemoModal({ isOpen, onClose }) {
                   <div className="text-sm text-slate-500">
                     Ready to get started?
                   </div>
-                  <button className="px-6 py-3 bg-gradient-to-r from-[#2563EB] to-[#1D4ED8] text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all flex items-center gap-2">
+                  <button
+                    onClick={() => { onClose(); navigate('/choose-subscription'); }}
+                    className="px-6 py-3 bg-gradient-to-r from-[#2563EB] to-[#1D4ED8] text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all flex items-center gap-2"
+                  >
                     Start Free Trial <Play className="w-4 h-4" />
                   </button>
                 </div>

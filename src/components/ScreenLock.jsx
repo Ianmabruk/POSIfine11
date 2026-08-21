@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Lock } from 'lucide-react';
 import { settings } from '../services/api';
+import { refreshAuthSession } from '../utils/authRefresh';
 
 export default function ScreenLock({ onUnlock, userType = 'user', logo = '' }) {
   const [pin, setPin] = useState('');
@@ -41,39 +42,64 @@ export default function ScreenLock({ onUnlock, userType = 'user', logo = '' }) {
         return null;
       }
 
-      // SECURITY: PIN validation happens on BACKEND ONLY (not frontend)
-      const response = await fetch(`${import.meta.env.VITE_API_BASE || 'https://posifine22.onrender.com/api'}/auth/unlock-screen`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ pin })
-      });
+      const doUnlock = async (authToken) => {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE || 'https://posifine22.onrender.com/api'}/auth/unlock-screen`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ pin })
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        
-        if (response.status === 429) {
-          throw new Error(errorData.message || 'Too many failed attempts. Try again later.');
-        } else if (response.status === 401) {
-          throw new Error(errorData.message || 'Incorrect PIN');
-        } else {
-          throw new Error(errorData.message || 'Unlock failed');
+        if (!response.ok) {
+          const errorData = await response.json();
+          if (response.status === 429) {
+            throw new Error(errorData.message || 'Too many failed attempts. Try again later.');
+          } else if (response.status === 401) {
+            throw new Error(errorData.message || 'Incorrect PIN');
+          } else {
+            throw new Error(errorData.message || 'Unlock failed');
+          }
         }
-      }
 
-      const data = await response.json();
-      
-      // Update token with new one that has screen_locked: false
-      if (data.token) {
-        localStorage.setItem('token', data.token);
-      }
+        const data = await response.json();
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+        }
+        return data;
+      };
 
+      let data = await doUnlock(token);
       setPin('');
       onUnlock(data);
-      
     } catch (error) {
+      if (error.message.includes('Incorrect PIN') || error.message.includes('Token expired')) {
+        const refreshed = await refreshAuthSession();
+        if (refreshed?.token) {
+          try {
+            const response = await fetch(`${import.meta.env.VITE_API_BASE || 'https://posifine22.onrender.com/api'}/auth/unlock-screen`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${refreshed.token}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ pin })
+            });
+            if (response.ok) {
+              const data = await response.json();
+              if (data.token) {
+                localStorage.setItem('token', data.token);
+              }
+              setPin('');
+              onUnlock(data);
+              return;
+            }
+          } catch {
+            // fall through to error display
+          }
+        }
+      }
       setError(error.message || 'Unlock failed');
     } finally {
       setLoading(false);
