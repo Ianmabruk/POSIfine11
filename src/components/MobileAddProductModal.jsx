@@ -43,6 +43,7 @@ export default function MobileAddProductModal({ isOpen, onClose, onProductCreate
     cost: '',
     category: 'finished',
     unit: 'pcs',
+    quantity: '0',
     visibleToCashier: true
   });
   const [imageFile, setImageFile] = useState(null);
@@ -73,6 +74,7 @@ export default function MobileAddProductModal({ isOpen, onClose, onProductCreate
       cost: '',
       category: 'finished',
       unit: 'pcs',
+      quantity: '0',
       visibleToCashier: true
     });
     setImageFile(null);
@@ -122,6 +124,9 @@ export default function MobileAddProductModal({ isOpen, onClose, onProductCreate
     if (form.cost !== '' && (!Number.isFinite(Number(form.cost)) || Number(form.cost) < 0)) {
       newErrors.cost = 'Enter a valid cost';
     }
+    if (form.quantity !== '' && (!Number.isFinite(Number(form.quantity)) || Number(form.quantity) < 0)) {
+      newErrors.quantity = 'Enter a valid initial stock';
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -135,11 +140,12 @@ export default function MobileAddProductModal({ isOpen, onClose, onProductCreate
     try {
       const parsedPrice = Number(form.price);
       const parsedCost = form.cost === '' ? null : Number(form.cost);
+      const parsedQuantity = Number(form.quantity || 0);
 
       const productData = {
         name: form.name.trim(),
         price: parsedPrice,
-        quantity: 0,
+        quantity: parsedQuantity,
         category: form.category,
         unit: form.unit,
         visibleToCashier: form.visibleToCashier,
@@ -339,6 +345,21 @@ export default function MobileAddProductModal({ isOpen, onClose, onProductCreate
                 <option value="ml">Milliliters</option>
               </select>
             </div>
+          </div>
+
+          {/* Initial Stock */}
+          <div>
+            <label className={labelClass}>Initial Stock</label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="0"
+              value={form.quantity}
+              onChange={(e) => setForm({ ...form, quantity: e.target.value })}
+              className={inputClass}
+            />
+            {errors.quantity && <p className="mt-1 text-sm text-red-600">{errors.quantity}</p>}
           </div>
 
           {/* Visible to cashier */}

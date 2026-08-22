@@ -49,7 +49,7 @@ const refreshAuthSession = sharedRefreshAuthSession;
 const invalidateEndpointCache = (endpoint) => {
     try {
         const escaped = endpoint.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        cacheClear(new RegExp(`^api_cache_${escaped}\\|(GET|HEAD)\\|`).source);
+        cacheClear(new RegExp(`^api_cache_${escaped}([?].*)?\\|(GET|HEAD)\\|`).source);
     } catch {
         cacheClear();
     }
@@ -333,10 +333,14 @@ export const products = {
   getLowStockWarnings: () => request('/products/low-stock-warnings'),
   
   // Update product stock/inventory
-  updateStock: (id, stockData) => request(`/products/${id}/stock`, {
-    method: 'PUT',
-    body: JSON.stringify(stockData)
-  }),
+  updateStock: async (id, stockData) => {
+    const result = await request(`/products/${id}/stock`, {
+      method: 'PUT',
+      body: JSON.stringify(stockData)
+    });
+    invalidateEndpointCache('/products');
+    return result;
+  },
   
   getMaxProducible: (id) => request(`/products/${id}/max-producible`),
   
@@ -405,7 +409,11 @@ export const expenses = {
 
 // Raw Materials API
 export const rawMaterials = {
-  getAll: () => request('/raw-materials')
+  getAll: () => request('/raw-materials'),
+  update: (id, data) => request(`/raw-materials/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data)
+  })
 };
 
 // Statistics API
@@ -526,10 +534,14 @@ export const batches = {
     const url = productId ? `/batches?productId=${productId}` : '/batches';
     return request(url);
   },
-  create: (batchData) => request('/batches', {
-    method: 'POST',
-    body: JSON.stringify(batchData)
-  })
+  create: async (batchData) => {
+    const result = await request('/batches', {
+      method: 'POST',
+      body: JSON.stringify(batchData)
+    });
+    invalidateEndpointCache('/products');
+    return result;
+  }
 };
 
 // Production API

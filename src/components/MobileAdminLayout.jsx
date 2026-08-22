@@ -26,6 +26,7 @@ const sidebarNavItems = [
   { id: 'reminders', label: 'Reminders', icon: BellRing, path: '/mobile/reminders' },
   { id: 'discounts', label: 'Discounts', icon: Tag, path: '/mobile/discounts' },
   { id: 'credit-requests', label: 'Credit Requests', icon: CreditCard, path: '/mobile/credit-requests' },
+  { id: 'analytics', label: 'Analytics', icon: BarChart3, path: '/mobile/analytics' },
   { id: 'settings', label: 'Settings', icon: Settings, path: '/mobile/settings' },
 ];
 

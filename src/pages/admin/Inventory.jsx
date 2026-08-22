@@ -40,6 +40,7 @@ export default function Inventory() {
     cost: '',
     category: 'finished',
     unit: 'pcs',
+    quantity: '0',
     expenseOnly: false,
     image: '',
     visibleToCashier: true,
@@ -325,11 +326,16 @@ export default function Inventory() {
         showNotification('❌ Enter a valid low-stock level', 'error');
         return;
       }
+      const parsedQuantity = Number(newProduct.quantity || 0);
+      if (!Number.isFinite(parsedQuantity) || parsedQuantity < 0) {
+        showNotification('❌ Enter a valid initial stock', 'error');
+        return;
+      }
 
       const productData = {
         ...newProduct,
         price: parsedPrice,
-        quantity: 0,
+        quantity: parsedQuantity,
         visibleToCashier: !newProduct.expenseOnly && newProduct.visibleToCashier !== false,
         reorder_level: parsedReorder ?? undefined
       };
@@ -1248,15 +1254,15 @@ export default function Inventory() {
                   value={newProduct.reorder_level}
                   onChange={(e) => setNewProduct({ ...newProduct, reorder_level: e.target.value })}
                 />
-                <select
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="Initial Stock"
                   className="input"
-                  value={newProduct.category}
-                  onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
-                >
-                  <option value="finished">Finished Product</option>
-                  <option value="raw">Raw Material</option>
-                  <option value="service">Service</option>
-                </select>
+                  value={newProduct.quantity}
+                  onChange={(e) => setNewProduct({ ...newProduct, quantity: e.target.value })}
+                />
               </div>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <select
@@ -1298,7 +1304,7 @@ export default function Inventory() {
                 <button type="button" onClick={() => {
                   setShowAddModal(false);
                   setImagePreview('');
-                  setNewProduct({ name: '', price: '', cost: '', category: 'finished', unit: 'pcs', expenseOnly: false, image: '', visibleToCashier: true, reorder_level: '' });
+                  setNewProduct({ name: '', price: '', cost: '', category: 'finished', unit: 'pcs', quantity: '0', expenseOnly: false, image: '', visibleToCashier: true, reorder_level: '' });
                 }} className="btn-secondary" disabled={isAddingProduct || isImageLoading}>Cancel</button>
               </div>
             </form>
