@@ -48,6 +48,40 @@ export const invalidateTokenCache = () => {
 
 const pendingSales = new Map();
 
+const PENDING_SALES_KEY = 'pos_pending_sales';
+
+function loadPendingSales() {
+  try {
+    const raw = sessionStorage.getItem(PENDING_SALES_KEY);
+    if (!raw) return;
+    const entries = JSON.parse(raw);
+    if (Array.isArray(entries)) {
+      entries.forEach(([key, promise]) => {
+        if (promise && typeof promise.then === 'function') {
+          pendingSales.set(key, promise);
+          promise.finally(() => {
+            pendingSales.delete(key);
+            savePendingSales();
+          }).catch(() => {});
+        }
+      });
+    }
+  } catch {
+    // ignore corrupt storage
+  }
+}
+
+function savePendingSales() {
+  try {
+    const entries = Array.from(pendingSales.entries());
+    sessionStorage.setItem(PENDING_SALES_KEY, JSON.stringify(entries));
+  } catch {
+    // ignore storage errors
+  }
+}
+
+loadPendingSales();
+
 function getCartFingerprint(items) {
   try {
     const sorted = [...items].sort((a, b) => (a.productId || a.product_id || a.id || 0) - (b.productId || b.product_id || b.id || 0));
@@ -282,7 +316,11 @@ export const completeSaleTransaction = async (
   })();
 
   pendingSales.set(pendingKey, promise);
-  promise.finally(() => pendingSales.delete(pendingKey)).catch(() => {});
+  savePendingSales();
+  promise.finally(() => {
+    pendingSales.delete(pendingKey);
+    savePendingSales();
+  }).catch(() => {});
   return promise;
 };
 
