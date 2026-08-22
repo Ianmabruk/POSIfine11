@@ -7,23 +7,21 @@
   VITE_API_BASE = "https://posifine22.onrender.com/api"
   VITE_API_URL = "https://posifine22.onrender.com"
 
-# Handle SPA routing - all routes go to index.html
+[[redirects]]
+  from = "/assets/*"
+  to = "/assets/:splat"
+  status = 200
+  force = true
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
-# Set headers for proper caching
 [[headers]]
   for = "/index.html"
     [headers.values]
       Cache-Control = "no-cache, no-store, must-revalidate"
-
-# Hashed assets are immutable - cache aggressively
-[[headers]]
-  for = "/assets/*"
-    [headers.values]
-      Cache-Control = "public, max-age=31536000, immutable"
 
 [[headers]]
   for = "/assets/*"
