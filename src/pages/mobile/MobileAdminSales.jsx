@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sales as salesApi } from '../../services/api';
 import { ShoppingBag, TrendingUp, TrendingDown, DollarSign, ArrowLeft } from 'lucide-react';
+import websocketService from '../../services/websocketService';
 
 export default function MobileAdminSales() {
   const navigate = useNavigate();
@@ -20,6 +21,26 @@ export default function MobileAdminSales() {
       }
     };
     loadSales();
+  }, []);
+
+  useEffect(() => {
+    const handleSaleCompleted = (sale) => {
+      setSales(prev => {
+        const exists = prev.some(s => s.id === sale.id);
+        if (exists) return prev;
+        return [sale, ...prev].slice(0, 50);
+      });
+    };
+
+    const token = localStorage.getItem('token');
+    if (token) {
+      websocketService.connect(token, handleSaleCompleted).catch(() => {});
+      websocketService.on('sale_completed', handleSaleCompleted);
+    }
+
+    return () => {
+      websocketService.disconnect();
+    };
   }, []);
 
   const totalSales = sales.reduce((sum, sale) => sum + (Number(sale.total) || 0), 0);

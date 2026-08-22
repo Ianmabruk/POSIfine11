@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { sales as salesApi, BASE_API_URL } from '../../services/api';
-import { Calendar, Download, Filter, Trash2, Trash, ChevronDown } from 'lucide-react';
+import { Calendar, Download, Filter, Trash2, Trash, ChevronDown, Wallet, Landmark, Smartphone, CreditCard } from 'lucide-react';
 import { exportSalesPDF, exportSalesDetailedPDF } from '../../utils/exportData';
+import websocketService from '../../services/websocketService';
 
 export default function Sales() {
   const [sales, setSales] = useState([]);
@@ -12,6 +13,26 @@ export default function Sales() {
 
   useEffect(() => {
     loadSales();
+  }, []);
+
+  useEffect(() => {
+    const handleSaleCompleted = (sale) => {
+      setSales(prev => {
+        const exists = prev.some(s => s.id === sale.id);
+        if (exists) return prev;
+        return [sale, ...prev];
+      });
+    };
+
+    const token = localStorage.getItem('token');
+    if (token) {
+      websocketService.connect(token, handleSaleCompleted).catch(() => {});
+      websocketService.on('sale_completed', handleSaleCompleted);
+    }
+
+    return () => {
+      websocketService.disconnect();
+    };
   }, []);
 
   const loadSales = async () => {
@@ -128,11 +149,14 @@ export default function Sales() {
       ? 'bg-blue-100 text-blue-800'
       : pm === 'credit'
       ? 'bg-yellow-100 text-yellow-800'
+      : pm === 'mpesa' || pm === 'm-pesa'
+      ? 'bg-teal-100 text-teal-800'
       : 'bg-gray-100 text-gray-600';
-    const icon = pm === 'cash' ? '💵' : pm === 'card' ? '💳' : pm === 'credit' ? '🏦' : '💰';
+    const icon = pm === 'cash' ? <Wallet className="w-3.5 h-3.5" /> : pm === 'card' ? <CreditCard className="w-3.5 h-3.5" /> : pm === 'credit' ? <Landmark className="w-3.5 h-3.5" /> : pm === 'mpesa' || pm === 'm-pesa' ? <Smartphone className="w-3.5 h-3.5" /> : <Wallet className="w-3.5 h-3.5" />;
     return (
       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${cls}`}>
-        {icon} {sale.paymentMethod || sale.payment_method || '—'}
+        {icon}
+        {sale.paymentMethod || sale.payment_method || '—'}
       </span>
     );
   };

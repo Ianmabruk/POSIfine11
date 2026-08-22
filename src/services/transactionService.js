@@ -17,6 +17,7 @@
 
 import { requestWithSWR } from './requestCache';
 import { refreshAuthSession } from '../utils/authRefresh';
+import { cacheClear } from '../utils/apiCache';
 
 const API_BASE =
   import.meta.env.VITE_API_URL ||
@@ -44,6 +45,20 @@ const getRefreshToken = () => localStorage.getItem('refreshToken');
 export const invalidateTokenCache = () => {
   cachedToken = null;
 };
+
+const pendingSales = new Map();
+
+function getCartFingerprint(items) {
+  try {
+    const sorted = [...items].sort((a, b) => (a.productId || a.product_id || a.id || 0) - (b.productId || b.product_id || b.id || 0));
+    return JSON.stringify(sorted.map(it => ({
+      id: it.productId || it.product_id || it.id,
+      q: Number(it.quantity || 0)
+    })));
+  } catch {
+    return String(Date.now());
+  }
+}
 
 /**
  * Ultra-fast API request with minimal overhead
@@ -147,8 +162,17 @@ export const completeSaleTransaction = async (
 ) => {
   const transactionStart = performance.now();
   let optimisticApplied = false;
-  
-  try {
+
+  const fingerprint = getCartFingerprint(saleData.items || []);
+  const pendingKey = `${fingerprint}_${saleData.total}`;
+  if (pendingSales.has(pendingKey)) {
+    return pendingSales.get(pendingKey);
+  }
+
+  const promise = (async () => {
+    try {
+      const idempotencyKey = `sale_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+      
     // ========================================================================
     // PHASE 1: OPTIMISTIC UPDATE - INSTANT UI FEEDBACK (< 1ms)
     // ========================================================================
@@ -220,6 +244,12 @@ export const completeSaleTransaction = async (
 
     console.log(`✅ [Transaction] Complete! Total: ${totalElapsed.toFixed(1)}ms ${successData.performanceGrade}`);
 
+    try {
+      cacheClear('^api_cache_/sales\\|(GET|HEAD)\\|');
+      cacheClear('^api_cache_/products\\|(GET|HEAD)\\|');
+      cacheClear('^api_cache_/stats\\|(GET|HEAD)\\|');
+    } catch {}
+
     // Call success callback with complete data
     if (onSuccess) {
       onSuccess(successData);
@@ -249,6 +279,11 @@ export const completeSaleTransaction = async (
 
     throw error;
   }
+  })();
+
+  pendingSales.set(pendingKey, promise);
+  promise.finally(() => pendingSales.delete(pendingKey)).catch(() => {});
+  return promise;
 };
 
 /**
