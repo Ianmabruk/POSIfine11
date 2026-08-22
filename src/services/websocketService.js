@@ -28,23 +28,25 @@ class WebSocketService {
     this.isManualClose = false;
     this.token = null;
     this.pongTimeout = null;
+    this.reconnectTimeoutId = null;
   }
 
   /**
    * Connect to WebSocket and listen for product updates
    */
   connect(token, onStockUpdate) {
-    return new Promise((resolve, reject) => {
-      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+    return new Promise((resolve) => {
+      if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
         resolve();
         return;
       }
 
       if (!token) {
-        reject(new Error('No token provided for WebSocket connection'));
+        resolve();
         return;
       }
 
+      this.clearReconnectTimeout();
       this.token = token;
       const wsUrl = `${getWebSocketUrl()}/api/ws/products?token=${encodeURIComponent(token)}`;
 
@@ -133,21 +135,20 @@ class WebSocketService {
         };
 
         this.ws.onerror = (error) => {
-          console.error('❌ WebSocket error:', error);
+          console.error('❌ WebSocket connection error:', error);
           this.emit('error', error);
-          reject(error);
         };
 
         this.ws.onclose = (event) => {
           console.log('🔌 WebSocket disconnected:', event.reason || event.code);
           this.stopHeartbeat();
-          if (!this.isManualClose) {
+          this.clearReconnectTimeout();
+          if (!this.isManualClose && this.reconnectAttempts < this.maxReconnectAttempts) {
             this.attemptReconnect(token, onStockUpdate);
           }
         };
       } catch (error) {
         console.error('Failed to create WebSocket:', error);
-        reject(error);
       }
     });
   }
@@ -188,6 +189,13 @@ class WebSocketService {
     }
   }
 
+  clearReconnectTimeout() {
+    if (this.reconnectTimeoutId) {
+      clearTimeout(this.reconnectTimeoutId);
+      this.reconnectTimeoutId = null;
+    }
+  }
+
   /**
    * Attempt to reconnect with exponential backoff
    */
@@ -202,7 +210,7 @@ class WebSocketService {
 
     console.log(`🔄 Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
 
-    setTimeout(() => {
+    this.reconnectTimeoutId = setTimeout(() => {
       this.connect(token, onStockUpdate).catch((error) => {
         console.error('Reconnection failed:', error);
       });
@@ -239,6 +247,8 @@ class WebSocketService {
    */
   disconnect() {
     this.isManualClose = true;
+    this.clearReconnectTimeout();
+    this.stopHeartbeat();
     if (this.ws) {
       this.ws.close();
       this.ws = null;

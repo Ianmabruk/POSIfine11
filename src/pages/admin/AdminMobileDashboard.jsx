@@ -4,7 +4,8 @@ import { useAuth } from '../../context/AuthContext';
 import { stats, sales as salesApi, users } from '../../services/api';
 import MobileAddProductModal from '../../components/MobileAddProductModal';
 import {
-  ExternalLink, ChevronRight, Bell, Plus, Loader2, User, X
+  ExternalLink, ChevronRight, Bell, Plus, Loader2, User, X,
+  TrendingUp, DollarSign, Package, BarChart3
 } from 'lucide-react';
 
 export default function AdminMobileDashboard() {

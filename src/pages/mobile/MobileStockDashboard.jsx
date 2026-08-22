@@ -52,7 +52,8 @@ export default function MobileStockDashboard() {
         quantity: m.quantity || 0,
         unit: m.unit || 'pcs',
         reorder_level: m.reorder_level || 0,
-        id: `raw-${m.id}`
+        id: `raw-${m.id}`,
+        rawMaterialId: m.id
       })) : [];
 
       setItems([...normalizedProducts, ...normalizedRawMaterials]);
@@ -117,7 +118,7 @@ export default function MobileStockDashboard() {
       const newQuantity = calculateNewQuantity(item);
 
       if (item.item_type === 'raw_material') {
-        await rawMaterials.update(item.raw_material_id || item.id, {
+        await rawMaterials.update(item.rawMaterialId || item.id, {
           quantity: newQuantity
         });
       } else {
