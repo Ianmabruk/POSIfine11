@@ -359,27 +359,38 @@ export default function AdminMobileDashboard() {
           )}
         </div>
 
-        {/* Quick Actions */}
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-3">Quick Actions</h3>
-          <div className="grid grid-cols-2 gap-3">
-            {quickActions.map((action) => {
-              const Icon = action.icon;
-              return (
-                <button
-                  key={action.label}
-                  onClick={() => action.action ? action.action() : navigate(action.path)}
-                  className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex flex-col items-center gap-2 hover:shadow-md transition-shadow"
-                >
-                  <div className={`w-10 h-10 rounded-xl ${action.color} flex items-center justify-center`}>
-                    <Icon className="w-5 h-5 text-white" />
-                  </div>
-                  <span className="text-sm font-medium text-gray-700">{action.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+         {/* Quick Actions */}
+         <div>
+           <h3 className="text-lg font-semibold text-gray-900 mb-3">Quick Actions</h3>
+           <div className="grid grid-cols-2 gap-3">
+             {quickActions.map((action) => {
+               const Icon = action.icon;
+               return (
+                 <button
+                   key={action.label}
+                   onClick={() => action.action ? action.action() : navigate(action.path)}
+                   className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex flex-col items-center gap-2 hover:shadow-md transition-shadow"
+                 >
+                   <div className={`w-10 h-10 rounded-xl ${action.color} flex items-center justify-center`}>
+                     <Icon className="w-5 h-5 text-white" />
+                   </div>
+                   <span className="text-sm font-medium text-gray-700">{action.label}</span>
+                 </button>
+               );
+             })}
+           </div>
+         </div>
+
+         {/* Add Product FAB - primary action */}
+         <button
+           type="button"
+           onClick={() => setShowAddProduct(true)}
+           className="fixed bottom-24 right-4 z-40 w-14 h-14 rounded-full bg-slate-900 text-white shadow-xl flex items-center justify-center hover:bg-slate-800 active:scale-95 transition-all"
+           aria-label="Add Product"
+           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+         >
+           <Plus className="w-7 h-7" />
+         </button>
       </div>
 
       {/* Bottom Navigation */}

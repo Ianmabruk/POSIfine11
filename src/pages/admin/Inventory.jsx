@@ -227,8 +227,8 @@ export default function Inventory() {
   const handleImageUpload = (e, isNewProduct = true) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        showNotification('Image must be smaller than 2MB', 'error');
+      if (file.size > 10 * 1024 * 1024) {
+        showNotification('Image is too large. Please select an image smaller than or equal to 10 MB.', 'error');
         return;
       }
 

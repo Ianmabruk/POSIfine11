@@ -1,7 +1,7 @@
 // WebSocket Service for Real-Time Product Updates
 
 const getWebSocketUrl = () => {
-  const baseUrl = import.meta.env.VITE_API_BASE || import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5000');
+  const baseUrl = import.meta.env.VITE_API_BASE || import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? window.location.origin : '');
   return baseUrl
     .replace('https://', 'wss://')
     .replace('http://', 'ws://')

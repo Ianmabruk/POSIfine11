@@ -22,7 +22,7 @@ const refreshAuth = async () => {
 
 const request = async (endpoint, options = {}) => {
   const token = getMainAdminToken();
-  const baseUrl = (import.meta.env.VITE_API_BASE || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5000') + '/api').replace(/\/$/, '');
+  const baseUrl = (import.meta.env.VITE_API_BASE || (typeof window !== 'undefined' ? window.location.origin : '') + '/api').replace(/\/$/, '');
 
   const config = {
     ...options,

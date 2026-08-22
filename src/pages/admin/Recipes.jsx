@@ -73,8 +73,8 @@ export default function Recipes() {
   const handleImageUpload = (e, isEdit = false) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      alert('Image must be under 2MB');
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Image is too large. Please select an image smaller than or equal to 10 MB.');
       return;
     }
     const reader = new FileReader();

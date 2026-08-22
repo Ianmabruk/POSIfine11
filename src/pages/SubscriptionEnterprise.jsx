@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, ArrowLeft, CreditCard, Smartphone, Building2, Globe, Lock, Sparkles, Crown, ArrowRight } from 'lucide-react';
-import api from '../services/apiClient';
+import { Check, ArrowLeft, CreditCard, Smartphone, Building2, Globe, Lock, Sparkles, Crown, ArrowRight, Loader2 } from 'lucide-react';
+import api from '../services/api';
 import CustomRequestForm from '../components/modern-landing/CustomRequestForm';
 import SEO from '../components/SEO';
 
@@ -53,22 +53,45 @@ export default function SubscriptionEnterprise() {
   const [processing, setProcessing] = useState(false);
   const [trialStarted, setTrialStarted] = useState(false);
   const [showCustomForm, setShowCustomForm] = useState(false);
+  const [isStartingTrial, setIsStartingTrial] = useState(false);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const selected = plans.find(p => p.id === selectedPlan);
 
   const handleStartTrial = async () => {
+    if (isStartingTrial) return;
+    setIsStartingTrial(true);
+
     const planData = { id: selected?.id, name: selected?.name, price: selected?.price };
     localStorage.setItem('selectedPlan', JSON.stringify(planData));
     localStorage.setItem('planId', selectedPlan);
-    
+
+    navigate('/choose-device');
+
     try {
       await api.createTrial(selectedPlan);
+      if (mountedRef.current) {
+        localStorage.removeItem('isTrial');
+        localStorage.removeItem('trialEndsAt');
+      }
     } catch (error) {
       console.error('Failed to create trial:', error);
-      localStorage.setItem('isTrial', 'true');
-      localStorage.setItem('trialEndsAt', new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString());
+      if (mountedRef.current) {
+        localStorage.setItem('isTrial', 'true');
+        localStorage.setItem('trialEndsAt', new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString());
+      }
+    } finally {
+      if (mountedRef.current) {
+        setIsStartingTrial(false);
+      }
     }
-    navigate('/choose-device');
   };
 
   const handlePayment = async () => {
@@ -279,10 +302,20 @@ export default function SubscriptionEnterprise() {
                             <motion.button
                               whileHover={{ scale: 1.01 }}
                               whileTap={{ scale: 0.99 }}
-                              onClick={(e) => { e.stopPropagation(); setSelectedPlan(plan.id); handleStartTrial(); }}
-                              className="w-full py-3 rounded-2xl bg-slate-900 text-vanilla-200 font-semibold text-sm hover:bg-slate-800 transition-colors inline-flex items-center justify-center gap-2"
+                              onClick={(e) => { e.stopPropagation(); handleStartTrial(); }}
+                              disabled={isStartingTrial}
+                              className="w-full py-3 rounded-2xl bg-slate-900 text-vanilla-200 font-semibold text-sm hover:bg-slate-800 transition-colors inline-flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                             >
-                              Start Trial <ArrowRight className="w-4 h-4" />
+                              {isStartingTrial ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                  Starting Trial...
+                                </>
+                              ) : (
+                                <>
+                                  Start Trial <ArrowRight className="w-4 h-4" />
+                                </>
+                              )}
                             </motion.button>
                           )}
                         </div>

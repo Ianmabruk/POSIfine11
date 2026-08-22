@@ -12,7 +12,7 @@ export async function refreshAuthSession() {
     return null;
   }
 
-  const baseUrl = (import.meta.env.VITE_API_BASE || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5000') + '/api').replace(/\/$/, '');
+  const baseUrl = (import.meta.env.VITE_API_BASE || (typeof window !== 'undefined' ? window.location.origin : '') + '/api').replace(/\/$/, '');
 
   refreshPromise = fetch(`${baseUrl}/auth/refresh`, {
     method: 'POST',

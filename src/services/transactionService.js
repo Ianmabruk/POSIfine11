@@ -22,7 +22,7 @@ const API_BASE =
   import.meta.env.VITE_API_URL ||
   (import.meta.env.VITE_API_BASE
     ? import.meta.env.VITE_API_BASE.replace(/\/?api\/?$/, '')
-    : (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5000'));
+    : (typeof window !== 'undefined' ? window.location.origin : ''));
 
 /**
  * Get authorization token (cached)

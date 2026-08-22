@@ -1,10 +1,19 @@
 import { monitoredFetch } from './performanceMonitor';
 import { requestWithSWR } from './requestCache';
 
-const BASE_URL =
-  import.meta?.env?.VITE_API_URL ||
-  import.meta?.env?.VITE_API_BASE ||
-  (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5000');
+const BASE_URL = (() => {
+  if (import.meta.env.VITE_API_BASE) {
+    return import.meta.env.VITE_API_BASE.replace(/\/$/, '');
+  }
+  if (import.meta.env.VITE_API_URL) {
+    const normalized = import.meta.env.VITE_API_URL.replace(/\/$/, '');
+    return normalized.endsWith('/api') ? normalized : `${normalized}/api`;
+  }
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return `${window.location.origin}/api`;
+  }
+  return '/api';
+})();
 
 class ApiClient {
   constructor() {

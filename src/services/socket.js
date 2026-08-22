@@ -11,7 +11,11 @@ const getBaseUrl = () => {
     }
   } catch (_) {}
 
-  return 'http://127.0.0.1:5000/api';
+  if (typeof window !== 'undefined' && window.location.origin) {
+    return window.location.origin + '/api';
+  }
+
+  return '/api';
 };
 
 const BASE = getBaseUrl();
@@ -21,7 +25,7 @@ const listeners = new Map();
 
 function buildWsUrl() {
   const token = (typeof window !== 'undefined') ? localStorage.getItem('token') : null;
-  const base = (BASE || 'http://127.0.0.1:5000/api').replace(/\/api\/?$/, '');
+  const base = (BASE || '/api').replace(/\/api\/?$/, '');
   const url = `${base}/api/ws/products${token ? `?token=${encodeURIComponent(token)}` : ''}`;
   return url.replace(/^http/, 'ws');
 }

@@ -109,7 +109,7 @@ export default function SchoolAdminDashboard() {
   const onStudentImageSelect = async (e, fieldName) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) { setStudentError('Image must be smaller than 2MB'); return; }
+    if (file.size > 10 * 1024 * 1024) { setStudentError('Image is too large. Please select an image smaller than or equal to 10 MB.'); return; }
     try {
       const image = await fileToBase64(file);
       setStudentForm(prev => ({ ...prev, [fieldName]: image }));
@@ -119,7 +119,7 @@ export default function SchoolAdminDashboard() {
   const onProductImageSelect = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) { setProductError('Image must be smaller than 2MB'); return; }
+    if (file.size > 10 * 1024 * 1024) { setProductError('Image is too large. Please select an image smaller than or equal to 10 MB.'); return; }
     try {
       const image = await fileToBase64(file);
       setProductForm(prev => ({ ...prev, image }));

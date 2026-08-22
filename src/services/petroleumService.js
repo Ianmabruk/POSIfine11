@@ -1,5 +1,5 @@
 const getBaseUrl = () => {
-  return import.meta.env.VITE_API_BASE || ((typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5000') + '/api');
+  return import.meta.env.VITE_API_BASE || ((typeof window !== 'undefined' ? window.location.origin : '') + '/api');
 };
 
 const BASE_API_URL = getBaseUrl();

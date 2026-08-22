@@ -4,7 +4,7 @@
  * Handles WebSocket connections with automatic reconnection and message protocol.
  */
 
-const WS_BASE_URL = (import.meta.env.VITE_API_BASE || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5000')).replace(/^http/, 'ws');
+const WS_BASE_URL = (import.meta.env.VITE_API_BASE || (typeof window !== 'undefined' ? window.location.origin : '')).replace(/^http/, 'ws');
 const WS_URL = `${WS_BASE_URL.replace(/\/$/, '')}/api/ws/products`;
 
 /**

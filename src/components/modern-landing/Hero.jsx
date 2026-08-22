@@ -1,12 +1,19 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Play, ArrowRight, Check, Monitor, Tablet, Smartphone, Printer } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import PosifyLogo from "../PosifyLogo";
+import { lazy } from "react";
+
+const SubscriptionEnterprise = lazy(() => import('../../pages/SubscriptionEnterprise'));
 
 export default function Hero({ onOpenDemo }) {
   const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
+
+  const prefetchSubscription = useCallback(() => {
+    import('../../pages/SubscriptionEnterprise');
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -83,7 +90,7 @@ export default function Hero({ onOpenDemo }) {
             <motion.button
               whileHover={{ scale: 1.05, boxShadow: "0 20px 40px rgba(37, 99, 235, 0.3)" }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => navigate('/choose-subscription')}
+              onClick={() => { prefetchSubscription(); navigate('/choose-subscription'); }}
               className="group px-8 py-4 bg-gradient-to-r from-[#2563EB] to-[#1D4ED8] text-white rounded-2xl font-semibold shadow-xl hover:shadow-2xl transition-all flex items-center justify-center gap-2"
             >
               Start 15-Day Free Trial

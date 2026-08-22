@@ -55,17 +55,12 @@ export const ProductsProvider = ({ children }) => {
     try {
       const data = await productsApi.getAll();
       
-      // Ensure we always get an array
       const productList = Array.isArray(data) ? data : [];
-      
-      // Filter visible products
       const visibleProducts = productList.filter(p => {
         return !p.pendingDelete;
       });
 
       persistProductsCache(visibleProducts);
-      
-      
       setProducts(visibleProducts);
       setError(null);
       
@@ -79,36 +74,12 @@ export const ProductsProvider = ({ children }) => {
     } catch (err) {
       console.error('Failed to fetch products:', err);
       setError(`Failed to load products: ${err.message}`);
-
-      // Prefer current in-memory state to avoid regressing recently edited costs/COGS.
-      if (Array.isArray(products) && products.length) {
-        return products;
-      }
-
-      try {
-        const cacheKey = getProductsCacheKey();
-        if (cacheKey) {
-          const cached = localStorage.getItem(cacheKey);
-          if (cached) {
-            const parsed = JSON.parse(cached);
-            const cachedProducts = Array.isArray(parsed?.products) ? parsed.products : [];
-            if (cachedProducts.length) {
-              setProducts(cachedProducts);
-              return cachedProducts;
-            }
-          }
-        }
-      } catch (cacheError) {
-        console.warn('Failed to restore cached products:', cacheError);
-      }
-
-      // Keep current products when fetch fails to avoid accidental UI wipes.
-      return products;
+      return [];
     } finally {
       setLoading(false);
       setLastUpdated(Date.now());
     }
-  }, [user?.account_id, user?.accountId, user?.id, products, persistProductsCache]);
+  }, [user?.account_id, user?.accountId, user?.id, persistProductsCache]);
 
   // Fetch when auth is ready and user changes
   useEffect(() => {
@@ -143,21 +114,21 @@ export const ProductsProvider = ({ children }) => {
   }, [user?.id, user?.account_id, user?.accountId, isInitialized]);
 
   // SMART AUTO-REFRESH: Only when NOT editing
-  // Refreshes every 30 seconds to ensure cashiers see admin updates
-  // But respects active editing state to prevent data loss
+  // Ref-based to avoid resetting the interval on every isEditing toggle.
+  const isEditingRef = useRef(isEditing);
   useEffect(() => {
-    if (!user) return; // Don't auto-refresh when not authenticated
-    const interval = setInterval(() => {
-      if (!isEditing && document.visibilityState === 'visible') {
-        console.log('🔄 Auto-refresh: Fetching latest products from backend...');
-        fetchProducts();
-      } else if (isEditing) {
-        console.log('⏸️ Auto-refresh: Skipped (user is editing)');
-      }
-    }, 30000); // 30 seconds
+    isEditingRef.current = isEditing;
+  }, [isEditing]);
 
+  useEffect(() => {
+    if (!user) return;
+    const interval = setInterval(() => {
+      if (!isEditingRef.current && document.visibilityState === 'visible') {
+        fetchProducts();
+      }
+    }, 30000);
     return () => clearInterval(interval);
-  }, [isEditing, fetchProducts, user]);
+  }, [user, fetchProducts]);
 
   // Listen for clear-data events and force immediate refetch
   useEffect(() => {

@@ -35,6 +35,28 @@ export default function AuthPage() {
 
   const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
+  useEffect(() => {
+    if (redirectedRef.current) return;
+    if (existingSession && !authLoading) {
+      redirectedRef.current = true;
+      navigate(getDashboardRoute(user), { replace: true });
+      return;
+    }
+    const token = localStorage.getItem('token');
+    const savedUser = localStorage.getItem('user');
+    if (token && savedUser && authLoading && !user) {
+      try {
+        const parsed = JSON.parse(savedUser);
+        if (parsed?.email && parsed?.role) {
+          redirectedRef.current = true;
+          navigate(getDashboardRoute(parsed), { replace: true });
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }, [existingSession, authLoading, user, navigate]);
+
   const validateField = useCallback((name, value, isLogin) => {
     if (name === 'email') {
       if (!value) return 'Email is required';
@@ -122,7 +144,7 @@ export default function AuthPage() {
         if (res.token && res.user) {
           await login(res);
           setSuccess('Login successful! Redirecting...');
-          setTimeout(() => navigate(getDashboardRoute(res.user), { replace: true }), 800);
+          navigate(getDashboardRoute(res.user), { replace: true });
         } else {
           throw new Error('Authentication failed. Please try again.');
         }
@@ -140,7 +162,7 @@ export default function AuthPage() {
         if (res.token && res.user) {
           await login(res);
           setSuccess('Account created! Redirecting...');
-          setTimeout(() => navigate(getDashboardRoute(res.user), { replace: true }), 800);
+          navigate(getDashboardRoute(res.user), { replace: true });
         } else {
           throw new Error('Signup failed. Please try again.');
         }

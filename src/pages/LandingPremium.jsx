@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import PosifyLogo from "../components/PosifyLogo";
@@ -25,6 +25,10 @@ const testimonials = [
 export default function LandingPremium() {
   const navigate = useNavigate();
   const [current, setCurrent] = useState(0);
+
+  const prefetchSubscription = useCallback(() => {
+    import('../pages/SubscriptionEnterprise');
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -66,7 +70,7 @@ export default function LandingPremium() {
                 Login
               </button>
               <button
-                onClick={() => navigate("/auth/signup")}
+                onClick={() => { prefetchSubscription(); navigate("/choose-subscription"); }}
                 className="px-5 py-2 rounded-xl text-sm font-semibold bg-slate-900 text-vanilla-200 hover:bg-slate-800 transition-colors"
               >
                 Get Started
@@ -81,7 +85,7 @@ export default function LandingPremium() {
                 Login
               </button>
               <button
-                onClick={() => navigate("/auth/signup")}
+                onClick={() => { prefetchSubscription(); navigate("/choose-subscription"); }}
                 className="px-4 py-2 rounded-xl text-sm font-semibold bg-slate-900 text-vanilla-200 hover:bg-slate-800 transition-colors"
               >
                 Get Started
@@ -109,7 +113,7 @@ export default function LandingPremium() {
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
               <button
-                onClick={() => navigate("/choose-subscription")}
+                onClick={() => { prefetchSubscription(); navigate("/choose-subscription"); }}
                 className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-slate-900 text-vanilla-200 font-semibold hover:bg-slate-800 transition-colors"
               >
                 Get Started

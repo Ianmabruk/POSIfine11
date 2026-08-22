@@ -15,7 +15,7 @@ const getBaseUrl = () => {
   if (typeof window !== 'undefined' && window.location?.origin) {
     return `${window.location.origin}/api`;
   }
-  return 'http://localhost:5000/api';
+  return '/api';
 };
 
 const BASE_API_URL = getBaseUrl();

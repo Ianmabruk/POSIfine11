@@ -2,7 +2,39 @@ import { useState, useEffect, useRef } from 'react';
 import { products } from '../services/api';
 import { Camera, X, Plus, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 
-const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
+
+const MAX_IMAGE_DIMENSION = 1200;
+const IMAGE_QUALITY = 0.8;
+
+const optimizeImage = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION) {
+          const ratio = Math.min(MAX_IMAGE_DIMENSION / width, MAX_IMAGE_DIMENSION / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        const mimeType = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+        const quality = mimeType === 'image/jpeg' ? IMAGE_QUALITY : undefined;
+        resolve(canvas.toDataURL(mimeType, quality));
+      };
+      img.onerror = () => reject(new Error('Failed to load image'));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error('Failed to read image'));
+    reader.readAsDataURL(file);
+  });
+};
 
 export default function MobileAddProductModal({ isOpen, onClose, onProductCreated, userType = 'user' }) {
   const [form, setForm] = useState({
@@ -51,7 +83,7 @@ export default function MobileAddProductModal({ isOpen, onClose, onProductCreate
     setIsImageLoading(false);
   };
 
-  const handleImageChange = (e) => {
+  const handleImageChange = async (e) => {
     const file = e.target.files && e.target.files[0];
     setImageError('');
     if (!file) return;
@@ -61,22 +93,20 @@ export default function MobileAddProductModal({ isOpen, onClose, onProductCreate
       return;
     }
     if (file.size > MAX_IMAGE_SIZE) {
-      setImageError('Image must be smaller than 2MB');
+      setImageError(`Image is too large. Maximum allowed size is 10 MB.`);
       return;
     }
 
     setIsImageLoading(true);
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setImagePreview(ev.target.result);
-      setImageFile(ev.target.result);
+    try {
+      const optimized = await optimizeImage(file);
+      setImagePreview(optimized);
+      setImageFile(optimized);
+    } catch {
+      setImageError('Failed to process image file');
+    } finally {
       setIsImageLoading(false);
-    };
-    reader.onerror = () => {
-      setImageError('Failed to read image file');
-      setIsImageLoading(false);
-    };
-    reader.readAsDataURL(file);
+    }
   };
 
   const validate = () => {
@@ -124,12 +154,18 @@ export default function MobileAddProductModal({ isOpen, onClose, onProductCreate
       const result = await products.create(productData);
 
       setToast({ type: 'success', message: 'Product added successfully' });
+
+      window.dispatchEvent(new CustomEvent('productsSync', {
+        detail: { products: [result], timestamp: Date.now() }
+      }));
+      window.dispatchEvent(new Event('productUpdated'));
+
       if (typeof onProductCreated === 'function') {
         onProductCreated(result);
       }
       setTimeout(() => {
         onClose();
-      }, 800);
+      }, 600);
     } catch (error) {
       const message =
         (error && error.message) ||
@@ -156,7 +192,7 @@ export default function MobileAddProductModal({ isOpen, onClose, onProductCreate
       />
 
       {/* Bottom sheet */}
-      <div className="relative w-full max-w-lg max-h-[92vh] bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col animate-fadeInUp">
+      <div className="relative w-full max-w-lg max-h-[92vh] bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden mb-20">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 sticky top-0 bg-white rounded-t-2xl z-10">
           <h3 className="text-lg font-bold text-gray-900">Add Product</h3>
@@ -189,7 +225,7 @@ export default function MobileAddProductModal({ isOpen, onClose, onProductCreate
         )}
 
         {/* Scrollable body */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 space-y-4">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 space-y-4" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom) + 5rem)' }}>
           {/* Product Name */}
           <div>
             <label className={labelClass}>Product Name <span className="text-red-500">*</span></label>
@@ -318,7 +354,7 @@ export default function MobileAddProductModal({ isOpen, onClose, onProductCreate
         </form>
 
         {/* Footer actions */}
-        <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 flex gap-3" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
+        <div className="bg-white border-t border-gray-200 p-4 flex gap-3" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
           <button
             type="button"
             onClick={onClose}
@@ -331,7 +367,7 @@ export default function MobileAddProductModal({ isOpen, onClose, onProductCreate
             type="button"
             onClick={handleSubmit}
             disabled={isSubmitting || isImageLoading}
-            className="flex-[2] px-4 py-3.5 rounded-xl bg-primary-600 text-white font-semibold text-base hover:bg-primary-700 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+            className="flex-[2] px-4 py-3.5 rounded-xl bg-slate-900 text-white font-semibold text-base hover:bg-slate-800 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
           >
             {isSubmitting ? (
               <>

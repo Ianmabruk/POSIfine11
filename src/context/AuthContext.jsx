@@ -157,9 +157,19 @@ export const AuthProvider = ({ children }) => {
       return;
     }
 
+    const cachedUser = localStorage.getItem('user');
+    if (cachedUser) {
+      try {
+        const parsed = JSON.parse(cachedUser);
+        setUser(normalizeUser(parsed));
+      } catch {
+        // ignore corrupted cache
+      }
+    }
+
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
 
       const response = await fetch(`${BASE_API_URL}/auth/me`, {
         credentials: 'include',
@@ -298,8 +308,8 @@ export const AuthProvider = ({ children }) => {
         }
         localStorage.setItem('user', JSON.stringify(normalized));
         setUser(normalized);
-        setTimeout(() => loadAppSettings(), 0);
-        setTimeout(() => checkSubscriptionStatus(), 0);
+        loadAppSettings();
+        checkSubscriptionStatus();
         return payload;
       }
 
@@ -315,8 +325,8 @@ export const AuthProvider = ({ children }) => {
         }
         localStorage.setItem('user', JSON.stringify(normalized));
         setUser(normalized);
-        setTimeout(() => loadAppSettings(), 0);
-        setTimeout(() => checkSubscriptionStatus(), 0);
+        loadAppSettings();
+        checkSubscriptionStatus();
         return response;
       }
       throw new Error('Invalid response from server');
@@ -340,8 +350,8 @@ export const AuthProvider = ({ children }) => {
         }
         localStorage.setItem('user', JSON.stringify(normalized));
         setUser(normalized);
-        setTimeout(() => loadAppSettings(), 0);
-        setTimeout(() => checkSubscriptionStatus(), 0);
+        loadAppSettings();
+        checkSubscriptionStatus();
         return response;
       }
       throw new Error('Invalid response from server');
