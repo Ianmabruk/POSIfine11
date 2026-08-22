@@ -18,6 +18,18 @@ export default function SettingsPage() {
   const [cashierUserManagement, setCashierUserManagement] = useState(true);
   const [realTimeProductSync, setRealTimeProductSync] = useState(true);
 
+  const [notificationPrefs, setNotificationPrefs] = useState({
+    push_enabled: true,
+    new_sales: true,
+    low_stock: true,
+    out_of_stock: true,
+    stock_restocked: false,
+    cashier_activity: true,
+    inventory_updates: false,
+    sound: true,
+    desktop: true
+  });
+
   // Change password modal state
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
@@ -41,6 +53,12 @@ export default function SettingsPage() {
       // Load new settings with defaults
       setCashierUserManagement(data.cashierUserManagement !== false); // Default to true
       setRealTimeProductSync(data.realTimeProductSync !== false); // Default to true
+      
+      // Load notification preferences
+      const savedPrefs = data.notification_preferences || data.notifications || {};
+      if (Object.keys(savedPrefs).length > 0) {
+        setNotificationPrefs(prev => ({ ...prev, ...savedPrefs }));
+      }
     } catch (error) {
       console.error('Failed to load settings:', error);
     }
@@ -60,6 +78,17 @@ export default function SettingsPage() {
     } catch (error) {
       console.error('Failed to save settings:', error);
       return false;
+    }
+  };
+
+  const saveNotificationPrefs = async (key, value) => {
+    const updated = { ...notificationPrefs, [key]: value };
+    setNotificationPrefs(updated);
+    try {
+      await saveSettings({ notification_preferences: updated });
+    } catch {
+      // revert on failure
+      setNotificationPrefs(prev => ({ ...prev, [key]: !value }));
     }
   };
 
@@ -237,29 +266,41 @@ export default function SettingsPage() {
           </div>
         </div>
 
-         {/* Notifications */}
-        <div className="card">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
-              <Bell className="w-5 h-5 text-green-600" />
+          {/* Notifications */}
+         <div className="card">
+           <div className="flex items-center gap-3 mb-4">
+             <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+               <Bell className="w-5 h-5 text-green-600" />
+             </div>
+             <h3 className="text-lg font-semibold">Notifications</h3>
+           </div>
+            <div className="space-y-3">
+              <label className="flex items-center justify-between">
+                <span className="text-sm">Push Notifications</span>
+                <input type="checkbox" checked={notificationPrefs.push_enabled} onChange={(e) => saveNotificationPrefs('push_enabled', e.target.checked)} className="toggle" />
+              </label>
+              <label className="flex items-center justify-between">
+                <span className="text-sm">New Sale Alerts</span>
+                <input type="checkbox" checked={notificationPrefs.new_sales} onChange={(e) => saveNotificationPrefs('new_sales', e.target.checked)} className="toggle" />
+              </label>
+              <label className="flex items-center justify-between">
+                <span className="text-sm">Low Stock Alerts</span>
+                <input type="checkbox" checked={notificationPrefs.low_stock} onChange={(e) => saveNotificationPrefs('low_stock', e.target.checked)} className="toggle" />
+              </label>
+              <label className="flex items-center justify-between">
+                <span className="text-sm">Out of Stock Alerts</span>
+                <input type="checkbox" checked={notificationPrefs.out_of_stock} onChange={(e) => saveNotificationPrefs('out_of_stock', e.target.checked)} className="toggle" />
+              </label>
+              <label className="flex items-center justify-between">
+                <span className="text-sm">Cashier Activity</span>
+                <input type="checkbox" checked={notificationPrefs.cashier_activity} onChange={(e) => saveNotificationPrefs('cashier_activity', e.target.checked)} className="toggle" />
+              </label>
+              <label className="flex items-center justify-between">
+                <span className="text-sm">Inventory Updates</span>
+                <input type="checkbox" checked={notificationPrefs.inventory_updates} onChange={(e) => saveNotificationPrefs('inventory_updates', e.target.checked)} className="toggle" />
+              </label>
             </div>
-            <h3 className="text-lg font-semibold">Notifications</h3>
-          </div>
-          <div className="space-y-3">
-            <label className="flex items-center justify-between">
-              <span className="text-sm">Email Notifications</span>
-              <input type="checkbox" defaultChecked className="toggle" />
-            </label>
-            <label className="flex items-center justify-between">
-              <span className="text-sm">Low Stock Alerts</span>
-              <input type="checkbox" defaultChecked className="toggle" />
-            </label>
-            <label className="flex items-center justify-between">
-              <span className="text-sm">Daily Sales Summary</span>
-              <input type="checkbox" className="toggle" />
-            </label>
-          </div>
-        </div>
+         </div>
 
 
         {/* Cashier User Management */}

@@ -9,6 +9,9 @@ import {
 } from 'lucide-react';
 import ReminderModal from '../../components/ReminderModal';
 import SkeletonCard from '../../components/ui/SkeletonCard';
+import NotificationBell from '../../components/NotificationBell';
+import NotificationPermissionPrompt from '../../components/NotificationPermissionPrompt';
+import PushNotificationService from '../../services/pushNotificationService';
 
 const Overview = lazy(() => import('./Overview'));
 const Analytics = lazy(() => import('./Analytics'));
@@ -37,6 +40,8 @@ export default function AdminDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [aiAnswer, setAiAnswer] = useState('');
   const [aiError, setAiError] = useState('');
+  const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
+  const [notificationDismissed, setNotificationDismissed] = useState(false);
   // Seed appSettings from context (which reads localStorage + backend on login)
   const [appSettings, setAppSettings] = useState(() => {
     try {
@@ -76,6 +81,39 @@ export default function AdminDashboard() {
       window.removeEventListener('settingsChanged', handleSettingsChanged);
     };
   }, []);
+
+  useEffect(() => {
+    const checkNotificationPermission = async () => {
+      if (notificationDismissed) return;
+
+      try {
+        const result = await PushNotificationService.getPermissionStatus();
+        if (result === 'granted') {
+          return;
+        }
+
+        if (result === 'denied') {
+          setShowNotificationPrompt(true);
+          return;
+        }
+
+        const settings = appSettings?.notification_preferences || appSettings?.notifications || {};
+        if (settings.push_enabled === false) {
+          return;
+        }
+
+        const delay = setTimeout(() => {
+          setShowNotificationPrompt(true);
+        }, 3000);
+
+        return () => clearTimeout(delay);
+      } catch {
+        // Silently fail - notifications are optional
+      }
+    };
+
+    checkNotificationPermission();
+  }, [appSettings, notificationDismissed]);
 
   const handleClearData = async () => {
     if (window.confirm('Are you sure you want to clear all sales and expenses data? This action cannot be undone.')) {
@@ -330,6 +368,7 @@ export default function AdminDashboard() {
               </div>
             </div>
             <div className="flex items-center gap-2 sm:gap-4">
+              <NotificationBell user={user} />
               {appSettings.logo ? (
                 <img src={appSettings.logo} alt="Business logo" className="hidden md:block w-12 h-12 rounded-xl object-cover border border-gray-200 shadow-sm" />
               ) : null}
@@ -409,6 +448,11 @@ export default function AdminDashboard() {
       {/* Reminder Modal */}
       {showReminderModal && (
         <ReminderModal onClose={() => setShowReminderModal(false)} />
+      )}
+
+      {/* Notification Permission Prompt */}
+      {showNotificationPrompt && (
+        <NotificationPermissionPrompt onClose={() => setNotificationDismissed(true)} />
       )}
     </div>
   );

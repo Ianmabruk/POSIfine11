@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { stats, sales as salesApi, users } from '../../services/api';
 import MobileAddProductModal from '../../components/MobileAddProductModal';
+import NotificationBell from '../../components/NotificationBell';
 import {
   ExternalLink, ChevronRight, Bell, Plus, Loader2, User, X,
   TrendingUp, DollarSign, Package, BarChart3
@@ -94,8 +95,13 @@ export default function AdminMobileDashboard() {
     <div className="p-4 space-y-6">
       {/* Welcome Card */}
       <div className="bg-gradient-to-br from-primary-600 to-brand-600 rounded-2xl p-5 text-white shadow-lg">
-        <h2 className="text-xl font-bold mb-1">Good Morning, {user?.name?.split(' ')[0] || 'Admin'} 👋</h2>
-        <p className="text-white/80 text-sm">Here's what's happening with your business today.</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-bold mb-1">Good Morning, {user?.name?.split(' ')[0] || 'Admin'} 👋</h2>
+            <p className="text-white/80 text-sm">Here's what's happening with your business today.</p>
+          </div>
+          <NotificationBell user={user} />
+        </div>
       </div>
 
       {/* Quick Stats */}

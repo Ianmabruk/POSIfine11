@@ -145,6 +145,21 @@ function DashboardRouter() {
 }
 
 function App() {
+  const [swReady, setSwReady] = useState(false);
+
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        .then((registration) => {
+          console.log('✅ Service Worker registered:', registration.scope);
+          setSwReady(true);
+        })
+        .catch((error) => {
+          console.error('❌ Service Worker registration failed:', error);
+        });
+    }
+  }, []);
+
   return (
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <ErrorBoundary>
