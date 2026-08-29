@@ -72,6 +72,10 @@ export const PushNotificationService = {
         return { success: true, subscription };
       }
 
+      if (!VAPID_PUBLIC_KEY) {
+        return { success: false, error: 'VAPID public key not configured' };
+      }
+
       const vapidKey = this.urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
       const newSubscription = await this.registration.pushManager.subscribe({
         userVisibleOnly: true,

@@ -66,7 +66,7 @@ export default function Invoice({ sale, businessName, businessLogo, onClose }) {
                 ${businessLogo ? `<img src="${businessLogo}" class="logo" alt="Logo" />` : ''}
               </div>
               <div class="business-info">
-                <div class="business-name">${businessName || 'POSIFY'}</div>
+                <div class="business-name" style="font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; color: #1a1a1a; margin-bottom: 4px;">${businessName || 'POSIFY'}</div>
                 <div class="invoice-title">INVOICE</div>
               </div>
             </div>
@@ -179,7 +179,7 @@ export default function Invoice({ sale, businessName, businessLogo, onClose }) {
             <div className="flex items-start justify-between">
               <div>
                 {businessLogo && <img src={businessLogo} alt="Logo" className="w-16 h-16 object-contain rounded-xl border border-gray-200 mb-3" />}
-                <h1 className="text-3xl font-bold text-gray-900">{businessName || 'POSIFY'}</h1>
+                <h1 className="text-3xl font-bold text-gray-900" style={{ fontFamily: "'Playfair Display', serif" }}>{businessName || 'POSIFY'}</h1>
               </div>
               <div className="text-right">
                 <p className="text-3xl font-bold text-gray-900">INVOICE</p>
