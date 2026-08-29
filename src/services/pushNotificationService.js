@@ -168,6 +168,9 @@ export const PushNotificationService = {
       });
 
       if (!response.ok) {
+        if (response.status === 404) {
+          return { success: false, error: 'Push notifications not supported' };
+        }
         const error = await response.json().catch(() => ({ error: 'Registration failed' }));
         return { success: false, error: error.error || error.message || 'Registration failed' };
       }
@@ -195,10 +198,14 @@ export const PushNotificationService = {
         }
       });
 
+      if (response.status === 404) {
+        return { success: true };
+      }
+
       return response.ok;
     } catch (error) {
       console.error('Backend unregister failed:', error);
-      return false;
+      return { success: false };
     }
   },
 
