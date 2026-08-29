@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { stats, sales as salesApi, users } from '../../services/api';
+import { stats, sales as salesApi, users, requests as requestsApi } from '../../services/api';
 import MobileAddProductModal from '../../components/MobileAddProductModal';
 import NotificationBell from '../../components/NotificationBell';
 import {
   ExternalLink, ChevronRight, Bell, Plus, Loader2, User, X,
-  TrendingUp, DollarSign, Package, BarChart3
+  TrendingUp, DollarSign, Package, BarChart3, ClipboardList
 } from 'lucide-react';
 
 export default function AdminMobileDashboard() {
@@ -15,7 +15,8 @@ export default function AdminMobileDashboard() {
   const [data, setData] = useState({
     stats: { totalSales: 0, totalExpenses: 0, profit: 0, grossProfit: 0, netProfit: 0, totalCOGS: 0, dailySales: 0, weeklySales: 0, productCount: 0 },
     recentSales: [],
-    lowStock: []
+    lowStock: [],
+    pendingRequests: 0
   });
   const [loading, setLoading] = useState(true);
   const [showCashierSelect, setShowCashierSelect] = useState(false);
@@ -52,9 +53,10 @@ export default function AdminMobileDashboard() {
 
   const loadData = async () => {
     try {
-      const [statsData, salesData] = await Promise.all([
+      const [statsData, salesData, requestsData] = await Promise.all([
         stats.get(),
-        salesApi.getAll({ limit: 20, sort: '-created_at' })
+        salesApi.getAll({ limit: 20, sort: '-created_at' }),
+        requestsApi.getAll({ status: 'pending', limit: 1 }).catch(() => ({ items: [], total: 0 }))
       ]);
       setData({
         stats: {
@@ -69,7 +71,8 @@ export default function AdminMobileDashboard() {
           productCount: statsData?.productCount ?? statsData?.productsCount ?? 0
         },
         recentSales: Array.isArray(salesData) ? salesData.slice(0, 10) : [],
-        lowStock: []
+        lowStock: [],
+        pendingRequests: requestsData?.total || 0
       });
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
@@ -88,6 +91,7 @@ export default function AdminMobileDashboard() {
 
   const quickActions = [
     { label: 'Add Product', icon: Plus, action: () => setShowAddProduct(true), color: 'bg-blue-500' },
+    { label: 'Request Orders', icon: ClipboardList, path: '/mobile/request-orders', color: 'bg-orange-500', showBadge: true },
     { label: 'View Reports', icon: Bell, path: '/mobile/sales', color: 'bg-purple-500' },
   ];
 
@@ -118,9 +122,15 @@ export default function AdminMobileDashboard() {
           <p className="text-xs text-gray-500 font-medium mb-1">Low Stock</p>
           <p className="text-2xl font-bold text-orange-600">0</p>
         </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-          <p className="text-xs text-gray-500 font-medium mb-1">Users</p>
-          <p className="text-2xl font-bold text-gray-900">-</p>
+        <div 
+          className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 cursor-pointer"
+          onClick={() => navigate('/mobile/request-orders')}
+        >
+          <p className="text-xs text-gray-500 font-medium mb-1">Requests</p>
+          <p className="text-2xl font-bold text-orange-600">{data.pendingRequests || 0}</p>
+          {data.pendingRequests > 0 && (
+            <p className="text-xs text-orange-600 font-medium mt-1">Pending</p>
+          )}
         </div>
       </div>
 
@@ -225,12 +235,17 @@ export default function AdminMobileDashboard() {
                <button
                  key={action.label}
                  onClick={() => action.action ? action.action() : navigate(action.path)}
-                 className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex flex-col items-center gap-2 hover:shadow-md transition-shadow"
+                 className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex flex-col items-center gap-2 hover:shadow-md transition-shadow relative"
                >
                  <div className={`w-10 h-10 rounded-xl ${action.color} flex items-center justify-center`}>
                    <Icon className="w-5 h-5 text-white" />
                  </div>
                  <span className="text-sm font-medium text-gray-700">{action.label}</span>
+                 {action.showBadge && data.pendingRequests > 0 && (
+                   <span className="absolute top-2 right-2 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                     {data.pendingRequests > 9 ? '9+' : data.pendingRequests}
+                   </span>
+                 )}
                </button>
              );
            })}

@@ -6,6 +6,7 @@ import { useProducts } from '../../context/ProductsContext';
 import { products, batches } from '../../services/api';
 import websocketService from '../../services/websocketService';
 import { Plus, Search, Edit2, Trash2, ChevronDown, ChevronUp, AlertTriangle, Camera, Package } from 'lucide-react';
+import { compressImage } from '../../utils/imageCompress';
 
 const hasRecipe = (product) => Array.isArray(product?.recipe) && product.recipe.length > 0;
 
@@ -225,7 +226,7 @@ export default function Inventory() {
     return () => setEditingState(false);
   }, [showAddModal, showEditModal, showAddStock, showWeightPricingModal, setEditingState]);
 
-  const handleImageUpload = (e, isNewProduct = true) => {
+  const handleImageUpload = async (e, isNewProduct = true) => {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 10 * 1024 * 1024) {
@@ -234,22 +235,22 @@ export default function Inventory() {
       }
 
       setIsImageLoading(true);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const base64 = e.target.result;
-        setImagePreview(base64);
+      try {
+        const compressed = await compressImage(file);
+        setImagePreview(compressed.dataUrl);
         if (isNewProduct) {
-          setNewProduct(prev => ({ ...prev, image: base64 }));
+          setNewProduct(prev => ({ ...prev, image: compressed.dataUrl }));
         } else {
-          setEditProduct(prev => ({ ...prev, image: base64 }));
+          setEditProduct(prev => ({ ...prev, image: compressed.dataUrl }));
         }
+        if (compressed.compressed) {
+          showNotification(`Image optimized: ${formatBytes(compressed.originalSize)} → ${formatBytes(compressed.size)}`, 'success');
+        }
+      } catch (error) {
+        showNotification('Failed to process image', 'error');
+      } finally {
         setIsImageLoading(false);
-      };
-      reader.onerror = () => {
-        showNotification('Failed to read image file', 'error');
-        setIsImageLoading(false);
-      };
-      reader.readAsDataURL(file);
+      }
     }
   };
 

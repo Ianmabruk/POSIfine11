@@ -1,14 +1,15 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useProducts } from '../context/ProductsContext';
-import { products, sales, expenses, stats, batches, discounts, timeEntries, creditRequests, reminders } from '../services/api';
+import { products, sales, expenses, stats, batches, discounts, timeEntries, creditRequests, reminders, requests as requestsApi } from '../services/api';
 import websocketService from '../services/websocketService';
 import { BASE_API_URL } from '../services/api';
-import { ShoppingCart, Trash2, LogOut, Plus, Minus, TrendingDown, Package, Edit2, Search, Camera, AlertTriangle, Clock, Play, Square, CreditCard, X, Bell, PenSquare, Loader2 } from 'lucide-react';
+import { ShoppingCart, Trash2, LogOut, Plus, Minus, TrendingDown, Package, Edit2, Search, Camera, AlertTriangle, Clock, Play, Square, CreditCard, X, Bell, PenSquare, Loader2, ClipboardList } from 'lucide-react';
 import SignaturePad from '../components/SignaturePad';
 import DiscountSelector from '../components/DiscountSelector';
 import ProductCard from '../components/ProductCard';
 import LowStockAlert from '../components/LowStockAlert';
+import Invoice from '../components/Invoice';
 import { 
   completeSaleTransaction, 
   invalidateProductCache
@@ -74,6 +75,11 @@ export default function CashierPOS() {
   const [showCreditRequest, setShowCreditRequest] = useState(false);
   const [creditRequestForm, setCreditRequestForm] = useState({ customerName: '', amount: '', reason: '', notes: '' });
   const [creditRequestSubmitting, setCreditRequestSubmitting] = useState(false);
+  const [showTradeRequest, setShowTradeRequest] = useState(false);
+  const [tradeRequestForm, setTradeRequestForm] = useState({ productId: '', productName: '', quantity: '', unit: 'pcs', transactionInfo: {} });
+  const [tradeRequestSubmitting, setTradeRequestSubmitting] = useState(false);
+  const [lastSale, setLastSale] = useState(null);
+  const [showInvoice, setShowInvoice] = useState(false);
   const [newExpense, setNewExpense] = useState({ description: '', amount: '', category: '' });
   const [imagePreview, setImagePreview] = useState('');
   const [discountList, setDiscountList] = useState([]);
@@ -824,6 +830,9 @@ export default function CashierPOS() {
             sales: [newSale, ...prev.sales]
           }));
           
+          setLastSale(newSale);
+          setShowInvoice(true);
+          
           console.log('📢 [Checkout] Dispatching sale_completed event for cashier sync');
           window.dispatchEvent(new CustomEvent('sale_completed', {
             detail: {
@@ -1075,6 +1084,36 @@ export default function CashierPOS() {
     }
   };
 
+  const handleTradeRequest = async (e) => {
+    e.preventDefault();
+    if (!tradeRequestForm.productName || !tradeRequestForm.quantity) {
+      alert('Please fill in all required fields');
+      return;
+    }
+    
+    setTradeRequestSubmitting(true);
+    try {
+      const response = await requestsApi.create({
+        requestType: 'trade',
+        productId: tradeRequestForm.productId ? parseInt(tradeRequestForm.productId) : null,
+        productName: tradeRequestForm.productName,
+        quantity: parseFloat(tradeRequestForm.quantity),
+        unit: tradeRequestForm.unit,
+        transactionInfo: tradeRequestForm.transactionInfo || {}
+      });
+      
+      console.log('✅ Trade request submitted:', response);
+      setTradeRequestForm({ productId: '', productName: '', quantity: '', unit: 'pcs', transactionInfo: {} });
+      setShowTradeRequest(false);
+      alert('✅ Trade request submitted successfully!');
+    } catch (error) {
+      console.error('Failed to submit trade request:', error);
+      alert('❌ Failed to submit trade request: ' + (error.message || 'Unknown error'));
+    } finally {
+      setTradeRequestSubmitting(false);
+    }
+  };
+
   const handleClearData = async () => {
     if (window.confirm('Are you sure you want to clear all sales and expenses? This action cannot be undone.')) {
       try {
@@ -1186,6 +1225,10 @@ export default function CashierPOS() {
             <button onClick={() => setShowCreditRequest(true)} className="px-4 py-3 sm:py-2 min-h-[44px] rounded-lg font-medium transition-all bg-blue-100 hover:bg-blue-200 text-blue-600 border border-blue-300 flex items-center gap-2 text-sm sm:text-base touch-manipulation">
               <CreditCard className="w-4 h-4" />
               Request Credit
+            </button>
+            <button onClick={() => setShowTradeRequest(true)} className="px-4 py-3 sm:py-2 min-h-[44px] rounded-lg font-medium transition-all bg-orange-100 hover:bg-orange-200 text-orange-600 border border-orange-300 flex items-center gap-2 text-sm sm:text-base touch-manipulation">
+              <ClipboardList className="w-4 h-4" />
+              Request Order
             </button>
             {isClockedIn && clockedInTime && (
               <div className="ml-auto text-right text-xs">
@@ -1503,10 +1546,28 @@ export default function CashierPOS() {
 
               <div>
                 <label className="block text-sm font-semibold mb-2">Payment Method</label>
-                <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className="input h-12 text-base touch-manipulation">
-                  <option value="cash">Cash</option>
-                  <option value="card">Card</option>
-                </select>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    { value: 'cash', label: 'Cash', icon: '💵', color: 'bg-green-50 border-green-300 text-green-700' },
+                    { value: 'mpesa', label: 'M-Pesa', icon: '📱', color: 'bg-blue-50 border-blue-300 text-blue-700' },
+                    { value: 'bank_transfer', label: 'Bank Transfer', icon: '🏦', color: 'bg-purple-50 border-purple-300 text-purple-700' },
+                    { value: 'card', label: 'Card', icon: '💳', color: 'bg-gray-50 border-gray-300 text-gray-700' },
+                  ].map((method) => (
+                    <button
+                      key={method.value}
+                      type="button"
+                      onClick={() => setPaymentMethod(method.value)}
+                      className={`px-3 py-3 rounded-xl border-2 text-sm font-medium transition-all touch-manipulation ${
+                        paymentMethod === method.value
+                          ? `${method.color} border-current shadow-md`
+                          : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
+                      }`}
+                    >
+                      <span className="text-lg block mb-1">{method.icon}</span>
+                      {method.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <button 
@@ -2034,6 +2095,83 @@ export default function CashierPOS() {
         </div>
       )}
 
+      {/* Trade Request Modal */}
+      {showTradeRequest && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-96 overflow-y-auto">
+            <div className="bg-gradient-to-r from-orange-500 to-red-600 p-6 text-white flex justify-between items-center sticky top-0">
+              <h2 className="text-2xl font-bold flex items-center gap-2">
+                <ClipboardList />
+                Request Order
+              </h2>
+              <button onClick={() => setShowTradeRequest(false)} className="hover:bg-white/20 p-2 rounded-lg transition">
+                <X size={24} />
+              </button>
+            </div>
+            <form onSubmit={handleTradeRequest} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Product/Item Name *</label>
+                <input
+                  type="text"
+                  placeholder="Enter product or item name"
+                  value={tradeRequestForm.productName}
+                  onChange={(e) => setTradeRequestForm({ ...tradeRequestForm, productName: e.target.value })}
+                  className="w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  required
+                  disabled={tradeRequestSubmitting}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Quantity *</label>
+                <input
+                  type="number"
+                  placeholder="0"
+                  value={tradeRequestForm.quantity}
+                  onChange={(e) => setTradeRequestForm({ ...tradeRequestForm, quantity: e.target.value })}
+                  className="w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  min="0"
+                  step="0.01"
+                  required
+                  disabled={tradeRequestSubmitting}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Unit</label>
+                <select
+                  value={tradeRequestForm.unit}
+                  onChange={(e) => setTradeRequestForm({ ...tradeRequestForm, unit: e.target.value })}
+                  className="w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  disabled={tradeRequestSubmitting}
+                >
+                  <option value="pcs">Pieces</option>
+                  <option value="kg">Kilograms</option>
+                  <option value="liters">Liters</option>
+                  <option value="units">Units</option>
+                  <option value="boxes">Boxes</option>
+                </select>
+              </div>
+              <div className="flex gap-2 pt-4">
+                <button
+                  type="submit"
+                  disabled={tradeRequestSubmitting}
+                  className="flex-1 bg-gradient-to-r from-orange-500 to-red-600 text-white py-3 rounded-lg font-bold hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {tradeRequestSubmitting ? 'Submitting...' : 'Submit Request'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowTradeRequest(false)}
+                  disabled={tradeRequestSubmitting}
+                  className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-bold hover:bg-gray-300 transition disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Mobile Cart Bottom Sheet */}
       {cart.length > 0 && (
         <>
@@ -2135,6 +2273,15 @@ export default function CashierPOS() {
             </div>
           )}
         </>
+      )}
+
+      {showInvoice && lastSale && (
+        <Invoice
+          sale={lastSale}
+          businessName={user?.businessName || user?.business_name || appSettings?.businessName || 'POSIFY'}
+          businessLogo={appSettings?.logo}
+          onClose={() => setShowInvoice(false)}
+        />
       )}
     </div>
   );

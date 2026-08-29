@@ -36,6 +36,8 @@ const MobileTimeTracking = lazy(() => import('./pages/mobile/MobileTimeTracking'
 const MobileReminders = lazy(() => import('./pages/mobile/MobileReminders'));
 const MobileDiscounts = lazy(() => import('./pages/mobile/MobileDiscounts'));
 const MobileCreditRequests = lazy(() => import('./pages/mobile/MobileCreditRequests'));
+const MobileRequestOrders = lazy(() => import('./pages/admin/RequestOrders'));
+const MobileAdminAttendance = lazy(() => import('./pages/mobile/MobileAdminAttendance'));
 const MobileAnalytics = lazy(() => import('./pages/mobile/MobileAnalytics'));
 const MobileCashierProducts = lazy(() => import('./pages/mobile/MobileCashierProducts'));
 const MobileCashierCart = lazy(() => import('./pages/mobile/MobileCashierCart'));
@@ -246,9 +248,11 @@ function App() {
                   <Route path="vendors" element={<MobileVendors />} />
                   <Route path="users" element={<MobileUsers />} />
                   <Route path="time-tracking" element={<MobileTimeTracking />} />
+                  <Route path="attendance" element={<MobileAdminAttendance />} />
                   <Route path="reminders" element={<MobileReminders />} />
                   <Route path="discounts" element={<MobileDiscounts />} />
                   <Route path="credit-requests" element={<MobileCreditRequests />} />
+                  <Route path="request-orders" element={<MobileRequestOrders />} />
                   <Route path="analytics" element={<MobileAnalytics />} />
                   <Route path="settings" element={<MobileAdminSettings />} />
                 </Route>

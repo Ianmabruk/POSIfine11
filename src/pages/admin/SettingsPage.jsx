@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
-import { Bell, User, Shield, Check, Upload, Image as ImageIcon, Users, RefreshCw, Settings, Eye, EyeOff, Lock } from 'lucide-react';
+import { Bell, User, Shield, Check, Upload, Image as ImageIcon, Users, RefreshCw, Settings, Eye, EyeOff, Lock, Building2, Phone, Mail, MapPin, FileText, Save } from 'lucide-react';
 import { settings as settingsApi, auth } from '../../services/api';
 
 
@@ -30,6 +30,17 @@ export default function SettingsPage() {
     desktop: true
   });
 
+  const [businessProfile, setBusinessProfile] = useState({
+    business_name: '',
+    business_phone: '',
+    business_email: '',
+    business_address: '',
+    tax_info: '',
+    invoice_footer: ''
+  });
+  const [businessProfileSaving, setBusinessProfileSaving] = useState(false);
+  const [businessProfileSaved, setBusinessProfileSaved] = useState(false);
+
   // Change password modal state
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
@@ -41,6 +52,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     loadSettings();
+    loadBusinessProfile();
   }, []);
 
 
@@ -78,6 +90,38 @@ export default function SettingsPage() {
     } catch (error) {
       console.error('Failed to save settings:', error);
       return false;
+    }
+  };
+
+  const loadBusinessProfile = async () => {
+    try {
+      const data = await settingsApi.get();
+      setBusinessProfile({
+        business_name: data.business_name || data.businessName || '',
+        business_phone: data.business_phone || '',
+        business_email: data.business_email || '',
+        business_address: data.business_address || '',
+        tax_info: data.tax_info || '',
+        invoice_footer: data.invoice_footer || ''
+      });
+    } catch (error) {
+      console.error('Failed to load business profile:', error);
+    }
+  };
+
+  const saveBusinessProfile = async (e) => {
+    e.preventDefault();
+    setBusinessProfileSaving(true);
+    setBusinessProfileSaved(false);
+    try {
+      await settingsApi.update(businessProfile);
+      setBusinessProfileSaved(true);
+      setTimeout(() => setBusinessProfileSaved(false), 3000);
+    } catch (error) {
+      console.error('Failed to save business profile:', error);
+      alert('Unable to save business information. Please try again.');
+    } finally {
+      setBusinessProfileSaving(false);
     }
   };
 
@@ -264,6 +308,98 @@ export default function SettingsPage() {
               <p className="font-medium capitalize">{user?.role}</p>
             </div>
           </div>
+        </div>
+
+        {/* Business Profile */}
+        <div className="card">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
+              <Building2 className="w-5 h-5 text-amber-600" />
+            </div>
+            <h3 className="text-lg font-semibold">Business Profile</h3>
+          </div>
+          <form onSubmit={saveBusinessProfile} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Business Name *</label>
+              <input
+                type="text"
+                value={businessProfile.business_name}
+                onChange={(e) => setBusinessProfile({ ...businessProfile, business_name: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                placeholder="Enter your business name"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Business Phone</label>
+              <input
+                type="tel"
+                value={businessProfile.business_phone}
+                onChange={(e) => setBusinessProfile({ ...businessProfile, business_phone: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                placeholder="+254 700 000000"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Business Email</label>
+              <input
+                type="email"
+                value={businessProfile.business_email}
+                onChange={(e) => setBusinessProfile({ ...businessProfile, business_email: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                placeholder="info@yourbusiness.com"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Business Address</label>
+              <textarea
+                value={businessProfile.business_address}
+                onChange={(e) => setBusinessProfile({ ...businessProfile, business_address: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                placeholder="Enter business address"
+                rows="2"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Tax Information (optional)</label>
+              <input
+                type="text"
+                value={businessProfile.tax_info}
+                onChange={(e) => setBusinessProfile({ ...businessProfile, tax_info: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                placeholder="KRA PIN or VAT number"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Invoice Footer (optional)</label>
+              <textarea
+                value={businessProfile.invoice_footer}
+                onChange={(e) => setBusinessProfile({ ...businessProfile, invoice_footer: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                placeholder="Thank you for your business."
+                rows="2"
+              />
+            </div>
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="submit"
+                disabled={businessProfileSaving}
+                className="btn-primary flex items-center gap-2 disabled:opacity-50"
+              >
+                {businessProfileSaving ? (
+                  <>Saving...</>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    Save Business Profile
+                  </>
+                )}
+              </button>
+              {businessProfileSaved && (
+                <span className="text-sm text-green-600 font-medium">✅ Saved</span>
+              )}
+            </div>
+          </form>
         </div>
 
           {/* Notifications */}

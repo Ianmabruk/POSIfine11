@@ -168,6 +168,12 @@ const SNAKE_TO_CAMEL = {
   amount_paid: 'amountPaid',
   stock_level: 'stockLevel',
   last_restocked: 'lastRestocked',
+  business_name: 'businessName',
+  business_phone: 'businessPhone',
+  business_email: 'businessEmail',
+  business_address: 'businessAddress',
+  tax_info: 'taxInfo',
+  invoice_footer: 'invoiceFooter',
 };
 
 const CAMEL_TO_SNAKE = Object.fromEntries(
@@ -872,6 +878,30 @@ export const cashierNotes = {
   }),
   delete: (id) => request(`/cashier-notes/${id}`, {
     method: 'DELETE'
+  })
+};
+
+// Requests / Trade Orders API
+export const requests = {
+  getAll: (params = {}) => {
+    const qs = new URLSearchParams();
+    if (params.page) qs.set('page', String(params.page));
+    if (params.limit) qs.set('limit', String(params.limit));
+    if (params.status) qs.set('status', params.status);
+    if (params.sort) qs.set('sort', params.sort);
+    const query = qs.toString();
+    return request(`/api/requests${query ? `?${query}` : ''}`);
+  },
+  create: (data) => request('/api/requests', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  }),
+  approve: (requestId) => request(`/api/requests/${requestId}/approve`, {
+    method: 'PUT'
+  }),
+  reject: (requestId, reason = '') => request(`/api/requests/${requestId}/reject`, {
+    method: 'PUT',
+    body: JSON.stringify({ rejectionReason: reason })
   })
 };
 
