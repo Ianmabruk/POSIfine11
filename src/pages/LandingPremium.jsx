@@ -1,120 +1,53 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import PosifyLogo from "../components/PosifyLogo";
 import SEO from "../components/SEO";
-import { TrendingUp, Package, BarChart3, Shield, ArrowRight, Menu, X } from "lucide-react";
+import { TrendingUp, Package, BarChart3, Shield, ArrowRight, Menu, X, Check, Play } from "lucide-react";
 
-const stats = [
-  { label: "Business Control", value: "Real-time visibility", icon: BarChart3 },
-  { label: "Smart Inventory", value: "Know what's selling", icon: Package },
-  { label: "Real Profit", value: "Understand your margins", icon: TrendingUp },
-  { label: "Secure & Reliable", value: "Enterprise-grade security", icon: Shield },
-];
-
-const testimonials = [
+const features = [
   {
-    quote: "Possify transformed how we manage our shop. Sales are up and inventory is finally under control.",
-    author: "James M.",
-    role: "Retail Store Owner",
+    icon: Package,
+    title: "Inventory Management",
+    description: "Track products and stock levels in real-time with smart reorder alerts and batch tracking.",
   },
   {
-    quote: "The mobile dashboard is a game changer. I can track everything from my phone while on the go.",
-    author: "Grace K.",
-    role: "Cafe Manager",
+    icon: BarChart3,
+    title: "Real-Time Analytics",
+    description: "Monitor daily and monthly sales across all devices instantly with live updates and reports.",
   },
   {
-    quote: "Switched from a complicated system to Possify and never looked back. Simple, fast, reliable.",
-    author: "David O.",
-    role: "Supermarket Operator",
+    icon: TrendingUp,
+    title: "Profit Tracking",
+    description: "Understand your margins with detailed cost breakdowns and profit analysis per product.",
+  },
+  {
+    icon: Shield,
+    title: "Secure & Reliable",
+    description: "Enterprise-grade security, role-based access, and secure cloud-based authentication.",
   },
 ];
 
 export default function LandingPremium() {
   const navigate = useNavigate();
-  const [current, setCurrent] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const prefetchSubscription = useCallback(() => {
     import('../pages/SubscriptionEnterprise');
   }, []);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrent((prev) => (prev + 1) % testimonials.length);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, []);
-
   return (
-    <div className="min-h-screen bg-slate-950 text-white antialiased overflow-x-hidden">
+    <div className="min-h-screen bg-vanilla-200 text-slate-900 antialiased overflow-x-hidden">
       <SEO
         title="POSIFY - Run your business beautifully"
         description="Simple, modern POS for African businesses. Inventory, sales, payments, and analytics in one place."
         canonical="https://posifine22.onrender.com/"
       />
 
-      {/* Hero with pyramid background */}
-      <div
-        className="fixed inset-0 z-0"
-        style={{
-          backgroundImage: 'url(https://images.unsplash.com/photo-1503177119275-0aa32b3a9368?w=1920&q=80)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
-      >
-        <div
-          className="absolute inset-0"
-          style={{
-            background: 'linear-gradient(90deg, rgba(4,10,16,0.92) 0%, rgba(4,10,16,0.75) 50%, rgba(4,10,16,0.88) 100%)',
-          }}
-        />
-      </div>
-
-      {/* Floating glass cards */}
-      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-        <motion.div
-          animate={{ y: [0, -20, 0] }}
-          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-[15%] right-[5%] w-64 bg-white/8 backdrop-blur-xl border border-white/12 rounded-2xl p-5 shadow-2xl hidden lg:block"
-        >
-          <p className="text-xs text-white/60 font-medium mb-1">Today's Sales</p>
-          <p className="text-2xl font-bold text-white mb-1" style={{ fontFamily: "'Playfair Display', serif" }}>KSh 84,250</p>
-          <p className="text-xs text-green-400 font-medium">+18.4%</p>
-        </motion.div>
-        <motion.div
-          animate={{ y: [0, 20, 0] }}
-          transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-          className="absolute top-[25%] left-[3%] w-56 bg-white/8 backdrop-blur-xl border border-white/12 rounded-2xl p-5 shadow-2xl hidden lg:block"
-        >
-          <p className="text-xs text-white/60 font-medium mb-1">Inventory</p>
-          <p className="text-2xl font-bold text-white mb-1" style={{ fontFamily: "'Playfair Display', serif" }}>1,284</p>
-          <p className="text-xs text-orange-400 font-medium">12 Low Stock</p>
-        </motion.div>
-        <motion.div
-          animate={{ y: [0, -15, 0] }}
-          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-          className="absolute bottom-[30%] right-[8%] w-60 bg-white/8 backdrop-blur-xl border border-white/12 rounded-2xl p-5 shadow-2xl hidden lg:block"
-        >
-          <p className="text-xs text-white/60 font-medium mb-1">Real Profit</p>
-          <p className="text-2xl font-bold text-white mb-1" style={{ fontFamily: "'Playfair Display', serif" }}>KSh 42,800</p>
-          <p className="text-xs text-green-400 font-medium">+12.8%</p>
-        </motion.div>
-        <motion.div
-          animate={{ y: [0, 15, 0] }}
-          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-          className="absolute bottom-[20%] left-[5%] w-52 bg-white/8 backdrop-blur-xl border border-white/12 rounded-2xl p-5 shadow-2xl hidden lg:block"
-        >
-          <p className="text-xs text-white/60 font-medium mb-1">Business Health</p>
-          <p className="text-2xl font-bold text-white mb-1" style={{ fontFamily: "'Playfair Display', serif" }}>Excellent</p>
-          <p className="text-xs text-blue-400 font-medium">All systems optimal</p>
-        </motion.div>
-      </div>
-
       {/* Navigation */}
       <header className="relative z-50 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto mt-4">
-          <div className="bg-white/8 backdrop-blur-2xl border border-white/12 rounded-2xl px-4 sm:px-6 py-3 flex items-center justify-between">
+          <div className="bg-white/80 backdrop-blur-xl border border-white/60 rounded-2xl px-4 sm:px-6 py-3 flex items-center justify-between shadow-sm">
             <button
               onClick={() => navigate("/")}
               className="flex items-center gap-2.5 focus-visible-ring rounded-xl"
@@ -123,11 +56,11 @@ export default function LandingPremium() {
             </button>
 
             <nav className="hidden md:flex items-center gap-1">
-              {['Features', 'Solutions', 'Pricing', 'About'].map((item) => (
+              {['Features', 'Pricing', 'About'].map((item) => (
                 <button
                   key={item}
                   onClick={() => navigate("/choose-subscription")}
-                  className="px-4 py-2 rounded-xl text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                  className="px-4 py-2 rounded-xl text-sm font-medium text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition-colors"
                 >
                   {item}
                 </button>
@@ -137,13 +70,13 @@ export default function LandingPremium() {
             <div className="hidden md:flex items-center gap-3">
               <button
                 onClick={() => navigate("/auth/login")}
-                className="px-5 py-2 rounded-xl text-sm font-medium text-white/90 hover:text-white hover:bg-white/10 transition-colors"
+                className="px-5 py-2 rounded-xl text-sm font-medium text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition-colors"
               >
                 Login
               </button>
               <button
                 onClick={() => { prefetchSubscription(); navigate("/choose-subscription"); }}
-                className="px-5 py-2 rounded-xl text-sm font-semibold bg-white text-slate-900 hover:bg-white/90 transition-colors shadow-lg"
+                className="px-5 py-2 rounded-xl text-sm font-semibold bg-gradient-to-r from-green-600 to-green-700 text-white hover:from-green-700 hover:to-green-800 transition-all shadow-md"
               >
                 Get Started
               </button>
@@ -151,83 +84,77 @@ export default function LandingPremium() {
 
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 text-white/80 hover:text-white"
+              className="md:hidden p-2 text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
 
           {/* Mobile menu */}
-          <AnimatePresence>
-            {mobileMenuOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="md:hidden mt-2 bg-white/10 backdrop-blur-2xl border border-white/12 rounded-2xl p-4 space-y-2"
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="md:hidden mt-2 bg-white/90 backdrop-blur-xl border border-white/60 rounded-2xl p-4 space-y-2 shadow-sm"
+            >
+              {['Features', 'Pricing', 'About'].map((item) => (
+                <button
+                  key={item}
+                  onClick={() => { setMobileMenuOpen(false); navigate("/choose-subscription"); }}
+                  className="w-full text-left px-4 py-2 rounded-xl text-sm font-medium text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                >
+                  {item}
+                </button>
+              ))}
+              <button
+                onClick={() => { setMobileMenuOpen(false); navigate("/auth/login"); }}
+                className="w-full text-left px-4 py-2 rounded-xl text-sm font-medium text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition-colors"
               >
-                {['Features', 'Solutions', 'Pricing', 'About'].map((item) => (
-                  <button
-                    key={item}
-                    onClick={() => { setMobileMenuOpen(false); navigate("/choose-subscription"); }}
-                    className="w-full text-left px-4 py-2 rounded-xl text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"
-                  >
-                    {item}
-                  </button>
-                ))}
-                <button
-                  onClick={() => { setMobileMenuOpen(false); navigate("/auth/login"); }}
-                  className="w-full text-left px-4 py-2 rounded-xl text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"
-                >
-                  Login
-                </button>
-                <button
-                  onClick={() => { setMobileMenuOpen(false); prefetchSubscription(); navigate("/choose-subscription"); }}
-                  className="w-full px-5 py-2.5 rounded-xl text-sm font-semibold bg-white text-slate-900 hover:bg-white/90 transition-colors"
-                >
-                  Get Started
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                Login
+              </button>
+              <button
+                onClick={() => { setMobileMenuOpen(false); prefetchSubscription(); navigate("/choose-subscription"); }}
+                className="w-full px-5 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-green-600 to-green-700 text-white hover:from-green-700 hover:to-green-800 transition-all shadow-md"
+              >
+                Get Started
+              </button>
+            </motion.div>
+          )}
         </div>
       </header>
 
       {/* Hero Content */}
-      <main className="relative z-10 flex items-center justify-center px-4 sm:px-6 min-h-screen">
-        <div className="w-full max-w-4xl pt-20 sm:pt-24 pb-12 text-center">
+      <main className="relative px-4 sm:px-6">
+        <div className="max-w-4xl mx-auto pt-12 sm:pt-20 pb-16 text-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <p className="text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase text-white/60 mb-6 sm:mb-8">
+            <p className="text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase text-green-700 mb-6 sm:mb-8">
               POS &middot; Inventory &middot; Payments
             </p>
 
-            <h1
-              className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tight text-white leading-[1.05] mb-6 sm:mb-8"
-              style={{ fontFamily: "'Playfair Display', serif" }}
-            >
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-slate-900 leading-[1.1] mb-6 sm:mb-8">
               Run your business.<br />
-              <span className="text-white/90">Know where your money goes.</span>
+              <span className="bg-gradient-to-r from-green-600 to-green-700 bg-clip-text text-transparent">Know where your money goes.</span>
             </h1>
 
-            <p className="text-base sm:text-lg text-white/70 max-w-xl mx-auto mb-8 sm:mb-10 leading-relaxed">
+            <p className="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto mb-8 sm:mb-10 leading-relaxed">
               Sales management, inventory control, profit tracking, and cashier management — all in one intelligent platform built for African businesses.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
               <button
                 onClick={() => { prefetchSubscription(); navigate("/choose-subscription"); }}
-                className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-white text-slate-900 font-semibold hover:bg-white/90 transition-all shadow-2xl flex items-center justify-center gap-2 group"
+                className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold hover:from-green-700 hover:to-green-800 transition-all shadow-lg flex items-center justify-center gap-2 group"
               >
-                Get Started
+                Start 15-Day Free Trial
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </button>
               <button
                 onClick={() => navigate("/auth/login")}
-                className="w-full sm:w-auto px-8 py-4 rounded-2xl border border-white/20 text-white font-semibold hover:bg-white/10 transition-colors"
+                className="w-full sm:w-auto px-8 py-4 rounded-2xl border-2 border-green-200 text-green-700 font-semibold hover:bg-green-50 transition-colors"
               >
                 Explore POSIFY
               </button>
@@ -241,82 +168,104 @@ export default function LandingPremium() {
             transition={{ duration: 0.8, delay: 0.3 }}
             className="mt-16 sm:mt-24 grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6"
           >
-            {stats.map((stat, i) => {
+            {[
+              { label: "Business Control", value: "Real-time visibility", icon: BarChart3 },
+              { label: "Smart Inventory", value: "Know what's selling", icon: Package },
+              { label: "Real Profit", value: "Understand margins", icon: TrendingUp },
+              { label: "Secure & Reliable", value: "Enterprise-grade security", icon: Shield },
+            ].map((stat, i) => {
               const Icon = stat.icon;
               return (
                 <div
                   key={stat.label}
-                  className="bg-white/8 backdrop-blur-xl border border-white/12 rounded-2xl p-5 sm:p-6 text-center"
+                  className="bg-white rounded-2xl p-5 sm:p-6 text-center shadow-sm border border-slate-100"
                 >
-                  <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center mx-auto mb-3">
-                    <Icon className="w-5 h-5 text-white/80" />
+                  <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center mx-auto mb-3">
+                    <Icon className="w-5 h-5 text-green-600" />
                   </div>
-                  <p
-                    className="text-2xl sm:text-3xl font-bold text-white mb-1"
-                    style={{ fontFamily: "'Playfair Display', serif" }}
-                  >
+                  <p className="text-xl sm:text-2xl font-bold text-slate-900 mb-1">
                     {stat.value}
                   </p>
-                  <p className="text-xs text-white/50 font-medium uppercase tracking-wider">{stat.label}</p>
+                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">{stat.label}</p>
                 </div>
               );
             })}
           </motion.div>
 
-          {/* Testimonials */}
+          {/* Features */}
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.5 }}
-            className="mt-12 sm:mt-16"
+            className="mt-16 sm:mt-24"
           >
-            <div className="bg-white/8 backdrop-blur-xl border border-white/12 rounded-2xl p-6 sm:p-8 relative overflow-hidden max-w-2xl mx-auto">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={current}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -12 }}
-                  transition={{ duration: 0.4 }}
-                  className="text-center"
-                >
-                  <p className="text-sm sm:text-base text-white/80 leading-relaxed mb-4">
-                    &ldquo;{testimonials[current].quote}&rdquo;
-                  </p>
-                  <div>
-                    <p className="text-sm font-bold text-white">{testimonials[current].author}</p>
-                    <p className="text-xs text-white/50">{testimonials[current].role}</p>
-                  </div>
-                </motion.div>
-              </AnimatePresence>
+            <div className="text-center mb-12">
+              <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
+                Everything You Need to Succeed
+              </h2>
+              <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+                Built to streamline operations, delight customers, and grow with your business.
+              </p>
+            </div>
 
-              <div className="mt-5 flex items-center justify-center gap-2">
-                {testimonials.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setCurrent(i)}
-                    className={`h-1.5 rounded-full transition-all duration-300 ${
-                      i === current ? 'w-6 bg-white' : 'w-1.5 bg-white/30 hover:bg-white/50'
-                    }`}
-                    aria-label={`Testimonial ${i + 1}`}
-                  />
-                ))}
-              </div>
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {features.map((feature, i) => {
+                const Icon = feature.icon;
+                return (
+                  <motion.div
+                    key={feature.title}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.6 + i * 0.1 }}
+                    className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-md hover:-translate-y-1 transition-all duration-300"
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center mb-4">
+                      <Icon className="w-6 h-6 text-green-600" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-slate-900 mb-2">{feature.title}</h3>
+                    <p className="text-sm text-slate-600 leading-relaxed">{feature.description}</p>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </motion.div>
+
+          {/* CTA Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.7 }}
+            className="mt-16 sm:mt-24"
+          >
+            <div className="bg-gradient-to-br from-green-600 to-green-700 rounded-3xl p-8 sm:p-12 text-center shadow-xl">
+              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">
+                Ready to transform your business?
+              </h2>
+              <p className="text-green-100 mb-8 max-w-xl mx-auto">
+                Join thousands of African businesses already using Posify to manage sales, inventory, and profits.
+              </p>
+              <button
+                onClick={() => { prefetchSubscription(); navigate("/choose-subscription"); }}
+                className="px-8 py-4 rounded-2xl bg-white text-green-700 font-semibold hover:bg-green-50 transition-all shadow-lg flex items-center justify-center gap-2 mx-auto"
+              >
+                Start Your Free Trial
+                <ArrowRight className="w-4 h-4" />
+              </button>
             </div>
           </motion.div>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 px-4 sm:px-6 pb-8 sm:pb-12">
+      <footer className="relative z-10 px-4 sm:px-6 pb-8 sm:pb-12 mt-12">
         <div className="max-w-4xl mx-auto">
-          <div className="bg-white/8 backdrop-blur-xl border border-white/12 rounded-2xl p-6 sm:p-8">
+          <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-100">
             <div className="flex flex-col items-center text-center gap-3">
               <PosifyLogo size="sm" />
-              <p className="text-xs sm:text-sm text-white/50">
+              <p className="text-xs sm:text-sm text-slate-500">
                 Built by Mabricksel Technologies
               </p>
-              <p className="text-xs text-white/40">
+              <p className="text-xs text-slate-400">
                 &copy; 2026 Mabricksel Technologies. All rights reserved.
               </p>
             </div>

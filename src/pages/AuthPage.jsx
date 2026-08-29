@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { auth } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useDeviceMode } from '../context/DeviceModeContext';
-import { Mail, Lock, User, Eye, EyeOff, Loader2, CheckCircle2, XCircle } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, Loader2, CheckCircle2, XCircle, Building2 } from 'lucide-react';
 import { getDashboardRoute } from '../utils/dashboardRouting';
 import PosifyLogo from '../components/PosifyLogo';
 import SEO from '../components/SEO';
@@ -19,6 +19,7 @@ export default function AuthPage() {
     email: '',
     password: '',
     name: '',
+    businessName: '',
     confirmPassword: '',
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -79,6 +80,11 @@ export default function AuthPage() {
       if (value !== formData.password) return 'Passwords do not match';
       return '';
     }
+    if (name === 'businessName') {
+      if (!value) return 'Business name is required';
+      if (value.length < 2) return 'Business name must be at least 2 characters';
+      return '';
+    }
     return '';
   }, [formData.password]);
 
@@ -99,7 +105,7 @@ export default function AuthPage() {
   };
 
   const resetForm = useCallback(() => {
-    setFormData({ email: '', password: '', name: '', confirmPassword: '' });
+    setFormData({ email: '', password: '', name: '', businessName: '', confirmPassword: '' });
     setError('');
     setSuccess('');
     setShowPassword(false);
@@ -116,7 +122,7 @@ export default function AuthPage() {
 
     const allFields = isLogin 
       ? ['email', 'password'] 
-      : ['email', 'name', 'password', 'confirmPassword'];
+      : ['email', 'name', 'businessName', 'password', 'confirmPassword'];
 
     const newTouched = {};
     const newFieldErrors = {};
@@ -152,13 +158,14 @@ export default function AuthPage() {
         const selectedPlan = localStorage.getItem('selectedPlan');
         const planId = localStorage.getItem('planId');
         const planData = selectedPlan ? JSON.parse(selectedPlan) : null;
-        const res = await signup({
-          email: formData.email,
-          password: formData.password,
-          name: formData.name,
-          plan: planId || planData?.id || 'starter',
-          deviceMode: tempDeviceMode,
-        });
+          const res = await signup({
+            email: formData.email,
+            password: formData.password,
+            name: formData.name,
+            businessName: formData.businessName,
+            plan: planId || planData?.id || 'starter',
+            deviceMode: tempDeviceMode,
+          });
         if (res.token && res.user) {
           await login(res);
           setSuccess('Account created! Redirecting...');
@@ -282,34 +289,63 @@ export default function AuthPage() {
           )}
 
           <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
-            {/* Full Name - Signup Only */}
-            {!isLogin && (
-              <div>
-                <label className="input-label text-sm font-medium text-slate-700 mb-1.5 block">Full Name</label>
-                <div className="relative">
-                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                  <input
-                    type="text"
-                    name="name"
-                    placeholder="John Doe"
-                    value={formData.name}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    className={`
-                      input pl-11 glass-vanilla-input
-                      ${fieldErrors.name ? 'border-red-400 focus:border-red-500 focus:ring-red-500/30 bg-red-50/50' : ''}
-                      ${!fieldErrors.name && touched.name && formData.name ? 'border-emerald-400 focus:border-emerald-500 focus:ring-emerald-500/30 bg-emerald-50/50' : ''}
-                    `}
-                    required
-                  />
-                </div>
-                {fieldErrors.name && (
-                  <p className="mt-1.5 text-xs text-red-600 flex items-center gap-1">
-                    <XCircle className="w-3 h-3" />{fieldErrors.name}
-                  </p>
-                )}
-              </div>
-            )}
+             {/* Full Name - Signup Only */}
+             {!isLogin && (
+               <div>
+                 <label className="input-label text-sm font-medium text-slate-700 mb-1.5 block">Full Name</label>
+                 <div className="relative">
+                   <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                   <input
+                     type="text"
+                     name="name"
+                     placeholder="John Doe"
+                     value={formData.name}
+                     onChange={handleChange}
+                     onBlur={handleBlur}
+                     className={`
+                       input pl-11 glass-vanilla-input
+                       ${fieldErrors.name ? 'border-red-400 focus:border-red-500 focus:ring-red-500/30 bg-red-50/50' : ''}
+                       ${!fieldErrors.name && touched.name && formData.name ? 'border-emerald-400 focus:border-emerald-500 focus:ring-emerald-500/30 bg-emerald-50/50' : ''}
+                     `}
+                     required
+                   />
+                 </div>
+                 {fieldErrors.name && (
+                   <p className="mt-1.5 text-xs text-red-600 flex items-center gap-1">
+                     <XCircle className="w-3 h-3" />{fieldErrors.name}
+                   </p>
+                 )}
+               </div>
+             )}
+
+             {/* Business Name - Signup Only */}
+             {!isLogin && (
+               <div>
+                 <label className="input-label text-sm font-medium text-slate-700 mb-1.5 block">Business Name</label>
+                 <div className="relative">
+                   <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                   <input
+                     type="text"
+                     name="businessName"
+                     placeholder="My Business Kenya Ltd"
+                     value={formData.businessName}
+                     onChange={handleChange}
+                     onBlur={handleBlur}
+                     className={`
+                       input pl-11 glass-vanilla-input
+                       ${fieldErrors.businessName ? 'border-red-400 focus:border-red-500 focus:ring-red-500/30 bg-red-50/50' : ''}
+                       ${!fieldErrors.businessName && touched.businessName && formData.businessName ? 'border-emerald-400 focus:border-emerald-500 focus:ring-emerald-500/30 bg-emerald-50/50' : ''}
+                     `}
+                     required
+                   />
+                 </div>
+                 {fieldErrors.businessName && (
+                   <p className="mt-1.5 text-xs text-red-600 flex items-center gap-1">
+                     <XCircle className="w-3 h-3" />{fieldErrors.businessName}
+                   </p>
+                 )}
+               </div>
+             )}
 
             {/* Email */}
             <div>

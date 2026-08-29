@@ -4,7 +4,7 @@ import { useProducts } from '../context/ProductsContext';
 import { products, sales, expenses, stats, batches, discounts, timeEntries, creditRequests, reminders, requests as requestsApi } from '../services/api';
 import websocketService from '../services/websocketService';
 import { BASE_API_URL } from '../services/api';
-import { ShoppingCart, Trash2, LogOut, Plus, Minus, TrendingDown, Package, Edit2, Search, Camera, AlertTriangle, Clock, Play, Square, CreditCard, X, Bell, PenSquare, Loader2, ClipboardList } from 'lucide-react';
+import { ShoppingCart, Trash2, LogOut, Plus, Minus, TrendingDown, Package, Edit2, Search, Camera, AlertTriangle, Clock, Play, Square, CreditCard, X, Bell, PenSquare, Loader2, ClipboardList, Banknote, Smartphone, Building2, Wallet } from 'lucide-react';
 import SignaturePad from '../components/SignaturePad';
 import DiscountSelector from '../components/DiscountSelector';
 import ProductCard from '../components/ProductCard';
@@ -90,8 +90,9 @@ export default function CashierPOS() {
   const [clockedInTime, setClockedInTime] = useState(null);
   const [cartItemUnits, setCartItemUnits] = useState({});  // Track units for each cart item
   const [checkoutLoading, setCheckoutLoading] = useState(false);  // Prevent double-submit
-  const [isAutoRefreshing, setIsAutoRefreshing] = useState(false);  // Auto-refresh indicator
   const [isProcessingSale, setIsProcessingSale] = useState(false);  // Processing sale state
+  const [amountReceived, setAmountReceived] = useState('');  // Cash payment input
+  const [changeAmount, setChangeAmount] = useState(0);  // Calculated change
   const [lastProductUpdate, setLastProductUpdate] = useState(Date.now());  // Track updates
   const [productUpdateCount, setProductUpdateCount] = useState(0);  // Update count
   const [reminderList, setReminderList] = useState([]);
@@ -130,6 +131,27 @@ export default function CashierPOS() {
   }, [productList.length, productUpdateCount]);
 
   const calc = useCashierCalculations(cart, selectedDiscount, taxType);
+
+  // Calculate change instantly when amount received changes
+  const calculatedChange = useMemo(() => {
+    if (paymentMethod !== 'cash') return 0;
+    const received = parseFloat(amountReceived) || 0;
+    const total = calc.finalTotal;
+    if (received <= 0) return 0;
+    return Math.max(0, received - total);
+  }, [amountReceived, paymentMethod, calc.finalTotal]);
+
+  const isInsufficientCash = useMemo(() => {
+    if (paymentMethod !== 'cash') return false;
+    const received = parseFloat(amountReceived) || 0;
+    return received < calc.finalTotal && received > 0;
+  }, [amountReceived, paymentMethod, calc.finalTotal]);
+
+  const remainingAmount = useMemo(() => {
+    if (paymentMethod !== 'cash') return 0;
+    const received = parseFloat(amountReceived) || 0;
+    return Math.max(0, calc.finalTotal - received);
+  }, [amountReceived, paymentMethod, calc.finalTotal]);
 
   // Show a non-blocking toast notification (auto-dismisses after `ms` ms)
   const showToast = useCallback((type, message, ms = 3500) => {
@@ -727,6 +749,19 @@ export default function CashierPOS() {
         await handleClockIn();
       }
     }
+
+    // Validate cash payment
+    if (paymentMethod === 'cash') {
+      const received = parseFloat(amountReceived) || 0;
+      if (received <= 0) {
+        alert('❌ Please enter the amount received from the customer.');
+        return;
+      }
+      if (received < calc.finalTotal) {
+        alert(`❌ Insufficient cash.\n\nTotal: KSh ${calc.finalTotal.toLocaleString()}\nReceived: KSh ${received.toLocaleString()}\nRemaining: KSh ${(calc.finalTotal - received).toLocaleString()}`);
+        return;
+      }
+    }
     
     setCheckoutLoading(true);
     setIsProcessingSale(true);
@@ -765,7 +800,8 @@ export default function CashierPOS() {
           tax: calc.taxAmount,
           taxType: taxType,
           paymentMethod: paymentMethod,
-          shiftId: currentTimeEntry?.id
+          shiftId: currentTimeEntry?.id,
+          amountReceived: paymentMethod === 'cash' ? parseFloat(amountReceived) || 0 : null
         },
         // onOptimisticUpdate - called IMMEDIATELY before API
         (optimisticData) => {
@@ -818,6 +854,8 @@ export default function CashierPOS() {
             tax: calc.taxAmount,
             taxType: taxType,
             paymentMethod: paymentMethod,
+            amountPaid: paymentMethod === 'cash' ? parseFloat(amountReceived) || calc.finalTotal : null,
+            change: paymentMethod === 'cash' ? calculatedChange : 0,
             accountId: user?.accountId,
             cashierId: user?.id,
             cashierName: user?.name || 'Cashier',
@@ -910,7 +948,11 @@ export default function CashierPOS() {
     user?.accountId,
     user?.id,
     user?.name,
-    calc
+    calc,
+    amountReceived,
+    calculatedChange,
+    isInsufficientCash,
+    remainingAmount
   ]);
 
   const handleAddProduct = async (e) => {
@@ -1548,27 +1590,70 @@ export default function CashierPOS() {
                 <label className="block text-sm font-semibold mb-2">Payment Method</label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {[
-                    { value: 'cash', label: 'Cash', icon: '💵', color: 'bg-green-50 border-green-300 text-green-700' },
-                    { value: 'mpesa', label: 'M-Pesa', icon: '📱', color: 'bg-blue-50 border-blue-300 text-blue-700' },
-                    { value: 'bank_transfer', label: 'Bank Transfer', icon: '🏦', color: 'bg-purple-50 border-purple-300 text-purple-700' },
-                    { value: 'card', label: 'Card', icon: '💳', color: 'bg-gray-50 border-gray-300 text-gray-700' },
+                    { value: 'cash', label: 'Cash', icon: Wallet, color: 'bg-green-50 border-green-300 text-green-700' },
+                    { value: 'mpesa', label: 'M-Pesa', icon: Smartphone, color: 'bg-blue-50 border-blue-300 text-blue-700' },
+                    { value: 'bank_transfer', label: 'Bank Transfer', icon: Building2, color: 'bg-purple-50 border-purple-300 text-purple-700' },
+                    { value: 'card', label: 'Card', icon: CreditCard, color: 'bg-gray-50 border-gray-300 text-gray-700' },
                   ].map((method) => (
                     <button
                       key={method.value}
                       type="button"
-                      onClick={() => setPaymentMethod(method.value)}
+                      onClick={() => {
+                        setPaymentMethod(method.value);
+                        if (method.value !== 'cash') {
+                          setAmountReceived('');
+                          setChangeAmount(0);
+                        }
+                      }}
                       className={`px-3 py-3 rounded-xl border-2 text-sm font-medium transition-all touch-manipulation ${
                         paymentMethod === method.value
                           ? `${method.color} border-current shadow-md`
                           : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
                       }`}
                     >
-                      <span className="text-lg block mb-1">{method.icon}</span>
+                      <method.icon className="w-6 h-6 mx-auto mb-1" />
                       {method.label}
                     </button>
                   ))}
                 </div>
               </div>
+
+              {paymentMethod === 'cash' && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">Customer Pays (KSh)</label>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      placeholder="Enter amount received"
+                      value={amountReceived}
+                      onChange={(e) => setAmountReceived(e.target.value)}
+                      className={`input text-lg font-semibold ${
+                        isInsufficientCash ? 'border-red-500 bg-red-50' : ''
+                      }`}
+                    />
+                    {isInsufficientCash && (
+                      <p className="mt-1 text-sm text-red-600 font-medium">
+                        Insufficient cash. Remaining: KSh {remainingAmount.toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                  {amountReceived && parseFloat(amountReceived) > 0 && (
+                    <div className={`p-3 rounded-lg ${
+                      calculatedChange > 0 ? 'bg-green-50 border border-green-200' : 'bg-gray-50 border border-gray-200'
+                    }`}>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Change</span>
+                        <span className={`font-bold ${
+                          calculatedChange > 0 ? 'text-green-700' : 'text-gray-900'
+                        }`}>
+                          KSh {calculatedChange.toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <button 
                 onClick={() => {
@@ -1580,10 +1665,10 @@ export default function CashierPOS() {
                     alert(`Error: ${err.message}`);
                   }
                 }} 
-                disabled={cart.length === 0 || checkoutLoading} 
+                disabled={cart.length === 0 || checkoutLoading || (paymentMethod === 'cash' && isInsufficientCash)} 
                 className="btn-primary w-full py-4 sm:py-3 min-h-[52px] sm:min-h-[48px] text-base sm:text-lg bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 touch-manipulation"
               >
-                {checkoutLoading ? '⏳ Processing...' : 'Checkout'}
+                {checkoutLoading ? '⏳ Processing...' : 'Complete Sale'}
               </button>
               
             </div>

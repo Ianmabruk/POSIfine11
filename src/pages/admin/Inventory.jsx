@@ -863,7 +863,7 @@ export default function Inventory() {
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div><span className="text-xs text-gray-500 block">Price</span><span className="font-semibold text-green-600">KSH {product.price?.toLocaleString()}</span></div>
                   <div><span className="text-xs text-gray-500 block">Cost/COGS</span><span className="text-orange-600">{cogs > 0 ? `KSH ${cogs.toLocaleString()}` : <span className="text-xs text-gray-400 italic">No cost</span>}</span></div>
-                  <div><span className="text-xs text-gray-500 block">Stock</span><span className={`font-medium ${(product.quantity || 0) === 0 ? 'text-red-600' : ((product.reorder_level || 0) > 0 && (product.quantity || 0) <= (product.reorder_level || 0)) ? 'text-yellow-600' : 'text-gray-900'}`}>{product.quantity || 0} {product.unit}</span></div>
+                   <div><span className="text-xs text-gray-500 block">Stock</span><span className={`font-medium ${(product.quantity || 0) === 0 ? 'text-red-600' : ((product.reorder_level || 0) > 0 && (product.quantity || 0) <= (product.reorder_level || 0)) ? 'text-yellow-600' : 'text-gray-900'}`}>{product.quantity || 0} {product.unit}</span>{(product.quantity || 0) === 0 ? <span className="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded-full font-medium ml-1">OUT OF STOCK</span> : (product.reorder_level || 0) > 0 && (product.quantity || 0) <= (product.reorder_level || 0) ? <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full font-medium ml-1">LOW STOCK</span> : null}</div>
                   <div><span className="text-xs text-gray-500 block">Margin</span><span className={`font-semibold ${margin > 30 ? 'text-green-600' : margin > 15 ? 'text-yellow-600' : 'text-red-600'}`}>{margin}%</span></div>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
@@ -998,14 +998,15 @@ export default function Inventory() {
                           }`}>
                             {product.quantity || 0} {product.unit}
                           </span>
-                          {(product.reorder_level || 0) > 0 && (product.quantity || 0) <= (product.reorder_level || 0) && (product.quantity || 0) > 0 && (
-                            <AlertTriangle className="w-4 h-4 text-yellow-500" />
-                          )}
-                          {(product.quantity || 0) === 0 && (
+                          {(product.quantity || 0) === 0 ? (
                             <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full font-medium">
-                              Out of Stock
+                              OUT OF STOCK
                             </span>
-                          )}
+                          ) : (product.reorder_level || 0) > 0 && (product.quantity || 0) <= (product.reorder_level || 0) ? (
+                            <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full font-medium">
+                              LOW STOCK
+                            </span>
+                          ) : null}
                         </div>
                       </td>
                       <td className="px-4 py-3">
@@ -1200,84 +1201,114 @@ export default function Inventory() {
               <h3 className="text-2xl font-bold text-gray-900">Add New Product</h3>
               <p className="text-sm text-gray-500">Create products faster with inline image preview and quick pricing.</p>
             </div>
-            <form onSubmit={handleAddProduct} className="space-y-5">
-              <input
-                type="text"
-                placeholder="Product Name"
-                className="input"
-                value={newProduct.name}
-                onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
-                required
-              />
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Product Image</label>
-                <div className="flex items-center gap-4">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => handleImageUpload(e, true)}
-                    className="input"
-                  />
-                  <Camera className="w-5 h-5 text-gray-400" />
-                </div>
-                {(imagePreview || newProduct.image) && (
-                  <div className="mt-2">
-                    <img src={imagePreview || newProduct.image} alt="Preview" className="w-24 h-24 object-cover rounded-lg border" />
-                  </div>
-                )}
-              </div>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <input
-                  type="number"
-                  step="0.01"
-                  placeholder="Price"
-                  className="input"
-                  value={newProduct.price}
-                  onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
-                  required
-                />
-                <input
-                  type="number"
-                  step="0.01"
-                  placeholder="Cost"
-                  className="input"
-                  value={newProduct.cost}
-                  onChange={(e) => setNewProduct({ ...newProduct, cost: e.target.value })}
-                />
-              </div>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <input
-                  type="number"
-                  step="1"
-                  min="0"
-                  placeholder="Low stock alert at (e.g. 10)"
-                  className="input"
-                  value={newProduct.reorder_level}
-                  onChange={(e) => setNewProduct({ ...newProduct, reorder_level: e.target.value })}
-                />
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="Initial Stock"
-                  className="input"
-                  value={newProduct.quantity}
-                  onChange={(e) => setNewProduct({ ...newProduct, quantity: e.target.value })}
-                />
-              </div>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <select
-                  className="input"
-                  value={newProduct.unit}
-                  onChange={(e) => setNewProduct({ ...newProduct, unit: e.target.value })}
-                >
-                  <option value="pcs">Pieces</option>
-                  <option value="kg">Kilograms</option>
-                  <option value="L">Liters</option>
-                  <option value="g">Grams</option>
-                  <option value="ml">Milliliters</option>
-                </select>
-              </div>
+             <form onSubmit={handleAddProduct} className="space-y-5">
+               <div>
+                 <label className="block text-sm font-semibold text-gray-700 mb-1">PRODUCT NAME</label>
+                 <input
+                   type="text"
+                   placeholder="Enter product name"
+                   className="input"
+                   value={newProduct.name}
+                   onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+                   required
+                 />
+               </div>
+               <div className="space-y-2">
+                 <label className="block text-sm font-semibold text-gray-700 mb-1">PRODUCT IMAGE</label>
+                 <div className="flex items-center gap-4">
+                   <input
+                     type="file"
+                     accept="image/*"
+                     onChange={(e) => handleImageUpload(e, true)}
+                     className="input"
+                   />
+                   <Camera className="w-5 h-5 text-gray-400" />
+                 </div>
+                 {(imagePreview || newProduct.image) && (
+                   <div className="mt-2">
+                     <img src={imagePreview || newProduct.image} alt="Preview" className="w-24 h-24 object-cover rounded-lg border" />
+                   </div>
+                 )}
+               </div>
+               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                 <div>
+                   <label className="block text-sm font-semibold text-gray-700 mb-1">SELLING PRICE (KSh)</label>
+                   <input
+                     type="number"
+                     step="0.01"
+                     placeholder="0.00"
+                     className="input"
+                     value={newProduct.price}
+                     onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
+                     required
+                   />
+                 </div>
+                 <div>
+                   <label className="block text-sm font-semibold text-gray-700 mb-1">COST PRICE (KSh)</label>
+                   <input
+                     type="number"
+                     step="0.01"
+                     placeholder="0.00"
+                     className="input"
+                     value={newProduct.cost}
+                     onChange={(e) => setNewProduct({ ...newProduct, cost: e.target.value })}
+                   />
+                 </div>
+               </div>
+               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                 <div>
+                   <label className="block text-sm font-semibold text-gray-700 mb-1">INITIAL STOCK</label>
+                   <input
+                     type="number"
+                     step="0.01"
+                     min="0"
+                     placeholder="0"
+                     className="input"
+                     value={newProduct.quantity}
+                     onChange={(e) => setNewProduct({ ...newProduct, quantity: e.target.value })}
+                   />
+                 </div>
+                 <div>
+                   <label className="block text-sm font-semibold text-gray-700 mb-1">LOW STOCK THRESHOLD</label>
+                   <input
+                     type="number"
+                     step="0.01"
+                     min="0"
+                     placeholder="10"
+                     className="input"
+                     value={newProduct.reorder_level}
+                     onChange={(e) => setNewProduct({ ...newProduct, reorder_level: e.target.value })}
+                   />
+                 </div>
+               </div>
+               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                 <div>
+                   <label className="block text-sm font-semibold text-gray-700 mb-1">CATEGORY</label>
+                   <select
+                     className="input"
+                     value={newProduct.category}
+                     onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
+                   >
+                     <option value="finished">Finished Product</option>
+                     <option value="raw">Raw Material</option>
+                     <option value="composite">Composite / Recipe</option>
+                   </select>
+                 </div>
+                 <div>
+                   <label className="block text-sm font-semibold text-gray-700 mb-1">UNIT</label>
+                   <select
+                     className="input"
+                     value={newProduct.unit}
+                     onChange={(e) => setNewProduct({ ...newProduct, unit: e.target.value })}
+                   >
+                     <option value="pcs">Pieces</option>
+                     <option value="kg">Kilograms</option>
+                     <option value="L">Liters</option>
+                     <option value="g">Grams</option>
+                     <option value="ml">Milliliters</option>
+                   </select>
+                 </div>
+               </div>
               <div className="space-y-2">
                 <label className="flex items-center gap-2">
                   <input

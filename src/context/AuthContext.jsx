@@ -31,6 +31,7 @@ export const AuthProvider = ({ children }) => {
     const profilePicture = rawUser.profilePicture ?? rawUser.profile_picture ?? null;
     const businessLogo = rawUser.business_logo ?? rawUser.businessLogo ?? null;
     const businessType = rawUser.business_type ?? rawUser.businessType ?? null;
+    const businessName = rawUser.business_name ?? rawUser.businessName ?? null;
     const accountId = rawUser.account_id ?? rawUser.accountId ?? null;
     const deviceMode = rawUser.device_mode ?? rawUser.deviceMode ?? null;
     return {
@@ -43,6 +44,8 @@ export const AuthProvider = ({ children }) => {
       businessLogo,
       business_type: businessType,
       businessType,
+      business_name: businessName,
+      businessName,
       account_id: accountId,
       accountId,
       device_mode: deviceMode,
