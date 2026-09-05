@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, ShoppingBag, Package, Menu, X, Bell, LogOut,
-  BarChart3, Layers, TrendingDown, Truck, Users, Clock,
+  BarChart3,   Layers, TrendingDown, Truck, Users, Clock,
   BellRing, Tag, CreditCard, Settings, BookOpen, FileText
 } from 'lucide-react';
 

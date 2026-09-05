@@ -1,10 +1,11 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Home, ShoppingBag, ShoppingCart, Menu, Bell, LogOut } from 'lucide-react';
+import { Home, ShoppingBag, ShoppingCart, Menu, Bell, LogOut, Truck } from 'lucide-react';
 
 const cashierMobileNavItems = [
   { id: 'home', label: 'Home', icon: Home, path: '/mobile/cashier' },
   { id: 'products', label: 'Products', icon: ShoppingBag, path: '/mobile/cashier/products' },
   { id: 'cart', label: 'Cart', icon: ShoppingCart, path: '/mobile/cashier/cart' },
+  { id: 'deliveries', label: 'Deliveries', icon: Truck, path: '/mobile/cashier/deliveries' },
   { id: 'more', label: 'More', icon: Menu, path: '/mobile/cashier/settings' },
 ];
 

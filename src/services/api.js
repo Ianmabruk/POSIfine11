@@ -168,12 +168,51 @@ const SNAKE_TO_CAMEL = {
   amount_paid: 'amountPaid',
   stock_level: 'stockLevel',
   last_restocked: 'lastRestocked',
-  business_name: 'businessName',
-  business_phone: 'businessPhone',
-  business_email: 'businessEmail',
-  business_address: 'businessAddress',
-  tax_info: 'taxInfo',
-  invoice_footer: 'invoiceFooter',
+   business_phone: 'businessPhone',
+   business_address: 'businessAddress',
+   business_name: 'businessName',
+   business_city: 'businessCity',
+   business_country: 'businessCountry',
+   invoice_footer: 'invoiceFooter',
+   is_wholesaler: 'isWholesaler',
+   wholesale_account_id: 'wholesalerAccountId',
+   wholesale_order_id: 'wholesaleOrderId',
+   delivery_id: 'deliveryId',
+   rider_id: 'riderId',
+   order_id: 'orderId',
+   is_verified: 'isVerified',
+   is_online: 'isOnline',
+   is_available: 'isAvailable',
+   completed_deliveries: 'completedDeliveries',
+   cancellation_rate: 'cancellationRate',
+   min_order_amount: 'minOrderAmount',
+   min_order_quantity: 'minOrderQuantity',
+   available_quantity: 'availableQuantity',
+   delivery_available: 'deliveryAvailable',
+   vehicle_type: 'vehicleType',
+   license_plate: 'licensePlate',
+   license_number: 'licenseNumber',
+   license_image: 'licenseImage',
+   verification_status: 'verificationStatus',
+   verification_notes: 'verificationNotes',
+   current_status: 'currentStatus',
+   eta_minutes: 'etaMinutes',
+   distance_km: 'distanceKm',
+   provider_reference: 'providerReference',
+   provider_payload: 'providerPayload',
+   callback_payload: 'callbackPayload',
+   verified_at: 'verifiedAt',
+   delivery_location: 'deliveryLocation',
+   pickup_location: 'pickupLocation',
+   is_fresh: 'isFresh',
+   read_at: 'readAt',
+   provider: 'provider',
+   status_from: 'statusFrom',
+   status_to: 'statusTo',
+   actor_id: 'actorId',
+   account_ref: 'accountRef',
+   amount_paid: 'amountPaid',
+   invoice_footer: 'invoiceFooter',
 };
 
 const CAMEL_TO_SNAKE = Object.fromEntries(
@@ -903,6 +942,113 @@ export const requests = {
     method: 'PUT',
     body: JSON.stringify({ rejectionReason: reason })
   })
+};
+
+// POSIFY Business Network — Marketplace
+export const marketplace = {
+  categories: () => request('/marketplace/categories'),
+  listWholesalers: (params = {}) => request(`/marketplace/wholesalers${toQueryString(params)}`),
+  getWholesaler: (id) => request(`/marketplace/wholesalers/${id}`),
+  getWholesalerProducts: (id) => request(`/marketplace/wholesalers/${id}/products`),
+  getProfile: () => request('/wholesaler/profile'),
+  upsertProfile: (data) => request('/wholesaler/profile', { method: 'PUT', body: JSON.stringify(data) }),
+  requestVerification: () => request('/wholesaler/verification', { method: 'POST' }),
+};
+
+export const wholesaleProducts = {
+  getAll: () => request('/wholesale/products'),
+  create: (data) => request('/wholesale/products', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id, data) => request(`/wholesale/products/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id) => request(`/wholesale/products/${id}`, { method: 'DELETE' }),
+};
+
+export const wholesaleOrders = {
+  list: () => request('/wholesale/orders'),
+  sellerList: () => request('/wholesale/orders/seller'),
+  get: (id) => request(`/wholesale/orders/${id}`),
+  create: (data) => request('/wholesale/orders', { method: 'POST', body: JSON.stringify(data) }),
+  accept: (id) => request(`/wholesale/orders/${id}/accept`, { method: 'POST' }),
+  reject: (id) => request(`/wholesale/orders/${id}/reject`, { method: 'POST' }),
+  markReady: (id) => request(`/wholesale/orders/${id}/mark-ready`, { method: 'POST' }),
+  markPickedUp: (id) => request(`/wholesale/orders/${id}/mark-picked-up`, { method: 'POST' }),
+  requestRider: (id, data) => request(`/wholesale/orders/${id}/request-rider`, { method: 'POST', body: JSON.stringify(data) }),
+};
+
+// Rider network & deliveries
+export const riders = {
+  register: (data) => request('/rider/register', { method: 'POST', body: JSON.stringify(data) }),
+  login: (data) => request('/auth/login', { method: 'POST', body: JSON.stringify(data) }),
+  getProfile: () => request('/rider/profile'),
+  updateProfile: (data) => request('/rider/profile', { method: 'PUT', body: JSON.stringify(data) }),
+  submitVerification: (data) => request('/rider/verification', { method: 'PUT', body: JSON.stringify(data) }),
+  setAvailability: (data) => request('/rider/availability', { method: 'PUT', body: JSON.stringify(data) }),
+  updateLocation: (data) => request('/rider/location', { method: 'POST', body: JSON.stringify(data) }),
+  getAvailability: () => request('/rider/availability'),
+  nearby: (params = {}) => request(`/riders/nearby${toQueryString(params)}`),
+  getDetail: (id) => request(`/riders/${id}`),
+  verify: (id, data) => request(`/riders/${id}/verify`, { method: 'POST', body: JSON.stringify(data) }),
+};
+
+export const deliveries = {
+  list: () => request('/deliveries'),
+  get: (id) => request(`/deliveries/${id}`),
+  events: (id) => request(`/deliveries/${id}/events`),
+  assign: (id, data) => request(`/deliveries/${id}/assign`, { method: 'POST', body: JSON.stringify(data) }),
+  updateStatus: (id, data) => request(`/deliveries/${id}/update-status`, { method: 'POST', body: JSON.stringify(data) }),
+  confirm: (id, data) => request(`/deliveries/${id}/confirm`, { method: 'POST', body: JSON.stringify(data) }),
+  cancel: (id, data) => request(`/deliveries/${id}/cancel`, { method: 'POST', body: JSON.stringify(data) }),
+};
+
+// Payments & settlements
+export const networkPayments = {
+  providers: () => request('/payments/providers'),
+  initiate: (data) => request('/payments/initiate', { method: 'POST', body: JSON.stringify(data) }),
+  verify: (txId) => request(`/payments/transactions/${txId}/verify`, { method: 'POST' }),
+  complete: (txId) => request(`/payments/transactions/${txId}/complete`, { method: 'POST' }),
+  refund: (txId) => request(`/payments/transactions/${txId}/refund`, { method: 'POST' }),
+  list: () => request('/payments/transactions'),
+  get: (id) => request(`/payments/transactions/${id}`),
+};
+
+export const settlements = {
+  list: () => request('/settlements'),
+  release: (id) => request(`/settlements/${id}/release`, { method: 'POST' }),
+};
+
+// Complaints & disputes
+export const complaints = {
+  create: (data) => request('/complaints', { method: 'POST', body: JSON.stringify(data) }),
+  list: () => request('/complaints'),
+  get: (id) => request(`/complaints/${id}`),
+  update: (id, data) => request(`/complaints/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  addEvidence: (id, data) => request(`/complaints/${id}/evidence`, { method: 'POST', body: JSON.stringify(data) }),
+  respond: (id, data) => request(`/complaints/${id}/respond`, { method: 'POST', body: JSON.stringify(data) }),
+};
+
+// Ratings & reputation
+export const ratings = {
+  create: (data) => request('/ratings', { method: 'POST', body: JSON.stringify(data) }),
+  list: () => request('/ratings'),
+  summary: () => request('/ratings/summary'),
+};
+
+export const notifications = {
+  history: (params = {}) => request(`/notifications/history${toQueryString(params)}`),
+  markRead: (id) => request('/notifications/mark-read', {
+    method: 'POST',
+    body: JSON.stringify({ notificationId: id, notification_id: id })
+  }),
+  markAllRead: () => request('/notifications/mark-all-read', { method: 'POST' }),
+};
+
+export const geocoding = {
+  // OpenFreeMap style URL (MapLibre) — no token required
+  mapStyle: 'https://tiles.openfreemap.org/styles/liberty',
+  defaultCenter: { lat: -1.2921, lng: 36.8219 },
+  geocode: (q) => request(`/geocode${toQueryString({ q })}`),
+  reverseGeocode: (lat, lng) => request(`/reverse-geocode${toQueryString({ lat, lng })}`),
+  route: (params) => request(`/route${toQueryString(params)}`),
+  matrix: (points) => request(`/matrix${toQueryString({ points: points.map((p) => `${p.latitude},${p.longitude}`).join(';') })}`),
 };
 
 // Default export - Generic API methods for custom endpoints

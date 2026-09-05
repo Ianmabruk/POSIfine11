@@ -3,7 +3,9 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { ProductsProvider } from './context/ProductsContext';
 import { ScreenModeProvider } from './context/ScreenModeContext';
 import { DeviceModeProvider, useDeviceMode } from './context/DeviceModeContext';
+import { WholesaleCartProvider } from './context/WholesaleCartContext';
 import { ProtectedRoute as RouteGuard, AdminGuard, CashierGuard, DeviceRouteGuard } from './components/RouteGuards';
+import RiderGuard from './components/RiderGuard';
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 
 const LandingPremium = lazy(() => import('./pages/LandingPremium'));
@@ -42,6 +44,10 @@ const MobileAnalytics = lazy(() => import('./pages/mobile/MobileAnalytics'));
 const MobileCashierProducts = lazy(() => import('./pages/mobile/MobileCashierProducts'));
 const MobileCashierCart = lazy(() => import('./pages/mobile/MobileCashierCart'));
 const MobileCashierSettings = lazy(() => import('./pages/mobile/MobileCashierSettings'));
+const CashierDeliveriesPage = lazy(() => import('./pages/admin/CashierDeliveriesPage'));
+// POSIFY Business Network — Rider
+const RiderAuth = lazy(() => import('./pages/rider/RiderAuth'));
+const RiderApp = lazy(() => import('./pages/rider/RiderApp'));
 
 const WindataWindAuth = lazy(() => import('./pages/windatawind/AuthPage'));
 const WindataWind = lazy(() => import('./pages/windatawind/WindataWind'));
@@ -142,6 +148,9 @@ function DashboardRouter() {
     }
     return <Navigate to="/cashier" replace />;
   }
+  if (user.role === 'rider') {
+    return <Navigate to="/rider" replace />;
+  }
 
   return <Navigate to="/dashboard/cashier" replace />;
 }
@@ -168,14 +177,15 @@ function App() {
             <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-primary-600 focus:text-white focus:rounded-lg focus:text-sm focus:font-medium">
               Skip to main content
             </a>
-            <AuthProvider>
-              <ProductsProvider>
-                <ScreenModeProvider>
-                  <DeviceModeProvider>
-                  <Suspense fallback={<LogoPreloader text="Loading..." />}>
-                <div id="main-content">
-                <Routes>
-                <Route path="/" element={<LandingPremium />} />
+             <AuthProvider>
+               <ProductsProvider>
+                 <WholesaleCartProvider>
+                 <ScreenModeProvider>
+                 <DeviceModeProvider>
+                   <Suspense fallback={<LogoPreloader text="Loading..." />}>
+                 <div id="main-content">
+                 <Routes>
+                 <Route path="/" element={<LandingPremium />} />
                 <Route path="/get-started" element={<LandingPremium />} />
                 <Route path="/choose-device" element={<ChooseDevice />} />
                 <Route path="/choose-subscription" element={<SubscriptionEnterprise />} />
@@ -271,7 +281,17 @@ function App() {
                   <Route path="products" element={<MobileCashierProducts />} />
                   <Route path="cart" element={<MobileCashierCart />} />
                   <Route path="settings" element={<MobileCashierSettings />} />
+                  <Route path="deliveries" element={<CashierDeliveriesPage />} />
                 </Route>
+
+                {/* POSIFY Business Network — Rider (mobile only) */}
+                <Route path="/rider/login" element={<RiderAuth />} />
+                <Route path="/rider/register" element={<RiderAuth register />} />
+                <Route path="/rider" element={
+                  <RiderGuard>
+                    <RiderApp />
+                  </RiderGuard>
+                } />
 
                 {/* 404 Catch-all */}
                 <Route path="*" element={
@@ -305,9 +325,10 @@ function App() {
                  </div>
                  </Suspense>
                   </DeviceModeProvider>
-                </ScreenModeProvider>
-              </ProductsProvider>
-            </AuthProvider>
+                 </ScreenModeProvider>
+               </WholesaleCartProvider>
+               </ProductsProvider>
+             </AuthProvider>
            <CookieConsent />
           </ErrorBoundary>
         </BrowserRouter>
