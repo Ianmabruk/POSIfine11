@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Lock, Unlock, Eye, EyeOff } from 'lucide-react';
-
+import { BASE_API_URL } from '../services/api';
 export default function ScreenLockPin({ isLocked, onUnlock, userName, businessLogo }) {
   const [error, setError] = useState('');
   const [isBlocked, setIsBlocked] = useState(false);
@@ -108,7 +108,7 @@ export default function ScreenLockPin({ isLocked, onUnlock, userName, businessLo
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(
-        `${import.meta.env.VITE_API_BASE || 'https://posifine22.onrender.com/api'}/auth/unlock-screen`,
+        `${BASE_API_URL}/auth/unlock-screen`,
         {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },

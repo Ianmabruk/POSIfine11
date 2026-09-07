@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Routes, Route, Link, useNavigate, useParams } from 'react-router-dom';
-import { riders, deliveries } from '../../services/api';
+import { riders, deliveries, BASE_API_URL } from '../../services/api';
 import trackingService from '../../services/trackingService';
 import MapView from '../../components/network/MapView';
 import DeliveryStatusStepper from '../../components/network/DeliveryStatusStepper';
@@ -175,7 +175,7 @@ function RiderEarnings() {
     (async () => {
       try {
         const token = localStorage.getItem('token');
-        const meResp = await fetch(`${import.meta.env.VITE_API_BASE}/rider/profile`, { headers: { Authorization: `Bearer ${token}` } });
+        const meResp = await fetch(`${BASE_API_URL}/rider/profile`, { headers: { Authorization: `Bearer ${token}` } });
         setSummary((await meResp.json()).rider);
       } catch {}
     })();

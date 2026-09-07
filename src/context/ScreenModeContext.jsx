@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useDeviceMode, getDeviceMode, setDeviceMode } from '../hooks/useDeviceMode';
+import { BASE_API_URL } from '../services/api';
 
 const ScreenModeContext = createContext();
 
@@ -33,7 +34,7 @@ export const ScreenModeProvider = ({ children }) => {
           if (mounted) setLoading(false);
           return;
         }
-        const res = await fetch(`${import.meta.env.VITE_API_BASE || 'https://posifine22.onrender.com/api'}/settings`, {
+        const res = await fetch(`${BASE_API_URL}/settings`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (res.ok) {

@@ -5,7 +5,8 @@ import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard, ShoppingBag, Package, Layers, TrendingDown, TrendingUp,
-  Users, Settings, LogOut, Menu, X, ExternalLink, Clock, Bell, DollarSign, Tag, CreditCard, Truck, MessageSquare, BarChart3, Search
+  Users, Settings, LogOut, Menu, X, ExternalLink, Clock, Bell, DollarSign, Tag,
+  CreditCard, Truck, MessageSquare, BarChart3, Search, Globe, Star
 } from 'lucide-react';
 import ReminderModal from '../../components/ReminderModal';
 import SkeletonCard from '../../components/ui/SkeletonCard';
@@ -29,6 +30,20 @@ const CreditRequests = lazy(() => import('./CreditRequests'));
 const Vendors = lazy(() => import('./Vendors'));
 const AdminSupportChat = lazy(() => import('./AdminSupportChat'));
 const StockDashboard = lazy(() => import('./StockDashboard'));
+// POSIFY Business Network
+const MarketplaceBrowser = lazy(() => import('./MarketplaceBrowser'));
+const WholesalerStorePage = lazy(() => import('./WholesalerStorePage'));
+const WholesalerProfilePage = lazy(() => import('./WholesalerProfilePage'));
+const WholesaleProductsPage = lazy(() => import('./WholesaleProductsPage'));
+const WholesaleOrdersPage = lazy(() => import('./WholesaleOrdersPage'));
+const WholesaleOrderDetailPage = lazy(() => import('./WholesaleOrderDetailPage'));
+const WholesaleCartPage = lazy(() => import('./WholesaleCartPage'));
+const RidersPage = lazy(() => import('./RidersPage'));
+const DeliveriesPage = lazy(() => import('./DeliveriesPage'));
+const LiveTrackingPage = lazy(() => import('./LiveTrackingPage'));
+const PaymentsPage = lazy(() => import('./PaymentsPage'));
+const ComplaintsPage = lazy(() => import('./ComplaintsPage'));
+const RatingsPage = lazy(() => import('./RatingsPage'));
 
 
 export default function AdminDashboard() {
@@ -160,13 +175,24 @@ export default function AdminDashboard() {
     { id: 'discounts', label: 'Discounts', icon: Tag, path: '/admin/discounts' },
     { id: 'credit-requests', label: 'Credit Requests', icon: CreditCard, path: '/admin/credit-requests' },
     { id: 'support', label: 'Support Chat', icon: MessageSquare, path: '/admin/support' },
-    { id: 'settings', label: 'Settings', icon: Settings, path: '/admin/settings' }
+    { id: 'settings', label: 'Settings', icon: Settings, path: '/admin/settings' },
+    // POSIFY Business Network
+    { id: 'marketplace', label: 'Marketplace', icon: Globe, path: '/admin/marketplace', group: 'network' },
+    { id: 'wholesaler-profile', label: 'My Wholesaler Profile', icon: ShoppingBag, path: '/admin/wholesaler/profile', group: 'network' },
+    { id: 'wholesale-products', label: 'Wholesale Products', icon: Package, path: '/admin/wholesale/products', group: 'network' },
+    { id: 'wholesale-orders', label: 'Wholesale Orders', icon: ShoppingBag, path: '/admin/wholesale/orders', group: 'network' },
+    { id: 'riders', label: 'Rider Network', icon: Truck, path: '/admin/riders', group: 'network' },
+    { id: 'deliveries', label: 'Deliveries', icon: Truck, path: '/admin/deliveries', group: 'network' },
+    { id: 'payments', label: 'Payments & Settlements', icon: CreditCard, path: '/admin/payments', group: 'network' },
+    { id: 'complaints', label: 'Complaints', icon: MessageSquare, path: '/admin/complaints', group: 'network' },
+    { id: 'ratings', label: 'Ratings & Reputation', icon: Star, path: '/admin/ratings', group: 'network' },
   ];
 
   const menuGroups = [
     { key: 'main', label: 'Main', items: menuItems.filter(i => ['overview','analytics','sales','inventory','stock'].includes(i.id)) },
     { key: 'management', label: 'Management', items: menuItems.filter(i => ['recipes','expenses','vendors','users','time','reminders'].includes(i.id)) },
     { key: 'financial', label: 'Financial', items: menuItems.filter(i => ['service-fees','discounts','credit-requests'].includes(i.id)) },
+    { key: 'network', label: 'Business Network', items: menuItems.filter(i => i.group === 'network') },
     { key: 'system', label: 'System', items: menuItems.filter(i => ['support','settings'].includes(i.id)) },
   ];
 
@@ -440,6 +466,20 @@ export default function AdminDashboard() {
               <Route path="/time" element={<TimeTracking />} />
               <Route path="/support" element={<AdminSupportChat />} />
               <Route path="/settings" element={<SettingsPage />} />
+              {/* POSIFY Business Network */}
+              <Route path="/marketplace" element={<MarketplaceBrowser />} />
+              <Route path="/marketplace/wholesaler/:id" element={<WholesalerStorePage />} />
+              <Route path="/marketplace/cart" element={<WholesaleCartPage />} />
+              <Route path="/wholesaler/profile" element={<WholesalerProfilePage />} />
+              <Route path="/wholesale/products" element={<WholesaleProductsPage />} />
+              <Route path="/wholesale/orders" element={<WholesaleOrdersPage />} />
+              <Route path="/wholesale/orders/:id" element={<WholesaleOrderDetailPage />} />
+              <Route path="/riders" element={<RidersPage />} />
+              <Route path="/deliveries" element={<DeliveriesPage />} />
+              <Route path="/deliveries/:id" element={<LiveTrackingPage />} />
+              <Route path="/payments" element={<PaymentsPage />} />
+              <Route path="/complaints" element={<ComplaintsPage />} />
+              <Route path="/ratings" element={<RatingsPage />} />
             </Routes>
           </Suspense>
         </main>

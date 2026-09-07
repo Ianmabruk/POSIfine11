@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Lock } from 'lucide-react';
-import { settings } from '../services/api';
+import { settings, BASE_API_URL } from '../services/api';
 import { refreshAuthSession } from '../utils/authRefresh';
 
 export default function ScreenLock({ onUnlock, userType = 'user', logo = '' }) {
@@ -43,7 +43,7 @@ export default function ScreenLock({ onUnlock, userType = 'user', logo = '' }) {
       }
 
       const doUnlock = async (authToken) => {
-        const response = await fetch(`${import.meta.env.VITE_API_BASE || 'https://posifine22.onrender.com/api'}/auth/unlock-screen`, {
+        const response = await fetch(`${BASE_API_URL}/auth/unlock-screen`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${authToken}`,
@@ -78,7 +78,7 @@ export default function ScreenLock({ onUnlock, userType = 'user', logo = '' }) {
         const refreshed = await refreshAuthSession();
         if (refreshed?.token) {
           try {
-            const response = await fetch(`${import.meta.env.VITE_API_BASE || 'https://posifine22.onrender.com/api'}/auth/unlock-screen`, {
+        const response = await fetch(`${BASE_API_URL}/auth/unlock-screen`, {
               method: 'POST',
               headers: {
                 'Authorization': `Bearer ${refreshed.token}`,
